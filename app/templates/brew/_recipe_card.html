@@ -1,0 +1,60 @@
+{# Reusable recipe card — shows 6 params in large scannable format + ratio.
+   Context variables needed:
+     - rec: dict (from recommendation) OR measurement object with same attrs
+     - ratio: str like "1:2.1"
+#}
+
+<div class="recipe-params">
+  <div class="recipe-param">
+    <span class="recipe-label">Grind</span>
+    <span class="recipe-value">
+      {% if rec is mapping %}{{ rec.grind_setting }}{% else %}{{ rec.grind_setting }}{% endif %}
+    </span>
+  </div>
+
+  <div class="recipe-param">
+    <span class="recipe-label">Temp</span>
+    <span class="recipe-value">
+      {% if rec is mapping %}{{ rec.temperature }}{% else %}{{ rec.temperature }}{% endif %}
+      <span class="recipe-unit">°C</span>
+    </span>
+  </div>
+
+  <div class="recipe-param">
+    <span class="recipe-label">Pre-inf</span>
+    <span class="recipe-value">
+      {% if rec is mapping %}{{ rec.preinfusion_pct }}{% else %}{{ rec.preinfusion_pct }}{% endif %}
+      <span class="recipe-unit">%</span>
+    </span>
+  </div>
+
+  <div class="recipe-param">
+    <span class="recipe-label">Dose</span>
+    <span class="recipe-value">
+      {% if rec is mapping %}{{ rec.dose_in }}{% else %}{{ rec.dose_in }}{% endif %}
+      <span class="recipe-unit">g</span>
+    </span>
+  </div>
+
+  <div class="recipe-param">
+    <span class="recipe-label">Yield</span>
+    <span class="recipe-value">
+      {% if rec is mapping %}{{ rec.target_yield }}{% else %}{{ rec.target_yield }}{% endif %}
+      <span class="recipe-unit">g</span>
+    </span>
+  </div>
+
+  <div class="recipe-param">
+    <span class="recipe-label">Saturation</span>
+    <span class="recipe-value recipe-value-text">
+      {% if rec is mapping %}{{ rec.saturation }}{% else %}{{ rec.saturation }}{% endif %}
+    </span>
+  </div>
+</div>
+
+{% if ratio %}
+<div class="ratio">
+  <span class="ratio-label">Ratio</span>
+  <span class="ratio-value">{{ ratio }}</span>
+</div>
+{% endif %}

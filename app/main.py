@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import beans
+from app.routers import beans, brew
 from app.services.optimizer import OptimizerService
 
 # Import models so they're registered with Base
@@ -42,6 +42,7 @@ if static_dir.exists():
 
 # Include routers
 app.include_router(beans.router)
+app.include_router(brew.router)
 
 
 @app.get("/health")

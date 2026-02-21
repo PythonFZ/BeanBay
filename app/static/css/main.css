@@ -97,6 +97,25 @@ body {
   text-decoration: none;
 }
 
+.nav-links {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
 .nav-active-bean {
   font-size: var(--text-sm);
   color: var(--text-secondary);
@@ -423,4 +442,155 @@ body {
   .container {
     max-width: 540px;
   }
+}
+
+/* ============================================================
+   Brew / Recipe styles
+   Large, scannable parameter display — readable from arm's length
+   ============================================================ */
+
+/* Action buttons on brew index */
+.brew-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.brew-action-btn {
+  font-size: var(--text-xl);
+  min-height: 64px;
+  border-radius: var(--radius-lg);
+}
+
+/* Recipe parameter grid */
+.recipe-params {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Individual parameter block */
+.recipe-param {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+.recipe-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Big numbers — readable at arm's length */
+.recipe-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.recipe-value-text {
+  font-size: var(--text-xl);
+}
+
+.recipe-unit {
+  font-size: var(--text-base);
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+
+/* Brew ratio display */
+.ratio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.ratio-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ratio-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Taste score slider */
+.score-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  min-height: 8px;
+  padding: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.score-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.score-slider::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Failed shot toggle */
+.failed-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-height: var(--touch-target);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.failed-toggle input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--danger);
+  flex-shrink: 0;
+}
+
+.failed-toggle-label {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--danger);
 }

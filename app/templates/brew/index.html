@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Brew — BrewFlow{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Brew</h1>
+</div>
+
+<div class="brew-actions">
+  <!-- Get Recommendation button -->
+  <form method="post" action="/brew/recommend" class="brew-action-form">
+    <button type="submit" class="btn btn-primary btn-full brew-action-btn">
+      ☕ Get Recommendation
+      <span class="htmx-indicator spinner" style="margin-left: 8px;"></span>
+    </button>
+  </form>
+
+  {% if has_measurements %}
+  <!-- Repeat Best button — only shown when shots have been recorded -->
+  <a href="/brew/best" class="btn btn-secondary btn-full brew-action-btn">
+    ⭐ Repeat Best
+  </a>
+  {% endif %}
+</div>
+
+{% if not has_measurements %}
+<div class="empty-state" style="margin-top: 2rem;">
+  <div class="empty-state-title">Ready to dial in</div>
+  <div class="empty-state-text">
+    Get your first recommendation to start the optimization loop for <strong>{{ active_bean.name }}</strong>.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

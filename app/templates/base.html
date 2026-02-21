@@ -13,6 +13,9 @@
   <nav class="nav">
     <div class="container nav-inner">
       <a href="/beans" class="nav-brand">BrewFlow</a>
+      <div class="nav-links">
+        <a href="/brew" class="nav-link">Brew</a>
+      </div>
       <div class="nav-active-bean" id="active-bean-indicator">
         {% if active_bean %}
           <a href="/beans/{{ active_bean.id }}">{{ active_bean.name }}</a>
