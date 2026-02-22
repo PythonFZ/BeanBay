@@ -48,6 +48,13 @@
 - Data migration: existing measurements get a default "espresso" method + default setup
 - Bean detail page updated to show/edit enhanced metadata (process, variety, roast date, bags)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — New SQLAlchemy models + extended Bean/Measurement + model tests
+- [ ] 13-02-PLAN.md — Alembic migration with data migration for existing measurements
+- [ ] 13-03-PLAN.md — Bean metadata UI + bag management on detail page
+
 **Success Criteria:**
 1. All new models exist with proper relationships and constraints
 2. Alembic migration runs cleanly on existing database with data
@@ -160,7 +167,7 @@ Phase 16 (Transfer Learning)
 | 1-6 | v1 MVP | 16/16 | Complete | 2026-02-22 |
 | 7-9 | v0.1.0 | 5/5 | Complete | 2026-02-22 |
 | 10-12 | v0.1.1 | 8/8 | Complete | 2026-02-22 |
-| 13 | v0.2.0 | 0/TBD | Pending | — |
+| 13 | v0.2.0 | 0/3 | Planned | — |
 | 14 | v0.2.0 | 0/TBD | Pending | — |
 | 15 | v0.2.0 | 0/TBD | Pending | — |
 | 16 | v0.2.0 | 0/TBD | Pending | — |
