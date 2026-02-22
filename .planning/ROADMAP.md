@@ -71,11 +71,11 @@ Plans:
 4. User can tap "Repeat Best" to instantly see the highest-rated recipe for this bean, without triggering a new BayBE recommendation
 5. Subsequent recommendations demonstrably differ from previous ones — BayBE is learning from submitted measurements
 
-**Plans:** 2 plans
+**Plans:** 2 plans — ✓ Complete (2026-02-22)
 
 Plans:
 - [x] 03-01-PLAN.md — Brew router, optimization loop (recommend, record, repeat best)
-- [ ] 03-02-PLAN.md — Gap closure: fix Repeat Best dedup, add bean deactivate UI
+- [x] 03-02-PLAN.md — Gap closure: fix Repeat Best dedup, add bean deactivate UI
 
 **Depends on:** Phase 2
 

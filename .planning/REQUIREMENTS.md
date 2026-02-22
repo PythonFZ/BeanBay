@@ -15,18 +15,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Optimization Loop
 
-- [ ] **OPT-01**: User can request a BayBE-powered recipe recommendation for the active bean
-- [ ] **OPT-02**: User can see recommended params (grind, temp, preinfusion%, dose, yield, saturation) in large scannable text
-- [ ] **OPT-03**: User can see brew ratio (dose:yield) alongside recommendation
-- [ ] **OPT-04**: User can submit a taste score (1-10, 0.5 steps) after brewing
-- [ ] **OPT-05**: User can mark a shot as failed (choked/gusher), auto-setting taste to 1
-- [ ] **OPT-06**: User can view and re-brew the current best recipe with one tap
+- [x] **OPT-01**: User can request a BayBE-powered recipe recommendation for the active bean
+- [x] **OPT-02**: User can see recommended params (grind, temp, preinfusion%, dose, yield, saturation) in large scannable text
+- [x] **OPT-03**: User can see brew ratio (dose:yield) alongside recommendation
+- [x] **OPT-04**: User can submit a taste score (1-10, 0.5 steps) after brewing
+- [x] **OPT-05**: User can mark a shot as failed (choked/gusher), auto-setting taste to 1
+- [x] **OPT-06**: User can view and re-brew the current best recipe with one tap
 
 ### Shot Tracking
 
 - [ ] **SHOT-01**: User can view shot history for a bean in reverse chronological order
 - [ ] **SHOT-02**: User can add optional free-text notes to any shot
-- [ ] **SHOT-03**: User can record actual extraction time in seconds
+- [x] **SHOT-03**: User can record actual extraction time in seconds
 
 ### Visualization & Insights
 
@@ -91,15 +91,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BEAN-01 | Phase 2 | Pending |
 | BEAN-02 | Phase 2 | Pending |
 | BEAN-03 | Phase 2 | Pending |
-| OPT-01 | Phase 3 | Pending |
-| OPT-02 | Phase 3 | Pending |
-| OPT-03 | Phase 3 | Pending |
-| OPT-04 | Phase 3 | Pending |
-| OPT-05 | Phase 3 | Pending |
-| OPT-06 | Phase 3 | Pending |
+| OPT-01 | Phase 3 | Complete |
+| OPT-02 | Phase 3 | Complete |
+| OPT-03 | Phase 3 | Complete |
+| OPT-04 | Phase 3 | Complete |
+| OPT-05 | Phase 3 | Complete |
+| OPT-06 | Phase 3 | Complete |
 | SHOT-01 | Phase 4 | Pending |
 | SHOT-02 | Phase 4 | Pending |
-| SHOT-03 | Phase 3 | Pending |
+| SHOT-03 | Phase 3 | Complete |
 | VIZ-01 | Phase 5 | Pending |
 | VIZ-02 | Phase 5 | Pending |
 | VIZ-03 | Phase 4 | Pending |

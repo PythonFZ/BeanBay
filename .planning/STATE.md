@@ -1,7 +1,7 @@
 # Project State: BrewFlow
 
 **Last updated:** 2026-02-22
-**Current phase:** Phase 3 complete — all UAT gaps closed, ready for Phase 4
+**Current phase:** Phase 3 complete — verified 9/9 must-haves, 65/65 tests passing. Ready for Phase 4.
 
 ## Project Reference
 
@@ -72,7 +72,7 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 
 ### Last Session
 - **Date:** 2026-02-22
-- **What happened:** Executed plan 03-02. Fixed 2 UAT gaps: (1) Repeat Best deduplication — replaced hardcoded `best-{{ best.id }}` with fresh UUID per visit; (2) Active bean deselect — added `POST /beans/deactivate`, Deselect button on detail page, ✕ button in nav. 5 new tests. 65/65 tests pass.
+- **What happened:** Executed plan 03-02 (gap closure). Fixed 2 UAT gaps: (1) Repeat Best deduplication — replaced hardcoded `best-{{ best.id }}` with fresh UUID per visit; (2) Active bean deselect — added `POST /beans/deactivate`, Deselect button on detail page, ✕ button in nav. 5 new tests. 65/65 tests pass. Phase 3 verified: 9/9 must-haves confirmed in codebase.
 - **Where we left off:** Phase 3 fully complete. Ready to plan and execute Phase 4.
 
 ### Next Steps
