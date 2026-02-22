@@ -244,3 +244,73 @@ async def test_rebuild_campaign_with_overrides(optimizer_service):
 
     rec = await optimizer_service.recommend("rebuild-override-bean", overrides)
     assert 90.0 <= rec["temperature"] <= 92.0
+
+
+# --- get_recommendation_insights tests ---
+
+
+async def test_insights_random_phase(optimizer_service):
+    """Fresh campaign (no measurements) returns phase='random' with no predictions."""
+    rec = await optimizer_service.recommend("insights-random-bean")
+    insights = optimizer_service.get_recommendation_insights("insights-random-bean", rec)
+
+    assert insights["phase"] == "random"
+    assert insights["phase_label"] == "Random exploration"
+    assert "Exploring randomly" in insights["explanation"]
+    assert insights["predicted_mean"] is None
+    assert insights["predicted_std"] is None
+    assert insights["predicted_range"] is None
+    assert insights["shot_count"] == 0
+
+
+async def test_insights_bayesian_phase(optimizer_service):
+    """After 2+ measurements, insights return phase='bayesian' with predictions."""
+    # Get a recommendation first to establish the bean
+    rec = await optimizer_service.recommend("insights-bayesian-bean")
+
+    # Add 2 measurements so surrogate model has data
+    params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    optimizer_service.add_measurement("insights-bayesian-bean", {**params, "taste": 7.0})
+    optimizer_service.add_measurement(
+        "insights-bayesian-bean",
+        {
+            "grind_setting": 21.0,
+            "temperature": 94.0,
+            "preinfusion_pct": 80.0,
+            "dose_in": 19.5,
+            "target_yield": 42.0,
+            "saturation": "no",
+            "taste": 8.0,
+        },
+    )
+
+    rec2 = await optimizer_service.recommend("insights-bayesian-bean")
+    insights = optimizer_service.get_recommendation_insights("insights-bayesian-bean", rec2)
+
+    assert insights["phase"] == "bayesian"
+    assert insights["phase_label"] == "Bayesian optimization"
+    assert insights["shot_count"] == 2
+    assert insights["predicted_mean"] is not None
+    assert insights["predicted_std"] is not None
+    assert insights["predicted_range"] is not None
+    # Range string should contain the em dash separator
+    assert "\u2013" in insights["predicted_range"]
+
+
+async def test_insights_with_improvement(optimizer_service):
+    """When latest shots show improvement, explanation mentions 'Zeroing in'."""
+    bean_id = "insights-improve-bean"
+    rec = await optimizer_service.recommend(bean_id)
+
+    # Add 6 measurements — early ones low taste, last 3 higher (shows improvement)
+    base_params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    for taste in [5.0, 6.0, 5.5, 7.0, 8.0, 8.5]:
+        optimizer_service.add_measurement(bean_id, {**base_params, "taste": taste})
+
+    rec2 = await optimizer_service.recommend(bean_id)
+    insights = optimizer_service.get_recommendation_insights(bean_id, rec2)
+
+    assert insights["phase"] == "bayesian"
+    assert insights["shot_count"] == 6
+    # Last 3 best (8.0, 8.5) improved over previous best (max of first 3: 6.0)
+    assert "Zeroing in" in insights["explanation"] or "improving" in insights["explanation"]

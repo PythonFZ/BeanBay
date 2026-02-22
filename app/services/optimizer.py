@@ -16,6 +16,7 @@ from baybe.campaign import Campaign
 from baybe.objectives import SingleTargetObjective
 from baybe.parameters import CategoricalParameter, NumericalContinuousParameter
 from baybe.recommenders import BotorchRecommender, TwoPhaseMetaRecommender
+from baybe.recommenders.pure.nonpredictive.sampling import RandomRecommender
 from baybe.searchspace import SearchSpace
 from baybe.targets import NumericalTarget
 
@@ -252,6 +253,100 @@ class OptimizerService:
             self._fingerprints[bean_id] = current_fp
             self._save_campaign_unlocked(bean_id)
         return campaign
+
+    def get_recommendation_insights(
+        self,
+        bean_id: str,
+        rec_dict: dict,
+        overrides: dict | None = None,
+    ) -> dict:
+        """Compute insight metadata for a recommendation.
+
+        Returns dict with:
+          - phase: "random" | "bayesian"
+          - phase_label: str (human-readable)
+          - explanation: str (contextual explanation)
+          - predicted_mean: float | None
+          - predicted_std: float | None
+          - predicted_range: str | None (e.g. "4.5 – 8.5")
+          - shot_count: int
+
+        Must be called *after* recommend() completes (they both use _lock separately).
+        """
+        campaign = self.get_or_create_campaign(bean_id, overrides)
+
+        with self._lock:
+            meta_rec = campaign.recommender
+            selected = meta_rec.select_recommender(
+                batch_size=1,
+                searchspace=campaign.searchspace,
+                objective=campaign.objective,
+                measurements=campaign.measurements,
+            )
+            is_random = isinstance(selected, RandomRecommender)
+
+            measurements_df = campaign.measurements
+            shot_count = len(measurements_df) if not measurements_df.empty else 0
+
+            # Determine phase and explanation
+            if is_random:
+                phase = "random"
+                phase_label = "Random exploration"
+                explanation = (
+                    "Exploring randomly — building initial understanding of the parameter space."
+                )
+            else:
+                phase = "bayesian"
+                phase_label = "Bayesian optimization"
+                if shot_count < 5:
+                    explanation = (
+                        "Building a map of the flavor space — "
+                        "the model is starting to learn your preferences."
+                    )
+                else:
+                    # Check if recent shots improved over previous best
+                    taste_values = measurements_df["taste"].tolist()
+                    previous_best = max(taste_values[:-3]) if len(taste_values) > 3 else None
+                    recent_best = max(taste_values[-3:])
+                    if previous_best is not None and recent_best > previous_best:
+                        explanation = (
+                            "Zeroing in — recent shots are improving. "
+                            "The model is finding promising regions."
+                        )
+                    else:
+                        explanation = (
+                            "Exploring new territory — "
+                            "looking for something better than the current best."
+                        )
+
+            # Compute predicted taste (only if Bayesian and enough data)
+            predicted_mean = None
+            predicted_std = None
+            predicted_range = None
+
+            if not is_random and shot_count >= 2:
+                try:
+                    rec_df = pd.DataFrame([{k: rec_dict[k] for k in BAYBE_PARAM_COLUMNS}])
+                    stats = campaign.posterior_stats(rec_df)
+                    predicted_mean = round(float(stats["taste_mean"].iloc[0]), 1)
+                    predicted_std = round(float(stats["taste_std"].iloc[0]), 1)
+                    lo = round(max(1.0, predicted_mean - predicted_std), 1)
+                    hi = round(min(10.0, predicted_mean + predicted_std), 1)
+                    predicted_range = f"{lo} \u2013 {hi}"
+                except Exception:
+                    predicted_mean = None
+                    predicted_std = None
+                    predicted_range = None
+
+        return {
+            "phase": phase,
+            "phase_label": phase_label,
+            "explanation": explanation,
+            "predicted_mean": predicted_mean,
+            "predicted_std": predicted_std,
+            "predicted_range": predicted_range,
+            "shot_count": shot_count,
+        }
 
     def _save_campaign_unlocked(self, bean_id: str) -> None:
         """Save campaign JSON + bounds fingerprint to disk. Must be called with lock held."""
