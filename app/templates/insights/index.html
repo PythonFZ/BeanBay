@@ -30,7 +30,7 @@
   <div class="insight-phase-label mt-sm">
     <span class="text-sm text-muted">Optimizer mode:</span>
     <span class="insight-badge insight-badge-{{ optimizer_phase }}">
-      {{ "Random exploration" if optimizer_phase == "random" else "Bayesian optimization" }}
+      {{ "Random exploration" if optimizer_phase == "random" else ("Learning" if optimizer_phase == "bayesian_early" else "Bayesian optimization") }}
     </span>
   </div>
 </div>

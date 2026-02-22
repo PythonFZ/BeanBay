@@ -264,32 +264,23 @@ async def test_insights_random_phase(optimizer_service):
 
 
 async def test_insights_bayesian_phase(optimizer_service):
-    """After 2+ measurements, insights return phase='bayesian' with predictions."""
+    """After 5+ measurements (switch_after=5), insights return phase='bayesian_early' with predictions."""
     # Get a recommendation first to establish the bean
     rec = await optimizer_service.recommend("insights-bayesian-bean")
 
-    # Add 2 measurements so surrogate model has data
+    # Add 5 measurements so campaign switches to Bayesian phase
     params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
-    optimizer_service.add_measurement("insights-bayesian-bean", {**params, "taste": 7.0})
-    optimizer_service.add_measurement(
-        "insights-bayesian-bean",
-        {
-            "grind_setting": 21.0,
-            "temperature": 94.0,
-            "preinfusion_pct": 80.0,
-            "dose_in": 19.5,
-            "target_yield": 42.0,
-            "saturation": "no",
-            "taste": 8.0,
-        },
-    )
+    for taste in [6.0, 7.0, 7.5, 8.0, 8.5]:
+        optimizer_service.add_measurement("insights-bayesian-bean", {**params, "taste": taste})
 
     rec2 = await optimizer_service.recommend("insights-bayesian-bean")
     insights = optimizer_service.get_recommendation_insights("insights-bayesian-bean", rec2)
 
-    assert insights["phase"] == "bayesian"
-    assert insights["phase_label"] == "Bayesian optimization"
-    assert insights["shot_count"] == 2
+    # With switch_after=5 and 5 measurements, we're in Bayesian mode
+    # shot_count=5 < 8, so phase is bayesian_early
+    assert insights["phase"] == "bayesian_early"
+    assert insights["phase_label"] == "Learning"
+    assert insights["shot_count"] == 5
     assert insights["predicted_mean"] is not None
     assert insights["predicted_std"] is not None
     assert insights["predicted_range"] is not None
@@ -298,19 +289,61 @@ async def test_insights_bayesian_phase(optimizer_service):
 
 
 async def test_insights_with_improvement(optimizer_service):
-    """When latest shots show improvement, explanation mentions 'Zeroing in'."""
+    """When latest shots show improvement and shot_count>=8, phase='bayesian' explanation mentions 'Zeroing in'."""
     bean_id = "insights-improve-bean"
     rec = await optimizer_service.recommend(bean_id)
 
-    # Add 6 measurements — early ones low taste, last 3 higher (shows improvement)
+    # Add 9 measurements — early ones low taste, last 3 higher (shows improvement)
+    # 9 shots → shot_count=9 >= 8 → phase="bayesian"
     base_params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
-    for taste in [5.0, 6.0, 5.5, 7.0, 8.0, 8.5]:
+    for taste in [5.0, 6.0, 5.5, 6.0, 5.5, 6.0, 7.0, 8.0, 8.5]:
         optimizer_service.add_measurement(bean_id, {**base_params, "taste": taste})
 
     rec2 = await optimizer_service.recommend(bean_id)
     insights = optimizer_service.get_recommendation_insights(bean_id, rec2)
 
     assert insights["phase"] == "bayesian"
-    assert insights["shot_count"] == 6
-    # Last 3 best (8.0, 8.5) improved over previous best (max of first 3: 6.0)
+    assert insights["shot_count"] == 9
+    # Last 3 best (8.0, 8.5) improved over previous best (max of first 6: 6.0)
     assert "Zeroing in" in insights["explanation"] or "improving" in insights["explanation"]
+
+
+async def test_recommend_no_crash_on_second_call(optimizer_service):
+    """recommend() twice for the same bean (with measurement in between) must not crash."""
+    bean_id = "no-crash-bean"
+
+    # First call
+    rec1 = await optimizer_service.recommend(bean_id)
+    assert isinstance(rec1, dict)
+    for param in BAYBE_PARAM_COLUMNS:
+        assert param in rec1
+
+    # Add a measurement between calls
+    params = {k: rec1[k] for k in BAYBE_PARAM_COLUMNS}
+    optimizer_service.add_measurement(bean_id, {**params, "taste": 7.0})
+
+    # Second call must NOT raise NotImplementedError (BayBE cache guard bug)
+    rec2 = await optimizer_service.recommend(bean_id)
+    assert isinstance(rec2, dict)
+    for param in BAYBE_PARAM_COLUMNS:
+        assert param in rec2
+    assert "recommendation_id" in rec2
+
+
+async def test_insights_bayesian_early_phase(optimizer_service):
+    """With exactly 6 measurements (switch_after=5, so Bayesian), phase='bayesian_early', label='Learning'."""
+    bean_id = "bayesian-early-bean"
+    rec = await optimizer_service.recommend(bean_id)
+
+    # Add 6 measurements → shot_count=6, which is >= 5 (Bayesian mode) but < 8 (bayesian_early)
+    base_params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    for taste in [6.0, 6.5, 7.0, 7.0, 7.5, 7.5]:
+        optimizer_service.add_measurement(bean_id, {**base_params, "taste": taste})
+
+    rec2 = await optimizer_service.recommend(bean_id)
+    insights = optimizer_service.get_recommendation_insights(bean_id, rec2)
+
+    assert insights["phase"] == "bayesian_early"
+    assert insights["phase_label"] == "Learning"
+    assert "learning" in insights["explanation"].lower()
+    assert insights["shot_count"] == 6

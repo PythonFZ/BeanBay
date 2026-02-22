@@ -189,7 +189,10 @@ async def insights_page(request: Request, db: Session = Depends(get_db)):
         objective=campaign.objective,
         measurements=campaign.measurements,
     )
-    optimizer_phase = "random" if isinstance(selected, RandomRecommender) else "bayesian"
+    if isinstance(selected, RandomRecommender):
+        optimizer_phase = "random"
+    else:
+        optimizer_phase = "bayesian_early" if shot_count < 8 else "bayesian"
 
     # Best measurement
     best_taste = None

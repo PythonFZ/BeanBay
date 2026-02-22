@@ -120,7 +120,7 @@ class OptimizerService:
         searchspace = SearchSpace.from_product(parameters=parameters)
         target = NumericalTarget(name="taste")
         objective = SingleTargetObjective(target=target)
-        recommender = TwoPhaseMetaRecommender(recommender=BotorchRecommender())
+        recommender = TwoPhaseMetaRecommender(recommender=BotorchRecommender(), switch_after=5)
         return Campaign(searchspace=searchspace, objective=objective, recommender=recommender)
 
     def get_or_create_campaign(
@@ -190,6 +190,7 @@ class OptimizerService:
         def _recommend():
             campaign = self.get_or_create_campaign(bean_id, overrides)
             with self._lock:
+                campaign.clear_cache()
                 rec_df = campaign.recommend(batch_size=1)
                 self._save_campaign_unlocked(bean_id)
             rec = rec_df.iloc[0].to_dict()
@@ -263,7 +264,7 @@ class OptimizerService:
         """Compute insight metadata for a recommendation.
 
         Returns dict with:
-          - phase: "random" | "bayesian"
+          - phase: "random" | "bayesian_early" | "bayesian"
           - phase_label: str (human-readable)
           - explanation: str (contextual explanation)
           - predicted_mean: float | None
@@ -296,14 +297,16 @@ class OptimizerService:
                     "Exploring randomly — building initial understanding of the parameter space."
                 )
             else:
-                phase = "bayesian"
-                phase_label = "Bayesian optimization"
-                if shot_count < 5:
+                if shot_count < 8:
+                    phase = "bayesian_early"
+                    phase_label = "Learning"
                     explanation = (
-                        "Building a map of the flavor space — "
-                        "the model is starting to learn your preferences."
+                        "The model is learning your preferences — "
+                        "building a map of the flavor space with each shot."
                     )
                 else:
+                    phase = "bayesian"
+                    phase_label = "Bayesian optimization"
                     # Check if recent shots improved over previous best
                     taste_values = measurements_df["taste"].tolist()
                     previous_best = max(taste_values[:-3]) if len(taste_values) > 3 else None
