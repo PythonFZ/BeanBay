@@ -68,12 +68,18 @@ See: .planning/phases/07-rebrand-cleanup/07-02-SUMMARY.md
 - **Docker image:** ghcr.io/grzonka/beanbay ✅ (publishing via GitHub Actions on tags)
 - **Release:** v0.1.0 live at https://github.com/grzonka/beanbay/releases/tag/v0.1.0
 
+## Quick Tasks Completed
+
+| ID | Task | Date | Summary |
+|----|------|------|---------|
+| 001 | Fix CI test DB isolation | 2026-02-22 | Refactored 5 test files + conftest.py to use in-memory SQLite with StaticPool, dependency injection overrides, and proper thread safety. 108/108 tests pass. |
+
 ## Session Continuity
 
 ### Last Session
 - **Date:** 2026-02-22
-- **What happened:** Executed Phase 9 Plan 01. Updated Docker files with BeanBay naming (docker-compose.yml, Dockerfile, .dockerignore) and created Unraid Community Apps XML template at unraid/beanbay.xml. Phase 9 complete. v0.1.0 milestone complete.
-- **Where we left off:** All v0.1.0 phases done (5/5 plans). Deploy to Unraid is next.
+- **What happened:** Fixed CI test failures. 5 test files were importing the production DB engine directly, causing `sqlite3.OperationalError` in CI (no `data/` dir). Refactored conftest.py (StaticPool, check_same_thread=False, get_db override) and all 5 test files to use shared fixtures. All 108 tests pass.
+- **Where we left off:** CI fix complete. Deploy to Unraid is next.
 
 ### Next Steps
 1. Deploy to Unraid using `docker compose up -d` or install via Community Apps custom repo
@@ -81,4 +87,4 @@ See: .planning/phases/07-rebrand-cleanup/07-02-SUMMARY.md
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-22 after 09-01 (Docker files + Unraid CA XML — v0.1.0 complete)*
+*Last updated: 2026-02-22 after quick-001 (Fix CI test DB isolation — 108/108 tests pass)*

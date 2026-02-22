@@ -1,29 +1,31 @@
 """Shared test fixtures for BeanBay."""
 
+import os
+
+# Force in-memory SQLite for the production engine (created at import time in app.database).
+# This prevents CI failures when data/ directory doesn't exist.
+# Must be set BEFORE importing app modules.
+os.environ.setdefault("BEANBAY_DATABASE_URL", "sqlite:///:memory:")
+
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from app.database import Base
+from app.database import Base, engine, get_db
+from app.main import app
 from app.models import Bean, Measurement  # noqa: F401 — registers models with Base
 from app.services.optimizer import OptimizerService
 
-
-@pytest.fixture(scope="session")
-def db_engine():
-    """Session-scoped in-memory SQLite engine."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
+# Create tables once on the (in-memory) engine.
+Base.metadata.create_all(bind=engine)
 
 
 @pytest.fixture()
-def db_session(db_engine):
+def db_session():
     """Function-scoped database session with rollback after each test."""
-    connection = db_engine.connect()
+    connection = engine.connect()
     transaction = connection.begin()
     Session = sessionmaker(bind=connection)
     session = Session()
@@ -32,6 +34,19 @@ def db_session(db_engine):
     if transaction.is_active:
         transaction.rollback()
     connection.close()
+
+
+@pytest.fixture()
+def client(db_session):
+    """FastAPI test client with get_db overridden to use the test session."""
+
+    def _override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = _override_get_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture()

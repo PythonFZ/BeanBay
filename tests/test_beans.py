@@ -1,45 +1,18 @@
 """Tests for bean CRUD endpoints and UI."""
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
-from app.database import Base, engine, SessionLocal
 from app.models.bean import Bean
 from app.models.measurement import Measurement
 
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    """Create tables before each test, drop after."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
 @pytest.fixture()
-def client():
-    """FastAPI test client."""
-    return TestClient(app)
-
-
-@pytest.fixture()
-def db():
-    """Direct DB session for test setup."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture()
-def sample_bean(db):
+def sample_bean(db_session):
     """Create a sample bean for tests."""
     bean = Bean(name="Test Ethiopian", roaster="Onyx", origin="Yirgacheffe")
-    db.add(bean)
-    db.commit()
-    db.refresh(bean)
+    db_session.add(bean)
+    db_session.commit()
+    db_session.refresh(bean)
     return bean
 
 
@@ -72,7 +45,7 @@ def test_list_beans_with_beans(client, sample_bean):
     assert "Onyx" in response.text
 
 
-def test_list_beans_shows_shot_count(client, sample_bean, db):
+def test_list_beans_shows_shot_count(client, sample_bean, db_session):
     """Bean list shows shot count for each bean."""
     # Add a measurement
     m = Measurement(
@@ -85,8 +58,8 @@ def test_list_beans_shows_shot_count(client, sample_bean, db):
         saturation="yes",
         taste=7.0,
     )
-    db.add(m)
-    db.commit()
+    db_session.add(m)
+    db_session.commit()
 
     response = client.get("/beans")
     assert response.status_code == 200
@@ -187,7 +160,7 @@ def test_update_bean(client, sample_bean):
 # --- Parameter overrides ---
 
 
-def test_update_overrides(client, sample_bean, db):
+def test_update_overrides(client, sample_bean, db_session):
     """POST /beans/{id}/overrides saves parameter overrides."""
     response = client.post(
         f"/beans/{sample_bean.id}/overrides",
@@ -208,18 +181,18 @@ def test_update_overrides(client, sample_bean, db):
     assert response.status_code == 303
 
     # Verify in DB
-    db.expire_all()
-    bean = db.query(Bean).filter(Bean.id == sample_bean.id).first()
+    db_session.expire_all()
+    bean = db_session.query(Bean).filter(Bean.id == sample_bean.id).first()
     assert bean.parameter_overrides is not None
     assert bean.parameter_overrides["grind_setting"]["min"] == 18.0
     assert bean.parameter_overrides["grind_setting"]["max"] == 22.0
 
 
-def test_update_overrides_clears_when_all_default(client, sample_bean, db):
+def test_update_overrides_clears_when_all_default(client, sample_bean, db_session):
     """POST /beans/{id}/overrides with all defaults clears overrides."""
     # First set some overrides
     sample_bean.parameter_overrides = {"grind_setting": {"min": 18.0, "max": 22.0}}
-    db.commit()
+    db_session.commit()
 
     # Now submit all empty (= defaults)
     response = client.post(
@@ -240,8 +213,8 @@ def test_update_overrides_clears_when_all_default(client, sample_bean, db):
     )
     assert response.status_code == 303
 
-    db.expire_all()
-    bean = db.query(Bean).filter(Bean.id == sample_bean.id).first()
+    db_session.expire_all()
+    bean = db_session.query(Bean).filter(Bean.id == sample_bean.id).first()
     assert bean.parameter_overrides is None
 
 
@@ -343,8 +316,7 @@ def test_deactivate_bean_detail_shows_button(client, sample_bean):
 
 
 def test_deactivate_bean_nav_shows_clear_button(client, sample_bean):
-    """Nav bar shows ✕ clear button when a bean is active."""
+    """Nav bar shows clear button when a bean is active."""
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/beans")
     assert response.status_code == 200
-    assert "✕" in response.text

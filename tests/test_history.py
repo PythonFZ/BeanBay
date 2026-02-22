@@ -5,10 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.database import Base, SessionLocal, engine
-from app.main import app
 from app.models.bean import Bean
 from app.models.measurement import Measurement
 
@@ -18,52 +15,28 @@ from app.models.measurement import Measurement
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    """Create tables before each test, drop after."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
 @pytest.fixture()
-def client():
-    """FastAPI test client."""
-    return TestClient(app, follow_redirects=False)
-
-
-@pytest.fixture()
-def db():
-    """Direct DB session for test setup."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture()
-def sample_bean(db):
+def sample_bean(db_session):
     """Create a sample bean."""
     bean = Bean(name="Ethiopian Yirgacheffe", roaster="Onyx", origin="Ethiopia")
-    db.add(bean)
-    db.commit()
-    db.refresh(bean)
+    db_session.add(bean)
+    db_session.commit()
+    db_session.refresh(bean)
     return bean
 
 
 @pytest.fixture()
-def second_bean(db):
+def second_bean(db_session):
     """Create a second sample bean."""
     bean = Bean(name="Colombian Huila", roaster="Counter Culture", origin="Colombia")
-    db.add(bean)
-    db.commit()
-    db.refresh(bean)
+    db_session.add(bean)
+    db_session.commit()
+    db_session.refresh(bean)
     return bean
 
 
 def _seed_shot(
-    db,
+    db_session,
     bean_id: str,
     taste: float = 8.0,
     is_failed: bool = False,
@@ -86,9 +59,9 @@ def _seed_shot(
     )
     if created_at is not None:
         m.created_at = created_at
-    db.add(m)
-    db.commit()
-    db.refresh(m)
+    db_session.add(m)
+    db_session.commit()
+    db_session.refresh(m)
     return m
 
 
@@ -97,20 +70,24 @@ def _seed_shot(
 # ---------------------------------------------------------------------------
 
 
-def test_history_page_loads(client, sample_bean, db):
+def test_history_page_loads(client, sample_bean, db_session):
     """GET /history returns 200 and contains page title."""
-    _seed_shot(db, sample_bean.id)
+    _seed_shot(db_session, sample_bean.id)
     response = client.get("/history")
     assert response.status_code == 200
     assert "Brew History" in response.text
 
 
-def test_history_shows_shots_reverse_chronological(client, sample_bean, db):
+def test_history_shows_shots_reverse_chronological(client, sample_bean, db_session):
     """Shots appear in newest-first order."""
     now = datetime.utcnow()
-    shot_old = _seed_shot(db, sample_bean.id, taste=5.0, created_at=now - timedelta(hours=2))
-    shot_mid = _seed_shot(db, sample_bean.id, taste=7.0, created_at=now - timedelta(hours=1))
-    shot_new = _seed_shot(db, sample_bean.id, taste=9.0, created_at=now)
+    shot_old = _seed_shot(
+        db_session, sample_bean.id, taste=5.0, created_at=now - timedelta(hours=2)
+    )
+    shot_mid = _seed_shot(
+        db_session, sample_bean.id, taste=7.0, created_at=now - timedelta(hours=1)
+    )
+    shot_new = _seed_shot(db_session, sample_bean.id, taste=9.0, created_at=now)
 
     response = client.get("/history")
     assert response.status_code == 200
@@ -124,10 +101,10 @@ def test_history_shows_shots_reverse_chronological(client, sample_bean, db):
     assert pos_new < pos_mid < pos_old, "Shots should be in reverse-chronological order"
 
 
-def test_history_filter_by_bean(client, sample_bean, second_bean, db):
+def test_history_filter_by_bean(client, sample_bean, second_bean, db_session):
     """GET /history/shots?bean_id=X returns only shots for that bean."""
-    shot_a = _seed_shot(db, sample_bean.id, taste=8.0)
-    shot_b = _seed_shot(db, second_bean.id, taste=7.0)
+    shot_a = _seed_shot(db_session, sample_bean.id, taste=8.0)
+    shot_b = _seed_shot(db_session, second_bean.id, taste=7.0)
 
     response = client.get(f"/history/shots?bean_id={sample_bean.id}")
     assert response.status_code == 200
@@ -137,11 +114,11 @@ def test_history_filter_by_bean(client, sample_bean, second_bean, db):
     assert f"shot-{shot_b.id}" not in html
 
 
-def test_history_filter_by_min_taste(client, sample_bean, db):
+def test_history_filter_by_min_taste(client, sample_bean, db_session):
     """GET /history/shots?min_taste=7 returns only shots with taste >= 7."""
-    shot_low = _seed_shot(db, sample_bean.id, taste=5.0)
-    shot_mid = _seed_shot(db, sample_bean.id, taste=7.0)
-    shot_high = _seed_shot(db, sample_bean.id, taste=9.0)
+    shot_low = _seed_shot(db_session, sample_bean.id, taste=5.0)
+    shot_mid = _seed_shot(db_session, sample_bean.id, taste=7.0)
+    shot_high = _seed_shot(db_session, sample_bean.id, taste=9.0)
 
     response = client.get("/history/shots?min_taste=7")
     assert response.status_code == 200
@@ -152,11 +129,11 @@ def test_history_filter_by_min_taste(client, sample_bean, db):
     assert f"shot-{shot_low.id}" not in html
 
 
-def test_history_combined_filters(client, sample_bean, second_bean, db):
+def test_history_combined_filters(client, sample_bean, second_bean, db_session):
     """Filter by bean AND min_taste together."""
-    shot_match = _seed_shot(db, sample_bean.id, taste=8.0)
-    shot_wrong_bean = _seed_shot(db, second_bean.id, taste=9.0)
-    shot_low_taste = _seed_shot(db, sample_bean.id, taste=5.0)
+    shot_match = _seed_shot(db_session, sample_bean.id, taste=8.0)
+    shot_wrong_bean = _seed_shot(db_session, second_bean.id, taste=9.0)
+    shot_low_taste = _seed_shot(db_session, sample_bean.id, taste=5.0)
 
     response = client.get(f"/history/shots?bean_id={sample_bean.id}&min_taste=7")
     assert response.status_code == 200
@@ -168,33 +145,33 @@ def test_history_combined_filters(client, sample_bean, second_bean, db):
 
 
 def test_history_empty_state(client):
-    """No shots → empty state message."""
+    """No shots -> empty state message."""
     response = client.get("/history")
     assert response.status_code == 200
     assert "Start brewing" in response.text
 
 
-def test_history_shows_failed_indicator(client, sample_bean, db):
+def test_history_shows_failed_indicator(client, sample_bean, db_session):
     """Failed shot has 'Failed' badge in HTML."""
-    _seed_shot(db, sample_bean.id, taste=1.0, is_failed=True)
+    _seed_shot(db_session, sample_bean.id, taste=1.0, is_failed=True)
 
     response = client.get("/history")
     assert response.status_code == 200
     assert "Failed" in response.text
 
 
-def test_history_shows_notes_indicator(client, sample_bean, db):
+def test_history_shows_notes_indicator(client, sample_bean, db_session):
     """Shot with notes shows the notes icon."""
-    _seed_shot(db, sample_bean.id, notes="Very floral, slight brightness")
+    _seed_shot(db_session, sample_bean.id, notes="Very floral, slight brightness")
 
     response = client.get("/history")
     assert response.status_code == 200
     assert "Has notes" in response.text
 
 
-def test_history_bean_preselect(client, sample_bean, db):
+def test_history_bean_preselect(client, sample_bean, db_session):
     """GET /history?bean_id=X renders that bean selected in the dropdown."""
-    _seed_shot(db, sample_bean.id)
+    _seed_shot(db_session, sample_bean.id)
 
     response = client.get(f"/history?bean_id={sample_bean.id}")
     assert response.status_code == 200
@@ -203,9 +180,9 @@ def test_history_bean_preselect(client, sample_bean, db):
     assert sample_bean.name in response.text
 
 
-def test_history_shots_partial_htmx(client, sample_bean, db):
+def test_history_shots_partial_htmx(client, sample_bean, db_session):
     """GET /history/shots with HX-Request header returns partial only."""
-    _seed_shot(db, sample_bean.id, taste=8.0)
+    _seed_shot(db_session, sample_bean.id, taste=8.0)
 
     response = client.get(
         "/history/shots",
@@ -224,9 +201,9 @@ def test_history_shots_partial_htmx(client, sample_bean, db):
 # ---------------------------------------------------------------------------
 
 
-def test_shot_detail_returns_modal_html(client, sample_bean, db):
+def test_shot_detail_returns_modal_html(client, sample_bean, db_session):
     """GET /history/{shot_id} returns 200 with shot details."""
-    shot = _seed_shot(db, sample_bean.id, taste=8.5)
+    shot = _seed_shot(db_session, sample_bean.id, taste=8.5)
 
     response = client.get(f"/history/{shot.id}")
     assert response.status_code == 200
@@ -239,9 +216,9 @@ def test_shot_detail_returns_modal_html(client, sample_bean, db):
     assert "Ethiopian Yirgacheffe" in html
 
 
-def test_shot_detail_includes_hx_trigger(client, sample_bean, db):
+def test_shot_detail_includes_hx_trigger(client, sample_bean, db_session):
     """GET /history/{shot_id} response includes HX-Trigger: openShotModal header."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.0)
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.0)
 
     response = client.get(f"/history/{shot.id}")
     assert response.status_code == 200
@@ -254,9 +231,9 @@ def test_shot_detail_nonexistent_returns_404(client):
     assert response.status_code == 404
 
 
-def test_shot_edit_form_loads(client, sample_bean, db):
+def test_shot_edit_form_loads(client, sample_bean, db_session):
     """GET /history/{shot_id}/edit returns 200 with edit form."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.5)
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.5)
 
     response = client.get(f"/history/{shot.id}/edit")
     assert response.status_code == 200
@@ -268,9 +245,9 @@ def test_shot_edit_form_loads(client, sample_bean, db):
     assert "flavor-slider" in html
 
 
-def test_shot_edit_saves_notes(client, sample_bean, db):
+def test_shot_edit_saves_notes(client, sample_bean, db_session):
     """POST /history/{shot_id}/edit with notes updates DB."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.0)
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.0)
 
     response = client.post(
         f"/history/{shot.id}/edit",
@@ -278,14 +255,14 @@ def test_shot_edit_saves_notes(client, sample_bean, db):
     )
     assert response.status_code == 200
 
-    db.expire_all()
-    updated = db.query(Measurement).filter(Measurement.id == shot.id).first()
+    db_session.expire_all()
+    updated = db_session.query(Measurement).filter(Measurement.id == shot.id).first()
     assert updated.notes == "great shot, very balanced"
 
 
-def test_shot_edit_saves_flavor_dimensions(client, sample_bean, db):
+def test_shot_edit_saves_flavor_dimensions(client, sample_bean, db_session):
     """POST /history/{shot_id}/edit with flavor dimensions updates DB."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.0)
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.0)
 
     response = client.post(
         f"/history/{shot.id}/edit",
@@ -293,17 +270,17 @@ def test_shot_edit_saves_flavor_dimensions(client, sample_bean, db):
     )
     assert response.status_code == 200
 
-    db.expire_all()
-    updated = db.query(Measurement).filter(Measurement.id == shot.id).first()
+    db_session.expire_all()
+    updated = db_session.query(Measurement).filter(Measurement.id == shot.id).first()
     assert updated.acidity == 3.0
     assert updated.sweetness == 5.0
     # Unsubmitted dimensions should be None
     assert updated.body is None
 
 
-def test_shot_edit_saves_flavor_tags(client, sample_bean, db):
+def test_shot_edit_saves_flavor_tags(client, sample_bean, db_session):
     """POST /history/{shot_id}/edit with flavor_tags saves as JSON list."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.0)
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.0)
 
     response = client.post(
         f"/history/{shot.id}/edit",
@@ -311,16 +288,16 @@ def test_shot_edit_saves_flavor_tags(client, sample_bean, db):
     )
     assert response.status_code == 200
 
-    db.expire_all()
-    updated = db.query(Measurement).filter(Measurement.id == shot.id).first()
+    db_session.expire_all()
+    updated = db_session.query(Measurement).filter(Measurement.id == shot.id).first()
     tags = json.loads(updated.flavor_tags)
     assert "chocolate" in tags
     assert "citrus" in tags
 
 
-def test_shot_edit_clears_notes(client, sample_bean, db):
+def test_shot_edit_clears_notes(client, sample_bean, db_session):
     """POST /history/{shot_id}/edit with empty notes clears existing notes."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.0, notes="old notes to clear")
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.0, notes="old notes to clear")
 
     response = client.post(
         f"/history/{shot.id}/edit",
@@ -328,14 +305,14 @@ def test_shot_edit_clears_notes(client, sample_bean, db):
     )
     assert response.status_code == 200
 
-    db.expire_all()
-    updated = db.query(Measurement).filter(Measurement.id == shot.id).first()
+    db_session.expire_all()
+    updated = db_session.query(Measurement).filter(Measurement.id == shot.id).first()
     assert updated.notes is None
 
 
-def test_shot_edit_returns_oob_row_update(client, sample_bean, db):
+def test_shot_edit_returns_oob_row_update(client, sample_bean, db_session):
     """POST /history/{shot_id}/edit response contains hx-swap-oob for the shot row."""
-    shot = _seed_shot(db, sample_bean.id, taste=7.0)
+    shot = _seed_shot(db_session, sample_bean.id, taste=7.0)
 
     response = client.post(
         f"/history/{shot.id}/edit",

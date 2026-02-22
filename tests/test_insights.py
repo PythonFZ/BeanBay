@@ -3,10 +3,8 @@
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 
-from app.database import Base, SessionLocal, engine
 from app.main import app
 from app.models.bean import Bean
 from app.models.measurement import Measurement
@@ -17,37 +15,13 @@ from app.models.measurement import Measurement
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    """Create tables before each test, drop after."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
 @pytest.fixture()
-def client():
-    """FastAPI test client."""
-    return TestClient(app, follow_redirects=False)
-
-
-@pytest.fixture()
-def db():
-    """Direct DB session for test setup."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture()
-def sample_bean(db):
+def sample_bean(db_session):
     """Create a sample bean."""
     bean = Bean(name="Test Ethiopian", roaster="Onyx", origin="Yirgacheffe")
-    db.add(bean)
-    db.commit()
-    db.refresh(bean)
+    db_session.add(bean)
+    db_session.commit()
+    db_session.refresh(bean)
     return bean
 
 
@@ -79,7 +53,7 @@ def mock_optimizer():
 
 
 def _seed_shot(
-    db,
+    db_session,
     bean_id: str,
     taste: float = 7.0,
     is_failed: bool = False,
@@ -97,9 +71,9 @@ def _seed_shot(
         taste=taste,
         is_failed=is_failed,
     )
-    db.add(m)
-    db.commit()
-    db.refresh(m)
+    db_session.add(m)
+    db_session.commit()
+    db_session.refresh(m)
     return m
 
 
@@ -109,14 +83,14 @@ def _seed_shot(
 
 
 def test_insights_requires_active_bean(client, mock_optimizer):
-    """GET /insights without active bean cookie → redirect to /beans (303)."""
-    response = client.get("/insights")
+    """GET /insights without active bean cookie -> redirect to /beans (303)."""
+    response = client.get("/insights", follow_redirects=False)
     assert response.status_code == 303
     assert response.headers["location"] == "/beans"
 
 
 def test_insights_empty_bean(client, sample_bean, mock_optimizer):
-    """GET /insights with active bean that has 0 measurements → shows 'Getting started'."""
+    """GET /insights with active bean that has 0 measurements -> shows 'Getting started'."""
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")
     assert response.status_code == 200
@@ -130,11 +104,11 @@ def test_insights_empty_bean(client, sample_bean, mock_optimizer):
     assert "progressChart" not in response.text
 
 
-def test_insights_with_measurements(client, sample_bean, db, mock_optimizer):
-    """Create bean + 3 measurements, GET /insights → shows convergence status, shot count, best taste."""
-    _seed_shot(db, sample_bean.id, taste=6.5)
-    _seed_shot(db, sample_bean.id, taste=7.5)
-    _seed_shot(db, sample_bean.id, taste=8.0)
+def test_insights_with_measurements(client, sample_bean, db_session, mock_optimizer):
+    """Create bean + 3 measurements, GET /insights -> shows convergence status, shot count, best taste."""
+    _seed_shot(db_session, sample_bean.id, taste=6.5)
+    _seed_shot(db_session, sample_bean.id, taste=7.5)
+    _seed_shot(db_session, sample_bean.id, taste=8.0)
 
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")
@@ -143,17 +117,17 @@ def test_insights_with_measurements(client, sample_bean, db, mock_optimizer):
     assert "3 shots" in response.text
     # Best taste shown
     assert "8.0" in response.text
-    # Convergence label (3 shots → "Early exploration")
+    # Convergence label (3 shots -> "Early exploration")
     assert "Early exploration" in response.text
     # Bean name
     assert "Test Ethiopian" in response.text
 
 
-def test_insights_chart_data_present(client, sample_bean, db, mock_optimizer):
-    """Create bean + 3 measurements, GET /insights → response contains 'progressChart' canvas element."""
-    _seed_shot(db, sample_bean.id, taste=6.0)
-    _seed_shot(db, sample_bean.id, taste=7.0)
-    _seed_shot(db, sample_bean.id, taste=8.0)
+def test_insights_chart_data_present(client, sample_bean, db_session, mock_optimizer):
+    """Create bean + 3 measurements, GET /insights -> response contains 'progressChart' canvas element."""
+    _seed_shot(db_session, sample_bean.id, taste=6.0)
+    _seed_shot(db_session, sample_bean.id, taste=7.0)
+    _seed_shot(db_session, sample_bean.id, taste=8.0)
 
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")
@@ -164,10 +138,10 @@ def test_insights_chart_data_present(client, sample_bean, db, mock_optimizer):
     assert "chart.js" in response.text.lower()
 
 
-def test_insights_convergence_early_exploration(client, sample_bean, db, mock_optimizer):
-    """Bean with 4 non-failed measurements → 'Early exploration' status."""
+def test_insights_convergence_early_exploration(client, sample_bean, db_session, mock_optimizer):
+    """Bean with 4 non-failed measurements -> 'Early exploration' status."""
     for taste in [6.0, 6.5, 7.0, 7.5]:
-        _seed_shot(db, sample_bean.id, taste=taste)
+        _seed_shot(db_session, sample_bean.id, taste=taste)
 
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")
@@ -178,7 +152,7 @@ def test_insights_convergence_early_exploration(client, sample_bean, db, mock_op
 
 
 def test_insights_nav_link(client, mock_optimizer):
-    """GET /beans → response contains href='/insights' nav link."""
+    """GET /beans -> response contains href='/insights' nav link."""
     response = client.get("/beans")
     assert response.status_code == 200
     assert 'href="/insights"' in response.text
@@ -189,11 +163,11 @@ def test_insights_nav_link(client, mock_optimizer):
 # ---------------------------------------------------------------------------
 
 
-def test_insights_heatmap_no_data(client, sample_bean, db, mock_optimizer):
-    """Bean with < 3 shots → heatmap shows empty state message, not chart canvas."""
+def test_insights_heatmap_no_data(client, sample_bean, db_session, mock_optimizer):
+    """Bean with < 3 shots -> heatmap shows empty state message, not chart canvas."""
     # Seed 2 shots (below the 3-shot threshold)
-    _seed_shot(db, sample_bean.id, taste=6.5)
-    _seed_shot(db, sample_bean.id, taste=7.0)
+    _seed_shot(db_session, sample_bean.id, taste=6.5)
+    _seed_shot(db_session, sample_bean.id, taste=7.0)
 
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")
@@ -204,12 +178,12 @@ def test_insights_heatmap_no_data(client, sample_bean, db, mock_optimizer):
     assert "heatmapChart" not in response.text
 
 
-def test_insights_heatmap_with_data(client, sample_bean, db, mock_optimizer):
-    """Bean with 4+ shots → heatmap chart rendered with correct canvas and section title."""
-    _seed_shot(db, sample_bean.id, taste=5.0, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=7.5, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=8.5, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=9.0, is_failed=False)
+def test_insights_heatmap_with_data(client, sample_bean, db_session, mock_optimizer):
+    """Bean with 4+ shots -> heatmap chart rendered with correct canvas and section title."""
+    _seed_shot(db_session, sample_bean.id, taste=5.0)
+    _seed_shot(db_session, sample_bean.id, taste=7.5)
+    _seed_shot(db_session, sample_bean.id, taste=8.5)
+    _seed_shot(db_session, sample_bean.id, taste=9.0)
 
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")
@@ -223,12 +197,12 @@ def test_insights_heatmap_with_data(client, sample_bean, db, mock_optimizer):
     assert '"y": 93.0' in response.text
 
 
-def test_insights_heatmap_failed_shots_distinct(client, sample_bean, db, mock_optimizer):
-    """Bean with normal + failed shots → heatmap_data JSON includes a point with is_failed: true."""
-    _seed_shot(db, sample_bean.id, taste=7.0, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=8.0, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=9.0, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=1.0, is_failed=True)
+def test_insights_heatmap_failed_shots_distinct(client, sample_bean, db_session, mock_optimizer):
+    """Bean with normal + failed shots -> heatmap_data JSON includes a point with is_failed: true."""
+    _seed_shot(db_session, sample_bean.id, taste=7.0, is_failed=False)
+    _seed_shot(db_session, sample_bean.id, taste=8.0, is_failed=False)
+    _seed_shot(db_session, sample_bean.id, taste=9.0, is_failed=False)
+    _seed_shot(db_session, sample_bean.id, taste=1.0, is_failed=True)
 
     client.cookies.set("active_bean_id", sample_bean.id)
     response = client.get("/insights")

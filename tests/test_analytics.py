@@ -3,10 +3,7 @@
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.database import Base, SessionLocal, engine
-from app.main import app
 from app.models.bean import Bean
 from app.models.measurement import Measurement
 
@@ -16,52 +13,28 @@ from app.models.measurement import Measurement
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    """Create tables before each test, drop after."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
 @pytest.fixture()
-def client():
-    """FastAPI test client."""
-    return TestClient(app, follow_redirects=False)
-
-
-@pytest.fixture()
-def db():
-    """Direct DB session for test setup."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture()
-def sample_bean(db):
+def sample_bean(db_session):
     """Create a sample bean."""
     bean = Bean(name="Test Ethiopian", roaster="Onyx", origin="Yirgacheffe")
-    db.add(bean)
-    db.commit()
-    db.refresh(bean)
+    db_session.add(bean)
+    db_session.commit()
+    db_session.refresh(bean)
     return bean
 
 
 @pytest.fixture()
-def second_bean(db):
+def second_bean(db_session):
     """Create a second bean for multi-bean tests."""
     bean = Bean(name="Brazil Natural", roaster="Counter Culture", origin="Brazil")
-    db.add(bean)
-    db.commit()
-    db.refresh(bean)
+    db_session.add(bean)
+    db_session.commit()
+    db_session.refresh(bean)
     return bean
 
 
 def _seed_shot(
-    db,
+    db_session,
     bean_id: str,
     taste: float = 7.0,
     is_failed: bool = False,
@@ -85,9 +58,9 @@ def _seed_shot(
         taste=taste,
         is_failed=is_failed,
     )
-    db.add(m)
-    db.commit()
-    db.refresh(m)
+    db_session.add(m)
+    db_session.commit()
+    db_session.refresh(m)
     return m
 
 
@@ -97,7 +70,7 @@ def _seed_shot(
 
 
 def test_analytics_no_data(client):
-    """GET /analytics with zero shots → empty state shown."""
+    """GET /analytics with zero shots -> empty state shown."""
     response = client.get("/analytics")
     assert response.status_code == 200
     assert "No shots yet" in response.text
@@ -106,11 +79,11 @@ def test_analytics_no_data(client):
     assert "stats-grid" not in response.text
 
 
-def test_analytics_with_stats(client, sample_bean, db):
-    """GET /analytics with some shots → stats card shows correct counts."""
-    _seed_shot(db, sample_bean.id, taste=7.0)
-    _seed_shot(db, sample_bean.id, taste=8.5)
-    _seed_shot(db, sample_bean.id, taste=6.0, is_failed=True)
+def test_analytics_with_stats(client, sample_bean, db_session):
+    """GET /analytics with some shots -> stats card shows correct counts."""
+    _seed_shot(db_session, sample_bean.id, taste=7.0)
+    _seed_shot(db_session, sample_bean.id, taste=8.5)
+    _seed_shot(db_session, sample_bean.id, taste=6.0, is_failed=True)
 
     response = client.get("/analytics")
     assert response.status_code == 200
@@ -126,15 +99,15 @@ def test_analytics_with_stats(client, sample_bean, db):
     assert "stats-grid" in response.text
 
 
-def test_analytics_multiple_beans_comparison(client, sample_bean, second_bean, db):
-    """GET /analytics with two beans → comparison shows best recipe per bean, sorted by taste."""
+def test_analytics_multiple_beans_comparison(client, sample_bean, second_bean, db_session):
+    """GET /analytics with two beans -> comparison shows best recipe per bean, sorted by taste."""
     # Ethiopian: best taste 8.0
-    _seed_shot(db, sample_bean.id, taste=7.0)
-    _seed_shot(db, sample_bean.id, taste=8.0)
+    _seed_shot(db_session, sample_bean.id, taste=7.0)
+    _seed_shot(db_session, sample_bean.id, taste=8.0)
 
     # Brazil: best taste 9.0
-    _seed_shot(db, second_bean.id, taste=6.5)
-    _seed_shot(db, second_bean.id, taste=9.0)
+    _seed_shot(db_session, second_bean.id, taste=6.5)
+    _seed_shot(db_session, second_bean.id, taste=9.0)
 
     response = client.get("/analytics")
     assert response.status_code == 200
@@ -152,13 +125,13 @@ def test_analytics_multiple_beans_comparison(client, sample_bean, second_bean, d
     assert pos_brazil < pos_ethiopian, "Higher-taste bean should appear first"
 
 
-def test_analytics_excludes_failed_from_best(client, sample_bean, db):
+def test_analytics_excludes_failed_from_best(client, sample_bean, db_session):
     """Best taste stats must exclude failed shots."""
     # A very high taste score, but it's failed
-    _seed_shot(db, sample_bean.id, taste=9.9, is_failed=True)
+    _seed_shot(db_session, sample_bean.id, taste=9.9, is_failed=True)
     # Real best: 7.5
-    _seed_shot(db, sample_bean.id, taste=7.5, is_failed=False)
-    _seed_shot(db, sample_bean.id, taste=6.0, is_failed=False)
+    _seed_shot(db_session, sample_bean.id, taste=7.5, is_failed=False)
+    _seed_shot(db_session, sample_bean.id, taste=6.0, is_failed=False)
 
     response = client.get("/analytics")
     assert response.status_code == 200
@@ -168,19 +141,19 @@ def test_analytics_excludes_failed_from_best(client, sample_bean, db):
     assert "9.9" not in response.text
 
 
-def test_analytics_improvement_rate(client, sample_bean, db):
-    """With >=10 non-failed shots, improvement_rate shows ↑/↓ direction."""
+def test_analytics_improvement_rate(client, sample_bean, db_session):
+    """With >=10 non-failed shots, improvement_rate shows up/down direction."""
     # Need 20 shots so first 10 and last 10 don't overlap:
-    # first 10 at taste 4.0, last 10 at taste 8.0 → should show ↑
+    # first 10 at taste 4.0, last 10 at taste 8.0 -> should show up
     for _ in range(10):
-        _seed_shot(db, sample_bean.id, taste=4.0)
+        _seed_shot(db_session, sample_bean.id, taste=4.0)
     for _ in range(10):
-        _seed_shot(db, sample_bean.id, taste=8.0)
+        _seed_shot(db_session, sample_bean.id, taste=8.0)
 
     response = client.get("/analytics")
     assert response.status_code == 200
 
     # Improvement rate arrow should appear
-    assert "↑" in response.text
+    assert "\u2191" in response.text
     # "first vs last 10" label
     assert "first vs last 10" in response.text
