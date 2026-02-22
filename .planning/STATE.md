@@ -65,7 +65,7 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Blockers
 
 - Docker build not verified (daemon not available in dev environment). Dockerfile and docker-compose.yml ready for Unraid deployment.
-- **Pre-existing:** `tests/test_analytics.py::test_analytics_improvement_rate` fails — test doesn't set active bean cookie so global stats view renders instead of bean-specific stats. File is also untracked (not committed by plan 06-01). Needs fix before full test suite is clean.
+- **[Resolved]** `tests/test_analytics.py::test_analytics_improvement_rate` fixed — test needed 20 shots (not 10) so first-10 and last-10 don't fully overlap. Committed by orchestrator.
 
 ## Accumulated Context
 
@@ -104,13 +104,12 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 
 ### Last Session
 - **Date:** 2026-02-22
-- **What happened:** Executed plan 06-02 (parameter exploration heatmap). Added Chart.js scatter chart to insights page showing grind vs temperature colored by taste score. Failed shots shown as grey crossRot markers. 3 new tests added (all 9 insights tests pass). Phase 6 now complete (2/2 plans).
-- **Where we left off:** All 6 phases complete. 22/22 requirements delivered.
+- **What happened:** Executed Phase 6 (Analytics & Exploration). Plan 06-01 created analytics page (brew stats + cross-bean comparison). Plan 06-02 added parameter heatmap to insights page. Orchestrator recovered 06-01 (aborted executor), fixed improvement_rate test. Verification passed 6/6 must-haves. 108/108 tests pass. All 6 phases complete.
+- **Where we left off:** All 6 phases complete. 22/22 requirements delivered. Milestone v1.0 ready.
 
 ### Next Steps
-1. Fix pre-existing `test_analytics_improvement_rate` failure in `tests/test_analytics.py` (needs active bean cookie in test)
-2. Commit untracked `tests/test_analytics.py` once fix is applied
-3. Deploy to Unraid (Docker build not yet verified)
+1. Complete milestone — `/gsd-complete-milestone`
+2. Deploy to Unraid (Docker build not yet verified)
 
 ---
 *State initialized: 2026-02-21*

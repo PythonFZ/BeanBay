@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Bean Management
 
-- [ ] **BEAN-01**: User can create a new bean with name and optional roaster/origin
-- [ ] **BEAN-02**: User can select an active bean for optimization
-- [ ] **BEAN-03**: User can view list of all beans with shot counts
+- [x] **BEAN-01**: User can create a new bean with name and optional roaster/origin
+- [x] **BEAN-02**: User can select an active bean for optimization
+- [x] **BEAN-03**: User can view list of all beans with shot counts
 
 ### Optimization Loop
 
@@ -24,28 +24,28 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Shot Tracking
 
-- [ ] **SHOT-01**: User can view shot history for a bean in reverse chronological order
-- [ ] **SHOT-02**: User can add optional free-text notes to any shot
+- [x] **SHOT-01**: User can view shot history for a bean in reverse chronological order
+- [x] **SHOT-02**: User can add optional free-text notes to any shot
 - [x] **SHOT-03**: User can record actual extraction time in seconds
 
 ### Visualization & Insights
 
 - [x] **VIZ-01**: User can see optimization progress chart (cumulative best taste over time)
 - [x] **VIZ-02**: User can see why a recipe was suggested (exploring vs exploiting)
-- [ ] **VIZ-03**: User can optionally rate 6 flavor dimensions (acidity, sweetness, body, bitterness, aroma, intensity) via expandable panel
-- [ ] **VIZ-04**: User can see parameter exploration heatmaps (grind x temp colored by taste)
+- [x] **VIZ-03**: User can optionally rate 6 flavor dimensions (acidity, sweetness, body, bitterness, aroma, intensity) via expandable panel
+- [x] **VIZ-04**: User can see parameter exploration heatmaps (grind x temp colored by taste)
 - [x] **VIZ-05**: User can see exploration/exploitation balance indicator (how converged the optimizer is)
 
 ### Analytics
 
-- [ ] **ANLYT-01**: User can compare best recipes across beans side-by-side
-- [ ] **ANLYT-02**: User can view brew statistics (total shots, averages, personal records, improvement rate)
+- [x] **ANLYT-01**: User can compare best recipes across beans side-by-side
+- [x] **ANLYT-02**: User can view brew statistics (total shots, averages, personal records, improvement rate)
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: App has mobile-first responsive layout with large touch targets (48px+)
-- [ ] **INFRA-02**: App deploys as a single Docker container on Unraid
-- [ ] **INFRA-03**: App is accessible from any device on the local network
+- [x] **INFRA-01**: App has mobile-first responsive layout with large touch targets (48px+)
+- [x] **INFRA-02**: App deploys as a single Docker container on Unraid
+- [x] **INFRA-03**: App is accessible from any device on the local network
 
 ## v2 Requirements
 
@@ -88,28 +88,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BEAN-01 | Phase 2 | Pending |
-| BEAN-02 | Phase 2 | Pending |
-| BEAN-03 | Phase 2 | Pending |
+| BEAN-01 | Phase 2 | Complete |
+| BEAN-02 | Phase 2 | Complete |
+| BEAN-03 | Phase 2 | Complete |
 | OPT-01 | Phase 3 | Complete |
 | OPT-02 | Phase 3 | Complete |
 | OPT-03 | Phase 3 | Complete |
 | OPT-04 | Phase 3 | Complete |
 | OPT-05 | Phase 3 | Complete |
 | OPT-06 | Phase 3 | Complete |
-| SHOT-01 | Phase 4 | Pending |
-| SHOT-02 | Phase 4 | Pending |
+| SHOT-01 | Phase 4 | Complete |
+| SHOT-02 | Phase 4 | Complete |
 | SHOT-03 | Phase 3 | Complete |
 | VIZ-01 | Phase 5 | Complete |
 | VIZ-02 | Phase 5 | Complete |
-| VIZ-03 | Phase 4 | Pending |
-| VIZ-04 | Phase 6 | Pending |
+| VIZ-03 | Phase 4 | Complete |
+| VIZ-04 | Phase 6 | Complete |
 | VIZ-05 | Phase 5 | Complete |
-| ANLYT-01 | Phase 6 | Pending |
-| ANLYT-02 | Phase 6 | Pending |
-| INFRA-01 | Phase 2 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
+| ANLYT-01 | Phase 6 | Complete |
+| ANLYT-02 | Phase 6 | Complete |
+| INFRA-01 | Phase 2 | Complete |
+| INFRA-02 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total
@@ -118,4 +118,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-21*
-*Last updated: 2026-02-21 after initial definition*
+*Last updated: 2026-02-22 — all 22 v1 requirements complete*
