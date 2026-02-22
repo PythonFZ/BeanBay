@@ -171,6 +171,11 @@ async def insights_page(request: Request, db: Session = Depends(get_db)):
             "is_failed": m.is_failed,
             "created_at": m.created_at,
             "grind_setting": m.grind_setting,
+            "temperature": m.temperature,
+            "dose_in": m.dose_in,
+            "target_yield": m.target_yield,
+            "preinfusion_pct": m.preinfusion_pct,
+            "saturation": m.saturation,
         }
         for m in measurements_raw
     ]
@@ -206,6 +211,21 @@ async def insights_page(request: Request, db: Session = Depends(get_db)):
     if shot_count >= 2:
         chart_data = _build_chart_data(measurements)
 
+    # Heatmap data (grind vs temperature, colored by taste)
+    heatmap_data = None
+    if shot_count >= 3:
+        heatmap_data = {
+            "points": [
+                {
+                    "x": m["grind_setting"],
+                    "y": m["temperature"],
+                    "taste": m["taste"],
+                    "is_failed": m["is_failed"],
+                }
+                for m in measurements
+            ]
+        }
+
     return templates.TemplateResponse(
         request,
         "insights/index.html",
@@ -216,5 +236,6 @@ async def insights_page(request: Request, db: Session = Depends(get_db)):
             "optimizer_phase": optimizer_phase,
             "best_taste": best_taste,
             "chart_data": chart_data,
+            "heatmap_data": heatmap_data,
         },
     )
