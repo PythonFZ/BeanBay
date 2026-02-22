@@ -1,78 +1,89 @@
-# BeanBay v0.1.0 Requirements — Release & Deploy
+# Requirements: BeanBay v0.1.1 — UX Polish & Manual Brew
 
-## Milestone Goal
+**Defined:** 2026-02-22
+**Core Value:** Every coffee brew teaches the system something — the app must make it effortless to capture that feedback from a phone at the espresso machine and return increasingly better recommendations.
 
-Ship the existing v1 MVP as a properly branded, documented, and deployable product. Rebrand from BrewFlow to BeanBay, clean up tech debt, create a proper GitHub release, publish Docker image, and create Unraid Community Apps template.
+## v0.1.1 Requirements
 
-## Requirements
+Requirements for this release. Each maps to roadmap phases.
 
-### Branding & Identity
+### Navigation & Layout
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| BRAND-01 | Rename project from BrewFlow to BeanBay across all code, config, templates, and metadata | Must |
-| BRAND-02 | Update UI title, page headers, and meta tags to reflect BeanBay branding | Must |
-| BRAND-03 | Create app icon/logo for Docker image, Unraid template, and GitHub repo | Should |
+- [ ] **NAV-01**: Mobile navigation uses hamburger menu / drawer instead of top tab row
+- [ ] **NAV-02**: Desktop layout uses full screen width with sidebar navigation (not 480px centered column)
+- [ ] **NAV-03**: Active bean indicator displays cleanly without wrapping or overflow in all viewports
 
-### Repository Cleanup
+### Taste Score UX
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| CLEAN-01 | Remove legacy files not part of BeanBay (my_espresso.py, __marimo__/, baybe-resources references) | Must |
-| CLEAN-02 | Remove dead app/routes/ directory (actual routers live in app/routers/) | Must |
-| CLEAN-03 | Create comprehensive README.md with project description, screenshots placeholder, setup instructions, Docker usage, and development guide | Must |
-| CLEAN-04 | LICENSE file present (Apache 2.0, already added via GitHub) | Should |
+- [ ] **UX-01**: Taste score slider starts inactive/greyed (same pattern as flavor sliders) and must be touched before form submission is allowed
+- [ ] **UX-02**: Failed shot toggle still overrides taste to 1 and disables the slider (existing behavior preserved)
 
-### Tech Debt
+### Brew Flow
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| DEBT-01 | Extract duplicated _get_active_bean helper from brew.py and insights.py into shared utility | Must |
-| DEBT-02 | Persist pending_recommendations to database/file instead of in-memory dict (survives restart) | Must |
-| DEBT-03 | Move startup ALTER TABLE migration into proper Alembic migration | Should |
-| DEBT-04 | Surface error feedback on invalid parameter override parsing instead of silent ValueError | Should |
+- [ ] **FLOW-01**: When user navigates to Brew without an active bean, show a clear "Pick a bean" prompt with direct link to bean selection instead of silent redirect
+- [ ] **FLOW-02**: User can enter all 6 recipe parameters manually and submit a taste score, bypassing BayBE recommendation
+- [ ] **FLOW-03**: Manual brew data feeds into BayBE optimizer via add_measurement (counts as optimization data point)
+- [ ] **FLOW-04**: Manual brews are visually distinguishable from BayBE recommendations in shot history
 
-### Docker & Deployment
+## Future Requirements (v2)
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| DEPLOY-01 | Update Dockerfile and docker-compose.yml with BeanBay naming (service name, volume, env vars) | Must |
-| DEPLOY-02 | Publish Docker image to GitHub Container Registry (ghcr.io/grzonka/beanbay) | Must |
-| DEPLOY-03 | Create GitHub Actions workflow for automated Docker image builds on release tags | Must |
-| DEPLOY-04 | Create Unraid Community Apps XML template in repository | Must |
+Deferred to next milestone. Tracked but not in current roadmap.
 
-### Release
+### Brewing Methods
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| REL-01 | Create GitHub release v0.1.0 with changelog and release notes | Must |
-| REL-02 | Ensure all 108+ existing tests pass after rebrand | Must |
+- **METHOD-01**: User can select brew method (espresso, filter, immersion) per bean
+- **METHOD-02**: Each method has its own parameter set and optimization campaign
 
----
+### Equipment Management
 
-**Total: 16 requirements (11 Must, 5 Should)**
-**Milestone type: Release & Deploy (no new features)**
+- **EQUIP-01**: User can manage grinders with dial type configuration
+- **EQUIP-02**: User can track water recipes/profiles
 
----
+### Bean Metadata
+
+- **META-01**: User can record roast date, origin, process method for each bean
+- **META-02**: Enhanced bean detail page with metadata display
+
+### Data Import
+
+- **IMPORT-01**: User can import brew history from Beanconqueror
+
+### Intelligence
+
+- **INTEL-01**: Cross-brew intelligence — recommendations informed by similar beans/brews
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Multi-user accounts | v3 vision — no auth needed for personal tool |
+| Community/shared database | v3 vision |
+| JavaScript framework (React, Vue, etc.) | Staying with Jinja2/htmx — works well, no build step |
+| PWA/offline mode | BayBE requires server — can't run in browser |
 
 ## Traceability
 
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| BRAND-01 | Rename BrewFlow to BeanBay in all code/config/templates | 7 | Complete |
-| BRAND-02 | Update UI title, headers, meta tags | 7 | Complete |
-| BRAND-03 | Create app icon/logo | 9 | Deferred |
-| CLEAN-01 | Remove legacy files (my_espresso.py, __marimo__/) | 7 | Complete |
-| CLEAN-02 | Remove dead app/routes/ directory | 7 | Complete |
-| CLEAN-03 | Create comprehensive README.md | 8 | Complete |
-| CLEAN-04 | LICENSE file present | 8 | Complete |
-| DEBT-01 | Deduplicate _get_active_bean helper | 7 | Complete |
-| DEBT-02 | Persist pending_recommendations | 7 | Complete |
-| DEBT-03 | Move ALTER TABLE to Alembic migration | 7 | Complete |
-| DEBT-04 | Surface error on invalid override parsing | 7 | Complete |
-| DEPLOY-01 | Update Docker files with BeanBay naming | 9 | Complete |
-| DEPLOY-02 | Publish Docker image to ghcr.io | 9 | Complete |
-| DEPLOY-03 | GitHub Actions CI/CD workflow | 8 | Complete |
-| DEPLOY-04 | Unraid Community Apps XML template | 9 | Complete |
-| REL-01 | Create GitHub release v0.1.0 | 8 | Complete |
-| REL-02 | All 108+ tests pass after rebrand | 7 | Complete |
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| NAV-01 | TBD | Pending |
+| NAV-02 | TBD | Pending |
+| NAV-03 | TBD | Pending |
+| UX-01 | TBD | Pending |
+| UX-02 | TBD | Pending |
+| FLOW-01 | TBD | Pending |
+| FLOW-02 | TBD | Pending |
+| FLOW-03 | TBD | Pending |
+| FLOW-04 | TBD | Pending |
+
+**Coverage:**
+- v0.1.1 requirements: 9 total
+- Mapped to phases: 0
+- Unmapped: 9 ⚠️
+
+---
+*Requirements defined: 2026-02-22*
+*Last updated: 2026-02-22 after initial definition*
