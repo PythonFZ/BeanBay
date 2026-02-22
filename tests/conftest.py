@@ -15,7 +15,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, engine, get_db
 from app.main import app
-from app.models import Bean, Measurement  # noqa: F401 — registers models with Base
+from app.models import Bean, BrewMethod, BrewSetup, Brewer, Grinder, Measurement, Paper, WaterRecipe  # noqa: F401 — registers models with Base
+from app.models import Bag  # noqa: F401 — registers Bag with Base
 from app.services.optimizer import OptimizerService
 
 # Create tables once on the (in-memory) engine.
