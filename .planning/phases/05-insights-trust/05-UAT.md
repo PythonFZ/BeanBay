@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 05-insights-trust
 source: 05-01-SUMMARY.md, 05-02-SUMMARY.md
 started: 2026-02-22T02:30:09Z
@@ -63,17 +63,32 @@ skipped: 0
   reason: "User reported: badge shows 'Bayesian optimization' after just 1 shot — BayBE switches phase after 1 recommendation by default, but the model has essentially no data; label feels misleading"
   severity: minor
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "TwoPhaseMetaRecommender is instantiated without switch_after override; BayBE's default is switch_after=1, so after just 1 recorded measurement (len(measurements) >= 1) it permanently switches to BotorchRecommender and the badge follows — even though the GP is essentially uninformed with 1 data point"
+  artifacts:
+    - path: "app/services/optimizer.py"
+      issue: "Line 123: TwoPhaseMetaRecommender(recommender=BotorchRecommender()) — no switch_after supplied, inherits default of 1"
+    - path: "app/services/optimizer.py"
+      issue: "Lines 280-299: select_recommender() faithfully returns BotorchRecommender after >=1 measurement; phase_label becomes 'Bayesian optimization'"
+    - path: "app/templates/brew/_recommendation_insights.html"
+      issue: "Badge renders {{ insights.phase_label }} verbatim — no guard for early Bayesian shots"
+  missing:
+    - "Set switch_after=5 (or 3) in TwoPhaseMetaRecommender instantiation in optimizer.py line 123"
+    - "Optionally add a 'bayesian_early' sub-phase label (e.g. 'Learning') for shots between switch and ~8 to smooth the transition"
+  debug_session: ".planning/debug/recommendation-phase-badge-too-early.md"
 
 - truth: "Recommendation page loads without crashing when campaign.recommend() is called"
   status: failed
   reason: "User reported: App crashed — NotImplementedError: 'UNSPECIFIED' has no Boolean representation — in baybe/campaign.py line 515, the campaign.recommend() method tries to evaluate a cached_recommendation sentinel value as a boolean"
   severity: blocker
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "BayBE 0.14.2 sets campaign.allow_recommending_already_recommended = UNSPECIFIED for hybrid/continuous search spaces (not DISCRETE). The cache fast-path guard in Campaign.recommend() at line 513-518 evaluates this sentinel as a boolean on the 2nd+ call (when _cached_recommendation is non-None and short-circuit evaluation no longer saves it), causing UnspecifiedType.__bool__ to raise NotImplementedError. First call succeeds; every subsequent call crashes."
+  artifacts:
+    - path: "app/services/optimizer.py"
+      issue: "Line 193: campaign.recommend(batch_size=1) — no cache clear before call"
+    - path: ".venv/lib/python3.11/site-packages/baybe/campaign.py"
+      issue: "Lines 513-518: cache guard evaluates allow_recommending_already_recommended as bool without guarding for UNSPECIFIED"
+    - path: ".venv/lib/python3.11/site-packages/baybe/campaign.py"
+      issue: "Lines 73-84: factory sets flag to UNSPECIFIED for HYBRID search spaces (our space is hybrid)"
+  missing:
+    - "Call campaign.clear_cache() immediately before campaign.recommend(batch_size=1) in optimizer.py _recommend method — resets _cached_recommendation to None so the walrus guard always short-circuits before reaching the UNSPECIFIED field"
+  debug_session: ".planning/debug/recommend-unspecified-bool-crash.md"
