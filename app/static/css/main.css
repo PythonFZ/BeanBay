@@ -731,7 +731,7 @@ body {
   gap: var(--spacing-sm);
 }
 
-.shot-notes-icon { font-size: var(--text-sm); }
+.shot-notes-icon { display: inline-flex; align-items: center; color: var(--text-muted); }
 
 .shot-row-body {
   display: flex;
