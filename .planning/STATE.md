@@ -1,7 +1,7 @@
 # Project State: BeanBay
 
 **Last updated:** 2026-02-22
-**Current phase:** Phase 8 — Documentation & Release (complete).
+**Current phase:** Phase 9 — Deployment Templates (complete).
 
 ## Project Reference
 
@@ -15,7 +15,7 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 | Milestone | Phases | Plans | Status | Date |
 |-----------|--------|-------|--------|------|
 | v1 MVP | 1-6 | 16 | Shipped | 2026-02-22 |
-| v0.1.0 Release & Deploy | 7-9 | 5 | In Progress | 2026-02-22 |
+| v0.1.0 Release & Deploy | 7-9 | 5 | ✅ Complete | 2026-02-22 |
 
 See: .planning/MILESTONES.md
 
@@ -27,18 +27,18 @@ See: .planning/MILESTONES.md
 |-------|------|--------|
 | 7 | Rebrand & Cleanup | ✅ Complete & Verified |
 | 8 | Documentation & Release | ✅ Complete (2/2 plans done) |
-| 9 | Deployment Templates | Not started |
+| 9 | Deployment Templates | ✅ Complete (1/1 plans done) |
 
-**Overall progress:** Phase 8 complete. 4/5 v0.1.0 plans done.
+**Overall progress:** All v0.1.0 phases complete. 5/5 v0.1.0 plans done. Milestone complete.
 
 ## Current Position
 
-Phase: 8 of 9 (Documentation & Release) — Complete
-Plan: 2 of 2 in Phase 8
-Status: Phase complete — ready for Phase 9
-Last activity: 2026-02-22 - Completed 08-02-PLAN.md (CI/CD workflows + v0.1.0 release)
+Phase: 9 of 9 (Deployment Templates) — Complete
+Plan: 1 of 1 in Phase 9
+Status: Phase complete — v0.1.0 milestone complete
+Last activity: 2026-02-22 - Completed 09-01-PLAN.md (Docker files + Unraid CA XML)
 
-Progress: ████░ 80% (4/5 v0.1.0 plans)
+Progress: █████ 100% (5/5 v0.1.0 plans)
 
 ## Blockers
 
@@ -72,13 +72,13 @@ See: .planning/phases/07-rebrand-cleanup/07-02-SUMMARY.md
 
 ### Last Session
 - **Date:** 2026-02-22
-- **What happened:** Executed Phase 8 Plan 02. Created GitHub Actions CI/CD workflows (test + Docker publish), CHANGELOG.md, and GitHub release v0.1.0. Phase 8 now complete.
-- **Where we left off:** Phase 8 complete. 4/5 v0.1.0 plans done. Ready for Phase 9 (Deployment Templates).
+- **What happened:** Executed Phase 9 Plan 01. Updated Docker files with BeanBay naming (docker-compose.yml, Dockerfile, .dockerignore) and created Unraid Community Apps XML template at unraid/beanbay.xml. Phase 9 complete. v0.1.0 milestone complete.
+- **Where we left off:** All v0.1.0 phases done (5/5 plans). Deploy to Unraid is next.
 
 ### Next Steps
-1. Execute 09-01 — Docker files update + Unraid CA XML template
-2. Deploy to Unraid
+1. Deploy to Unraid using `docker compose up -d` or install via Community Apps custom repo
+2. Optional: Create `unraid/beanbay-icon.png` for Unraid CA icon display (BRAND-03)
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-22 after 08-02 (CI/CD + v0.1.0 release)*
+*Last updated: 2026-02-22 after 09-01 (Docker files + Unraid CA XML — v0.1.0 complete)*

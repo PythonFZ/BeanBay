@@ -49,7 +49,7 @@ Plans:
 
 ---
 
-### Phase 9: Deployment Templates
+### Phase 9: Deployment Templates ✓
 
 **Goal:** Create deployment configurations for Docker users and Unraid Community Apps, making BeanBay installable by anyone with Docker or Unraid.
 
@@ -57,10 +57,11 @@ Plans:
 
 **Depends on:** Phase 8 (needs CI workflow and Docker image published)
 
+**Status:** Complete (2026-02-22)
 **Plans:** 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md — Update Docker files with BeanBay naming + create Unraid CA XML template
+- [x] 09-01-PLAN.md — Update Docker files with BeanBay naming + create Unraid CA XML template
 
 **Success criteria:**
 - docker-compose.yml updated with BeanBay naming
