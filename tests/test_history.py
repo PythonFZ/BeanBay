@@ -214,7 +214,7 @@ def test_history_shots_partial_htmx(client, sample_bean, db):
     assert response.status_code == 200
     # Partial should NOT include the full base.html nav/head
     assert "<!DOCTYPE html>" not in response.text
-    assert "BrewFlow" not in response.text
+    assert "BeanBay" not in response.text
     # But should include the shot row
     assert "shot-row" in response.text
 

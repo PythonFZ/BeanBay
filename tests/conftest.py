@@ -1,4 +1,4 @@
-"""Shared test fixtures for BrewFlow."""
+"""Shared test fixtures for BeanBay."""
 
 from pathlib import Path
 

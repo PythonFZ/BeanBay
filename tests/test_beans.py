@@ -61,7 +61,7 @@ def test_list_beans_empty(client):
     response = client.get("/beans")
     assert response.status_code == 200
     assert "No beans yet" in response.text
-    assert "BrewFlow" in response.text
+    assert "BeanBay" in response.text
 
 
 def test_list_beans_with_beans(client, sample_bean):

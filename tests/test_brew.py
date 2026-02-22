@@ -114,7 +114,7 @@ def test_brew_index_with_active_bean(active_client):
     response = active_client.get("/brew")
     assert response.status_code == 200
     assert "Get Recommendation" in response.text
-    assert "BrewFlow" in response.text
+    assert "BeanBay" in response.text
 
 
 def test_brew_index_no_repeat_best_without_measurements(active_client):

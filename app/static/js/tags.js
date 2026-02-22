@@ -1,5 +1,5 @@
 /**
- * tags.js — Flavor tag input and modal behavior for BrewFlow.
+ * tags.js — Flavor tag input and modal behavior for BeanBay.
  *
  * Handles:
  * - Adding tags via Enter or comma key in the brew form tag input
