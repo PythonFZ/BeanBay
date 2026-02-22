@@ -91,11 +91,13 @@ Plans:
   2. Submitted manual brew is saved and fed to BayBE via add_measurement — it counts as an optimization data point (visible in recommendation reasoning)
   3. Manual brews are visually distinguishable from BayBE-recommended brews in shot history (e.g., badge, icon, or label)
   4. Manual brew form validates inputs within existing parameter ranges before submission
-**Plans:** TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — DB migration (is_manual) + brew page restructure + record endpoint
+- [ ] 12-02-PLAN.md — Manual brew form with editable params + toggleFailed extraction
+- [ ] 12-03-PLAN.md — Manual badge in history + batch delete with campaign rebuild
+- [ ] 12-04-PLAN.md — Adaptive parameter range extension
 
 ## Progress
 
@@ -109,4 +111,4 @@ Plans:
 | 9 | v0.1.0 | 1/1 | Complete | 2026-02-22 |
 | 10. Responsive Nav & Layout | v0.1.1 | 2/2 | ✅ Complete | 2026-02-22 |
 | 11. Brew UX Improvements | v0.1.1 | 2/2 | ✅ Complete | 2026-02-22 |
-| 12. Manual Brew Input | v0.1.1 | 0/TBD | Not started | - |
+| 12. Manual Brew Input | v0.1.1 | 0/4 | Not started | - |
