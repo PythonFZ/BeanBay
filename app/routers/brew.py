@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.bean import Bean
 from app.models.measurement import Measurement
+from app.routers.beans import _get_active_bean
 
 router = APIRouter(prefix="/brew", tags=["brew"])
 templates = Jinja2Templates(directory="app/templates")
@@ -28,14 +29,6 @@ templates = Jinja2Templates(directory="app/templates")
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _get_active_bean(request: Request, db: Session) -> Optional[Bean]:
-    """Read active bean from cookie."""
-    bean_id = request.cookies.get("active_bean_id")
-    if bean_id:
-        return db.query(Bean).filter(Bean.id == bean_id).first()
-    return None
 
 
 def _require_active_bean(request: Request, db: Session) -> Optional[Bean]:

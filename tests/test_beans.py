@@ -310,7 +310,7 @@ def test_health(client):
     """GET /health returns JSON status."""
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "brewflow"}
+    assert response.json() == {"status": "ok", "service": "beanbay"}
 
 
 # --- Deactivate bean ---
