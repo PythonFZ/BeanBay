@@ -69,21 +69,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | TBD | Pending |
-| NAV-02 | TBD | Pending |
-| NAV-03 | TBD | Pending |
-| UX-01 | TBD | Pending |
-| UX-02 | TBD | Pending |
-| FLOW-01 | TBD | Pending |
-| FLOW-02 | TBD | Pending |
-| FLOW-03 | TBD | Pending |
-| FLOW-04 | TBD | Pending |
+| NAV-01 | Phase 10 | Pending |
+| NAV-02 | Phase 10 | Pending |
+| NAV-03 | Phase 10 | Pending |
+| UX-01 | Phase 11 | Pending |
+| UX-02 | Phase 11 | Pending |
+| FLOW-01 | Phase 11 | Pending |
+| FLOW-02 | Phase 12 | Pending |
+| FLOW-03 | Phase 12 | Pending |
+| FLOW-04 | Phase 12 | Pending |
 
 **Coverage:**
 - v0.1.1 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9 ⚠️
+- Mapped to phases: 9 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-22*
-*Last updated: 2026-02-22 after initial definition*
+*Last updated: 2026-02-22 after roadmap creation (all 9 requirements mapped to Phases 10-12)*
