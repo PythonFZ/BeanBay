@@ -25,6 +25,7 @@ class Measurement(Base):
     # Metadata (optional)
     extraction_time = Column(Float, nullable=True)
     is_failed = Column(Boolean, default=False)
+    is_manual = Column(Boolean, nullable=True, default=False)
     notes = Column(String, nullable=True)
 
     # Flavor profile (all optional, Phase 4)
