@@ -749,3 +749,60 @@ def test_manual_page_shows_bean_bounds(active_client, sample_bean):
     # Default temperature bounds: 86–96
     assert "86" in response.text
     assert "96" in response.text
+
+
+# ---------------------------------------------------------------------------
+# POST /brew/extend-ranges
+# ---------------------------------------------------------------------------
+
+
+def test_extend_ranges_updates_parameter_overrides(active_client, sample_bean, db_session):
+    """POST /brew/extend-ranges with new bounds -> bean.parameter_overrides updated."""
+    response = active_client.post(
+        "/brew/extend-ranges",
+        data={"grind_setting_min": "13", "grind_setting_max": "28"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+    db_session.expire_all()
+    db_session.refresh(sample_bean)
+    overrides = sample_bean.parameter_overrides
+    assert overrides is not None
+    assert "grind_setting" in overrides
+    assert overrides["grind_setting"]["min"] == 13.0
+    assert overrides["grind_setting"]["max"] == 28.0
+
+
+def test_extend_ranges_preserves_existing_overrides(active_client, sample_bean, db_session):
+    """POST /brew/extend-ranges with grind changes preserves existing temperature overrides."""
+    # Pre-seed temperature overrides
+    sample_bean.parameter_overrides = {"temperature": {"min": 84.0, "max": 98.0}}
+    db_session.commit()
+
+    response = active_client.post(
+        "/brew/extend-ranges",
+        data={"grind_setting_min": "13", "grind_setting_max": "28"},
+    )
+    assert response.status_code == 200
+
+    db_session.expire_all()
+    db_session.refresh(sample_bean)
+    overrides = sample_bean.parameter_overrides
+    assert "temperature" in overrides
+    assert overrides["temperature"]["min"] == 84.0
+    assert overrides["temperature"]["max"] == 98.0
+    assert "grind_setting" in overrides
+    assert overrides["grind_setting"]["min"] == 13.0
+    assert overrides["grind_setting"]["max"] == 28.0
+
+
+def test_extend_ranges_no_active_bean_redirects(client):
+    """POST /brew/extend-ranges without active bean -> 303 redirect to /beans."""
+    response = client.post(
+        "/brew/extend-ranges",
+        data={"grind_setting_min": "13", "grind_setting_max": "28"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/beans"

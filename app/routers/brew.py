@@ -7,6 +7,7 @@ Implements the core espresso optimization workflow:
   POST /brew/record                  — Record measurement (taste/failed)
   GET  /brew/best                    — Show highest-rated shot
   GET  /brew/manual                  — Manual brew entry form
+  POST /brew/extend-ranges           — Extend bean parameter bounds
 """
 
 import json
@@ -24,7 +25,7 @@ from app.database import get_db
 from app.models.bean import Bean
 from app.models.measurement import Measurement
 from app.routers.beans import _get_active_bean
-from app.services.optimizer import _resolve_bounds, _round_value
+from app.services.optimizer import DEFAULT_BOUNDS, _resolve_bounds, _round_value
 
 router = APIRouter(prefix="/brew", tags=["brew"])
 templates = Jinja2Templates(directory="app/templates")
@@ -388,3 +389,33 @@ async def manual_brew(request: Request, db: Session = Depends(get_db)):
             "manual_session_id": manual_session_id,
         },
     )
+
+
+@router.post("/extend-ranges")
+async def extend_ranges(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Extend bean parameter ranges when manual input exceeds current bounds."""
+    bean = _require_active_bean(request, db)
+    if not bean:
+        return RedirectResponse(url="/beans", status_code=303)
+
+    form = await request.form()
+    overrides = dict(bean.parameter_overrides or {})
+
+    for param in DEFAULT_BOUNDS:
+        new_min = form.get(f"{param}_min")
+        new_max = form.get(f"{param}_max")
+        if new_min is not None or new_max is not None:
+            current = overrides.get(param, {})
+            if new_min is not None:
+                current["min"] = float(new_min)
+            if new_max is not None:
+                current["max"] = float(new_max)
+            overrides[param] = current
+
+    bean.parameter_overrides = overrides
+    db.commit()
+
+    return JSONResponse(content={"status": "ok"})
