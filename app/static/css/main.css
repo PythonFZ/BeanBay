@@ -131,6 +131,138 @@ body {
   text-decoration: none;
 }
 
+/* Hamburger button */
+.nav-hamburger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hamburger icon — CSS-only 3-line icon */
+.hamburger-icon {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 1px;
+  position: relative;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.hamburger-icon::before,
+.hamburger-icon::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 1px;
+  position: absolute;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.hamburger-icon::before {
+  top: -7px;
+}
+
+.hamburger-icon::after {
+  top: 7px;
+}
+
+/* X close state when drawer is open */
+.nav-hamburger[aria-expanded="true"] .hamburger-icon {
+  opacity: 0;
+}
+
+.nav-hamburger[aria-expanded="true"] .hamburger-icon::before {
+  transform: rotate(45deg) translate(5px, 5px);
+  opacity: 1;
+}
+
+.nav-hamburger[aria-expanded="true"] .hamburger-icon::after {
+  transform: rotate(-45deg) translate(5px, -5px);
+  opacity: 1;
+}
+
+/* Overlay backdrop */
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+.nav-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Drawer */
+.nav-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 80vw;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  z-index: 300;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+  padding: var(--spacing-lg) 0;
+}
+
+.nav-drawer.open {
+  transform: translateX(0);
+}
+
+/* Drawer links */
+.nav-drawer-link {
+  display: block;
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-base);
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-drawer-link:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* Drawer divider */
+.nav-drawer-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Drawer active bean section */
+.nav-drawer-bean {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* Update nav-inner: full-width top bar (no container constraint) */
+.nav-inner {
+  padding: 0 var(--spacing-md);
+}
+
 /* Main content */
 .main {
   padding: var(--spacing-lg) 0 var(--spacing-xl);
