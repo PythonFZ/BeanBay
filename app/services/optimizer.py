@@ -1,4 +1,4 @@
-"""BayBE optimizer service — the core intelligence of BrewFlow.
+"""BayBE optimizer service — the core intelligence of BeanBay.
 
 Wraps BayBE in a thread-safe service that can create hybrid campaigns,
 generate recommendations, accept measurements, and persist campaign state.

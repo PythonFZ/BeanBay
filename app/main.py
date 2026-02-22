@@ -1,4 +1,4 @@
-"""BrewFlow — FastAPI application entry point."""
+"""BeanBay — FastAPI application entry point."""
 
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
     # Shutdown: nothing to clean up
 
 
-app = FastAPI(title="BrewFlow", lifespan=lifespan)
+app = FastAPI(title="BeanBay", lifespan=lifespan)
 
 # Mount static files
 static_dir = Path(__file__).parent / "static"
@@ -60,7 +60,7 @@ app.include_router(analytics.router)
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "ok", "service": "brewflow"}
+    return {"status": "ok", "service": "beanbay"}
 
 
 @app.get("/")

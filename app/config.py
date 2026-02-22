@@ -4,14 +4,14 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Application settings, configurable via BREWFLOW_ environment variables."""
+    """Application settings, configurable via BEANBAY_ environment variables."""
 
     data_dir: Path = Path("./data")
     database_url: str = ""
 
     @property
     def db_path(self) -> Path:
-        return self.data_dir / "brewflow.db"
+        return self.data_dir / "beanbay.db"
 
     @property
     def campaigns_dir(self) -> Path:
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     def effective_database_url(self) -> str:
         return self.database_url or f"sqlite:///{self.db_path}"
 
-    model_config = {"env_prefix": "BREWFLOW_"}
+    model_config = {"env_prefix": "BEANBAY_"}
 
 
 settings = Settings()
