@@ -16,5 +16,10 @@
         {% if bean.origin %}{{ bean.origin }}{% endif %}
       </div>
     {% endif %}
+    {% if bean.process %}
+      <div>
+        <span class="badge" style="font-size: 0.75rem;">{{ bean.process|capitalize }}</span>
+      </div>
+    {% endif %}
   </div>
 </a>

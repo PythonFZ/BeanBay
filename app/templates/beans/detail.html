@@ -37,8 +37,96 @@
       <label class="form-label" for="origin">Origin</label>
       <input type="text" id="origin" name="origin" class="form-input" value="{{ bean.origin or '' }}" placeholder="Optional">
     </div>
+    <div class="form-group">
+      <label class="form-label" for="roast_date">Roast Date</label>
+      <input type="date" id="roast_date" name="roast_date" class="form-input"
+             value="{{ bean.roast_date.isoformat() if bean.roast_date else '' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="process">Process</label>
+      <select id="process" name="process" class="form-input">
+        <option value="">—</option>
+        <option value="washed" {% if bean.process == 'washed' %}selected{% endif %}>Washed</option>
+        <option value="natural" {% if bean.process == 'natural' %}selected{% endif %}>Natural</option>
+        <option value="honey" {% if bean.process == 'honey' %}selected{% endif %}>Honey</option>
+        <option value="anaerobic" {% if bean.process == 'anaerobic' %}selected{% endif %}>Anaerobic</option>
+        <option value="other" {% if bean.process == 'other' %}selected{% endif %}>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="variety">Variety</label>
+      <input type="text" id="variety" name="variety" class="form-input"
+             value="{{ bean.variety or '' }}" placeholder="e.g. SL-28, Gesha, Bourbon">
+    </div>
     <button type="submit" class="btn btn-secondary btn-full">Save Changes</button>
   </form>
+</div>
+
+<!-- Bags -->
+<div class="card mb-md">
+  <h3 class="card-title" style="margin-bottom: var(--space-sm);">Bags</h3>
+  <p class="text-sm text-muted mb-md">Track purchases of this coffee. Same coffee, multiple bags.</p>
+
+  {% if bean.bags %}
+    {% for bag in bean.bags %}
+      <div class="card mb-sm" style="background: var(--surface-elevated, var(--surface)); padding: var(--space-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            {% if bag.purchase_date %}
+              <span class="text-sm">{{ bag.purchase_date.strftime('%b %d, %Y') }}</span>
+            {% endif %}
+            {% if bag.cost %}
+              <span class="badge badge-count">{{ "%.2f"|format(bag.cost) }}</span>
+            {% endif %}
+            {% if bag.weight_grams %}
+              <span class="text-sm text-muted">{{ bag.weight_grams|int }}g</span>
+            {% endif %}
+          </div>
+          <form method="post" action="/beans/{{ bean.id }}/bags/{{ bag.id }}/delete" style="margin: 0;">
+            <button type="submit" class="btn btn-sm" style="color: var(--danger, #c0392b); padding: 4px 8px;"
+                    onclick="return confirm('Delete this bag?')">✕</button>
+          </form>
+        </div>
+        {% if bag.notes %}
+          <p class="text-sm text-muted" style="margin-top: var(--space-xs);">{{ bag.notes }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-sm text-muted">No bags recorded yet.</p>
+  {% endif %}
+
+  <button
+    type="button"
+    class="collapsible-toggle mt-sm"
+    onclick="this.nextElementSibling.classList.toggle('open'); this.setAttribute('aria-expanded', this.nextElementSibling.classList.contains('open'))"
+    aria-expanded="false"
+  >
+    Add Bag
+    <span aria-hidden="true">&#9662;</span>
+  </button>
+
+  <div class="collapsible-content">
+    <form method="post" action="/beans/{{ bean.id }}/bags">
+      <div class="form-group">
+        <label class="form-label" for="purchase_date">Purchase Date</label>
+        <input type="date" id="purchase_date" name="purchase_date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cost">Cost</label>
+        <input type="number" id="cost" name="cost" class="form-input" step="0.01" placeholder="Optional">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="weight_grams">Weight (grams)</label>
+        <input type="number" id="weight_grams" name="weight_grams" class="form-input" step="1" placeholder="e.g. 250">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bag_notes">Notes</label>
+        <input type="text" id="bag_notes" name="notes" class="form-input" placeholder="Optional">
+      </div>
+      <button type="submit" class="btn btn-secondary btn-full">Add Bag</button>
+    </form>
+  </div>
 </div>
 
 <!-- Parameter overrides -->

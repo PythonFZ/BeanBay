@@ -49,6 +49,37 @@
       autocomplete="off"
     >
   </div>
+  <button
+    type="button"
+    class="collapsible-toggle"
+    onclick="this.nextElementSibling.classList.toggle('open'); this.setAttribute('aria-expanded', this.nextElementSibling.classList.contains('open'))"
+    aria-expanded="false"
+  >
+    More Details
+    <span aria-hidden="true">&#9662;</span>
+  </button>
+  <div class="collapsible-content">
+    <div class="form-group">
+      <label class="form-label" for="roast_date">Roast Date</label>
+      <input type="date" id="roast_date" name="roast_date" class="form-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="process">Process</label>
+      <select id="process" name="process" class="form-input">
+        <option value="">—</option>
+        <option value="washed">Washed</option>
+        <option value="natural">Natural</option>
+        <option value="honey">Honey</option>
+        <option value="anaerobic">Anaerobic</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="variety">Variety</label>
+      <input type="text" id="variety" name="variety" class="form-input"
+             placeholder="e.g. SL-28, Gesha" autocomplete="off">
+    </div>
+  </div>
   <button type="submit" class="btn btn-primary btn-full">
     Add Bean
     <span class="htmx-indicator spinner" style="margin-left: 8px;"></span>
