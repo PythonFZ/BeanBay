@@ -15,12 +15,12 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### Taste Score UX
 
-- [ ] **UX-01**: Taste score slider starts inactive/greyed (same pattern as flavor sliders) and must be touched before form submission is allowed
-- [ ] **UX-02**: Failed shot toggle still overrides taste to 1 and disables the slider (existing behavior preserved)
+- [x] **UX-01**: Taste score slider starts inactive/greyed (same pattern as flavor sliders) and must be touched before form submission is allowed
+- [x] **UX-02**: Failed shot toggle still overrides taste to 1 and disables the slider (existing behavior preserved)
 
 ### Brew Flow
 
-- [ ] **FLOW-01**: When user navigates to Brew without an active bean, show a clear "Pick a bean" prompt with direct link to bean selection instead of silent redirect
+- [x] **FLOW-01**: When user navigates to Brew without an active bean, show a clear "Pick a bean" prompt with direct link to bean selection instead of silent redirect
 - [ ] **FLOW-02**: User can enter all 6 recipe parameters manually and submit a taste score, bypassing BayBE recommendation
 - [ ] **FLOW-03**: Manual brew data feeds into BayBE optimizer via add_measurement (counts as optimization data point)
 - [ ] **FLOW-04**: Manual brews are visually distinguishable from BayBE recommendations in shot history
@@ -72,9 +72,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-01 | Phase 10 | Complete |
 | NAV-02 | Phase 10 | Complete |
 | NAV-03 | Phase 10 | Complete |
-| UX-01 | Phase 11 | Pending |
-| UX-02 | Phase 11 | Pending |
-| FLOW-01 | Phase 11 | Pending |
+| UX-01 | Phase 11 | Complete |
+| UX-02 | Phase 11 | Complete |
+| FLOW-01 | Phase 11 | Complete |
 | FLOW-02 | Phase 12 | Pending |
 | FLOW-03 | Phase 12 | Pending |
 | FLOW-04 | Phase 12 | Pending |
