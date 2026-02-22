@@ -11,6 +11,9 @@
     </form>
   {% else %}
     <span class="badge badge-active">Active</span>
+    <form method="post" action="/beans/deactivate" style="display:inline;">
+      <button type="submit" class="btn btn-secondary btn-sm">Deselect</button>
+    </form>
   {% endif %}
 </div>
 

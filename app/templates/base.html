@@ -19,6 +19,9 @@
       <div class="nav-active-bean" id="active-bean-indicator">
         {% if active_bean %}
           <a href="/beans/{{ active_bean.id }}">{{ active_bean.name }}</a>
+          <form method="post" action="/beans/deactivate" style="display:inline; margin-left:0.25rem;">
+            <button type="submit" class="btn btn-secondary" style="padding:0.15rem 0.4rem; font-size:0.75rem; min-height:auto;">✕</button>
+          </form>
         {% else %}
           <span class="text-muted">No bean selected</span>
         {% endif %}

@@ -311,3 +311,40 @@ def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "service": "brewflow"}
+
+
+# --- Deactivate bean ---
+
+
+def test_deactivate_bean(client, sample_bean):
+    """POST /beans/deactivate clears active_bean_id cookie and redirects to /beans."""
+    client.cookies.set("active_bean_id", sample_bean.id)
+    response = client.post("/beans/deactivate", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/beans"
+
+    # Verify the response instructs the browser to delete the cookie (Max-Age=0)
+    set_cookie = response.headers.get("set-cookie", "")
+    assert "active_bean_id" in set_cookie
+    assert "Max-Age=0" in set_cookie
+
+    # After clearing the cookie manually, the page should show "No bean selected"
+    client.cookies.delete("active_bean_id")
+    response2 = client.get("/beans")
+    assert "No bean selected" in response2.text
+
+
+def test_deactivate_bean_detail_shows_button(client, sample_bean):
+    """Bean detail page shows 'Deselect' button when that bean is active."""
+    client.cookies.set("active_bean_id", sample_bean.id)
+    response = client.get(f"/beans/{sample_bean.id}")
+    assert response.status_code == 200
+    assert "Deselect" in response.text
+
+
+def test_deactivate_bean_nav_shows_clear_button(client, sample_bean):
+    """Nav bar shows ✕ clear button when a bean is active."""
+    client.cookies.set("active_bean_id", sample_bean.id)
+    response = client.get("/beans")
+    assert response.status_code == 200
+    assert "✕" in response.text

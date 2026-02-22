@@ -89,6 +89,21 @@ async def create_bean(
     return RedirectResponse(url="/beans", status_code=303)
 
 
+@router.post("/deactivate")
+async def deactivate_bean(request: Request):
+    """Clear the active bean (delete cookie)."""
+    if _is_htmx(request):
+        response = templates.TemplateResponse(
+            request,
+            "beans/_active_indicator.html",
+            {"active_bean": None},
+        )
+    else:
+        response = RedirectResponse(url="/beans", status_code=303)
+    response.delete_cookie("active_bean_id")
+    return response
+
+
 @router.get("/{bean_id}", response_class=HTMLResponse)
 async def bean_detail(request: Request, bean_id: str, db: Session = Depends(get_db)):
     """Bean detail page with parameter overrides."""
