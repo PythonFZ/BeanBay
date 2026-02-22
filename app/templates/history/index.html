@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Brew History — BrewFlow{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Brew History</h1>
+</div>
+
+<!-- Filter panel -->
+<div class="filter-panel-wrapper card mb-md">
+  <button
+    type="button"
+    class="collapsible-toggle"
+    onclick="this.nextElementSibling.classList.toggle('open'); this.setAttribute('aria-expanded', this.nextElementSibling.classList.contains('open'))"
+    aria-expanded="false"
+  >
+    Filter
+    <span aria-hidden="true">&#9662;</span>
+  </button>
+  <div class="collapsible-content">
+    {% include "history/_filter_panel.html" %}
+  </div>
+</div>
+
+<!-- Shot list -->
+<div id="shot-list">
+  {% include "history/_shot_list.html" %}
+</div>
+
+<!-- Modal container for Plan 03 shot detail -->
+<dialog id="shot-modal" class="shot-modal">
+  <div id="shot-modal-container"></div>
+</dialog>
+{% endblock %}

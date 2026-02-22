@@ -701,3 +701,103 @@ body {
 .tag-text-input {
   min-height: 36px;
 }
+
+/* ============================================================
+   History list
+   ============================================================ */
+
+.shot-row {
+  cursor: pointer;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.shot-row:hover { background: var(--bg-input); }
+
+.shot-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.shot-date {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.shot-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.shot-notes-icon { font-size: var(--text-sm); }
+
+.shot-row-body {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-md);
+}
+
+.shot-taste {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.shot-grind {
+  font-size: var(--text-sm);
+}
+
+.shot-bean {
+  margin-left: auto;
+}
+
+.badge-failed {
+  background: var(--danger);
+  color: white;
+}
+
+/* Filter panel */
+.filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Mobile: filter behind collapsible toggle */
+.filter-panel-wrapper .collapsible-toggle {
+  border-top: none;
+}
+
+/* Desktop: always show filter panel */
+@media (min-width: 480px) {
+  .filter-panel-wrapper .collapsible-content {
+    display: block !important;
+  }
+  .filter-panel-wrapper .collapsible-toggle {
+    display: none;
+  }
+  .filter-panel {
+    flex-direction: row;
+  }
+  .filter-panel .form-group {
+    flex: 1;
+    margin-bottom: 0;
+  }
+}
+
+/* Shot modal placeholder (styled in Plan 03) */
+.shot-modal {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  max-width: 480px;
+  width: calc(100% - 32px);
+}
+
+.shot-modal::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
