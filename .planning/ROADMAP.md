@@ -1,6 +1,6 @@
-# BeanBay v1.1 Roadmap — Release & Deploy
+# BeanBay v0.1.0 Roadmap — Release & Deploy
 
-**Milestone:** v1.1 — Rebrand, clean up, and ship
+**Milestone:** v0.1.0 — Rebrand, clean up, and ship
 **Goal:** Transform the v1 MVP into a properly branded, documented, and publicly deployable product called BeanBay.
 **Phases:** 7-9 (continuing from v1)
 **Estimated effort:** 3 phases, 5 plans
@@ -30,7 +30,7 @@ Plans:
 
 ### Phase 8: Documentation & Release
 
-**Goal:** Create comprehensive project documentation (README, LICENSE) and set up GitHub Actions CI for automated Docker image builds, preparing for the v1.1 release.
+**Goal:** Create comprehensive project documentation (README, LICENSE) and set up GitHub Actions CI for automated Docker image builds, preparing for the v0.1.0 release.
 
 **Requirements:** CLEAN-03, CLEAN-04, DEPLOY-03, REL-01
 
@@ -38,13 +38,13 @@ Plans:
 
 Plans:
 - [ ] 08-01-PLAN.md — Create concise README.md with WIP indication (LICENSE already present)
-- [ ] 08-02-PLAN.md — Create GitHub Actions CI/CD workflows (test + Docker publish) + v1.1 release
+- [ ] 08-02-PLAN.md — Create GitHub Actions CI/CD workflows (test + Docker publish) + v0.1.0 release
 
 **Success criteria:**
 - README.md with concise project description, WIP indication, Docker quick start, dev setup
 - LICENSE file present (Apache 2.0, already exists)
 - GitHub Actions workflow builds and publishes Docker image on release tags
-- GitHub release v1.1 created with changelog
+- GitHub release v0.1.0 created with changelog
 
 ---
 
@@ -77,4 +77,4 @@ Plans:
 | 8 | Documentation & Release | CLEAN-03,04 DEPLOY-03 REL-01 | Phase 7 |
 | 9 | Deployment Templates | DEPLOY-01,02,04 BRAND-03 | Phase 8 |
 
-**After v1.1:** Deploy to Unraid, use with real espresso sessions, then plan v2 (multi-method optimization platform).
+**After v0.1.0:** Deploy to Unraid, use with real espresso sessions, then plan v2 (multi-method optimization platform).

@@ -1,4 +1,4 @@
-# BeanBay v1.1 Requirements — Release & Deploy
+# BeanBay v0.1.0 Requirements — Release & Deploy
 
 ## Milestone Goal
 
@@ -45,7 +45,7 @@ Ship the existing v1 MVP as a properly branded, documented, and deployable produ
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| REL-01 | Create GitHub release v1.1 with changelog and release notes | Must |
+| REL-01 | Create GitHub release v0.1.0 with changelog and release notes | Must |
 | REL-02 | Ensure all 108+ existing tests pass after rebrand | Must |
 
 ---
@@ -74,5 +74,5 @@ Ship the existing v1 MVP as a properly branded, documented, and deployable produ
 | DEPLOY-02 | Publish Docker image to ghcr.io | 9 | Pending |
 | DEPLOY-03 | GitHub Actions CI/CD workflow | 8 | Pending |
 | DEPLOY-04 | Unraid Community Apps XML template | 9 | Pending |
-| REL-01 | Create GitHub release v1.1 | 8 | Pending |
+| REL-01 | Create GitHub release v0.1.0 | 8 | Pending |
 | REL-02 | All 108+ tests pass after rebrand | 7 | Complete |

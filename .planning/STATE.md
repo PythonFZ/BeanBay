@@ -8,20 +8,20 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Every coffee brew teaches the system something — the app must make it effortless to capture that feedback from a phone at the espresso machine and return increasingly better recommendations.
-**Current focus:** v1.1 — Rebrand to BeanBay, clean up, ship, deploy.
+**Current focus:** v0.1.0 — Rebrand to BeanBay, clean up, ship, deploy.
 
 ## Milestone History
 
 | Milestone | Phases | Plans | Status | Date |
 |-----------|--------|-------|--------|------|
 | v1 MVP | 1-6 | 16 | Shipped | 2026-02-22 |
-| v1.1 Release & Deploy | 7-9 | 5 | In Progress | 2026-02-22 |
+| v0.1.0 Release & Deploy | 7-9 | 5 | In Progress | 2026-02-22 |
 
 See: .planning/MILESTONES.md
 
 ## Phase Status
 
-### v1.1 Phases
+### v0.1.0 Phases
 
 | Phase | Name | Status |
 |-------|------|--------|
@@ -29,7 +29,7 @@ See: .planning/MILESTONES.md
 | 8 | Documentation & Release | Not started |
 | 9 | Deployment Templates | Not started |
 
-**Overall progress:** Phase 7 fully complete. 2/5 v1.1 plans done.
+**Overall progress:** Phase 7 fully complete. 2/5 v0.1.0 plans done.
 
 ## Current Position
 
@@ -38,7 +38,7 @@ Plan: 2 of 2 in Phase 7
 Status: Phase complete and verified ✓ — ready for Phase 8
 Last activity: 2026-02-22 - Phase 7 verified, all must-haves pass
 
-Progress: ██░░░ 40% (2/5 v1.1 plans)
+Progress: ██░░░ 40% (2/5 v0.1.0 plans)
 
 ## Blockers
 

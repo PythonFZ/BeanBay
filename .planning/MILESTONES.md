@@ -24,9 +24,9 @@
 
 ---
 
-## v1.1 Release & Deploy (In Progress)
+## v0.1.0 Release & Deploy (In Progress)
 
-**Goal:** Rebrand from BrewFlow to BeanBay, clean up tech debt, create documentation, and ship as a publicly deployable product with Docker images and Unraid support.
+**Goal:** Rebrand from BrewFlow to BeanBay, clean up tech debt, create documentation, and ship as the first publicly deployable release with Docker images and Unraid support.
 
 **Phases:** 7-9 (5 plans total)
 
@@ -36,6 +36,7 @@
 - README, LICENSE, GitHub Actions CI/CD
 - Docker image on ghcr.io/grzonka/beanbay
 - Unraid Community Apps XML template
+- GitHub release v0.1.0 with changelog
 
 **Status:** Planning complete, ready for execution.
 

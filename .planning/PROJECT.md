@@ -14,8 +14,8 @@ Every coffee brew teaches the system something — the app must make it effortle
 
 ## Current State
 
-**Shipped:** v1 MVP (2026-02-22) — as "BrewFlow" (being rebranded to BeanBay in v1.1)
-**Active milestone:** v1.1 Release & Deploy
+**Shipped:** v1 MVP (2026-02-22) — as "BrewFlow" (being rebranded to BeanBay in v0.1.0)
+**Active milestone:** v0.1.0 Release & Deploy
 **Codebase:** ~7,632 LOC (Python, HTML, CSS/JS), 108 tests passing
 **Stack:** FastAPI, Jinja2/htmx, SQLite, Chart.js, BayBE, Docker
 
@@ -37,7 +37,7 @@ Every coffee brew teaches the system something — the app must make it effortle
 
 ### Active
 
-See `.planning/REQUIREMENTS.md` for v1.1 requirements (rebrand, cleanup, deploy).
+See `.planning/REQUIREMENTS.md` for v0.1.0 requirements (rebrand, cleanup, deploy).
 
 ### Out of Scope (current milestone)
 
@@ -64,7 +64,7 @@ See `.planning/REQUIREMENTS.md` for v1.1 requirements (rebrand, cleanup, deploy)
 - **Backend language**: Python — BayBE is a Python library, no way around it
 - **Optimization engine**: BayBE — already proven, campaign state is JSON-serializable
 - **Parameters**: Fixed set of 6 parameters with current ranges (matched to Sage Dual Boiler + DF83v) — v2 will make this configurable
-- **Single user**: v1/v1.1 is personal use only, no auth needed
+- **Single user**: v1/v0.1.0 is personal use only, no auth needed
 - **Self-hosted**: Must run on local server via Docker (Unraid or any Docker host)
 
 ## Key Decisions
@@ -82,16 +82,16 @@ See `.planning/REQUIREMENTS.md` for v1.1 requirements (rebrand, cleanup, deploy)
 | SQLite as database | Single-user, embedded, no separate DB server | ✓ Good — zero ops overhead |
 | Chart.js for visualization | CDN-loaded, no build step, rich chart types | ✓ Good — progress charts + heatmaps working |
 | Measurements as source of truth | Campaigns rebuildable from measurement data | ✓ Good — disaster recovery works |
-| Rebrand to BeanBay | Better name — "bean" first, "bay" as gathering place + Bayesian hint | v1.1 — in progress |
+| Rebrand to BeanBay | Better name — "bean" first, "bay" as gathering place + Bayesian hint | v0.1.0 — in progress |
 
 ## Milestone Roadmap
 
 | Milestone | Focus | Status |
 |-----------|-------|--------|
 | v1 MVP | Core espresso optimization loop | ✓ Shipped |
-| v1.1 Release & Deploy | Rebrand, cleanup, Docker/Unraid deployment | Active |
+| v0.1.0 Release & Deploy | Rebrand, cleanup, Docker/Unraid deployment | Active |
 | v2 Multi-Method Platform | Filter/immersion brewing, grinders, waters, Beanconqueror import | Planned |
 | v3 Community Platform | Multi-user, shared database, hosted solution | Vision |
 
 ---
-*Last updated: 2026-02-22 after v1.1 milestone planning*
+*Last updated: 2026-02-22 after v0.1.0 milestone planning*
