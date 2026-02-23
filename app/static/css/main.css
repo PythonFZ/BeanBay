@@ -393,6 +393,23 @@ body {
   margin-top: var(--spacing-xs);
 }
 
+/* Select dropdowns — reset browser chrome, match dark theme */
+select.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: calc(var(--spacing-md) + 20px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23b0a090' d='M1.4 0L6 4.6 10.6 0 12 1.4l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  background-size: 12px 8px;
+}
+
+select.form-input option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
 /* Cards */
 .card {
   background: var(--bg-card);

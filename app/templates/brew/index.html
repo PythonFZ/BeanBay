@@ -29,7 +29,7 @@
     {% if setups %}
       <form method="post" action="/brew/set-setup">
         <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-          <select name="setup_id" class="form-control" onchange="this.form.submit()" style="flex: 1; min-height: 48px;">
+          <select name="setup_id" class="form-input" onchange="this.form.submit()" style="flex: 1; min-height: 48px;">
             <option value="" disabled {% if not active_setup %}selected{% endif %}>Pick a setup…</option>
             {% for s in setups %}
             <option value="{{ s.id }}" {% if active_setup and s.id == active_setup.id %}selected{% endif %}>{{ s.name }}</option>
@@ -56,7 +56,7 @@
     {% if beans %}
       <form method="post" action="/beans/set-active">
         <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-          <select name="bean_id" class="form-control" onchange="this.form.submit()" style="flex: 1; min-height: 48px;">
+          <select name="bean_id" class="form-input" onchange="this.form.submit()" style="flex: 1; min-height: 48px;">
             <option value="" disabled {% if not active_bean %}selected{% endif %}>Pick a bean…</option>
             {% for b in beans %}
             <option value="{{ b.id }}" {% if active_bean and b.id == active_bean.id %}selected{% endif %}>{{ b.name }}</option>

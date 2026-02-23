@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 Phase: 16 of 16 (Cross-Brew Transfer Learning) — ✅ Complete
 Plan: 2 of 2 complete
 Status: Phase 16 complete — v0.2.0 feature-complete
-Last activity: 2026-02-23 — Completed 16-02-PLAN.md (transfer learning wire-up, 240 tests)
+Last activity: 2026-02-23 — Completed quick task 002: Style brew select dropdowns
 
 Progress: [████████████████████████████████████████████] 100% (13/13 v0.2.0 plans)
 
@@ -73,6 +73,7 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 | ID | Task | Date |
 |----|------|------|
 | 001 | Fix CI test DB isolation | 2026-02-22 |
+| 002 | Style brew select dropdowns to match dark theme | 2026-02-23 |
 
 ## Session Continuity
 
