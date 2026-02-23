@@ -2,6 +2,10 @@
 
 Wraps BayBE in a thread-safe service that can create hybrid campaigns,
 generate recommendations, accept measurements, and persist campaign state.
+
+Campaign keys have the format: {bean_id}__{method}__{setup_id}
+(or {bean_id}__espresso__none if no setup is selected).
+Legacy bare bean_id keys are migrated at startup via migrate_legacy_campaigns().
 """
 
 import asyncio
@@ -20,7 +24,9 @@ from baybe.recommenders.pure.nonpredictive.sampling import RandomRecommender
 from baybe.searchspace import SearchSpace
 from baybe.targets import NumericalTarget
 
-# BayBE parameter column names (the 6 recipe params)
+from app.services.optimizer_key import is_legacy_key, make_campaign_key
+
+# BayBE parameter column names for espresso (the 6 recipe params)
 BAYBE_PARAM_COLUMNS = [
     "grind_setting",
     "temperature",
@@ -30,7 +36,16 @@ BAYBE_PARAM_COLUMNS = [
     "saturation",
 ]
 
-# Default parameter bounds (used when no overrides specified)
+# Pour-over BayBE parameter columns
+POUR_OVER_PARAM_COLUMNS = [
+    "grind_setting",
+    "temperature",
+    "bloom_weight",
+    "dose_in",
+    "brew_volume",
+]
+
+# Default parameter bounds for espresso (used when no overrides specified)
 DEFAULT_BOUNDS: dict[str, tuple[float, float]] = {
     "grind_setting": (15.0, 25.0),
     "temperature": (86.0, 96.0),
@@ -39,7 +54,16 @@ DEFAULT_BOUNDS: dict[str, tuple[float, float]] = {
     "target_yield": (36.0, 50.0),
 }
 
-# Rounding rules for practical precision
+# Pour-over default parameter bounds
+POUR_OVER_DEFAULT_BOUNDS: dict[str, tuple[float, float]] = {
+    "grind_setting": (15.0, 40.0),  # coarser grind for pour-over
+    "temperature": (88.0, 98.0),
+    "bloom_weight": (20.0, 80.0),  # grams of water for bloom
+    "dose_in": (12.0, 22.0),  # dose in grams
+    "brew_volume": (150.0, 500.0),  # total brew volume in ml
+}
+
+# Rounding rules for espresso (practical precision)
 ROUNDING_RULES: dict[str, float] = {
     "grind_setting": 0.5,
     "temperature": 1.0,
@@ -47,6 +71,36 @@ ROUNDING_RULES: dict[str, float] = {
     "dose_in": 0.5,
     "target_yield": 1.0,
 }
+
+# Rounding rules for pour-over
+POUR_OVER_ROUNDING_RULES: dict[str, float] = {
+    "grind_setting": 0.5,
+    "temperature": 1.0,
+    "bloom_weight": 1.0,
+    "dose_in": 0.5,
+    "brew_volume": 5.0,
+}
+
+
+def _get_param_columns(method: str) -> list[str]:
+    """Return BayBE parameter column names for the given method."""
+    if method == "pour-over":
+        return POUR_OVER_PARAM_COLUMNS
+    return BAYBE_PARAM_COLUMNS  # espresso and all others
+
+
+def _get_default_bounds(method: str) -> dict[str, tuple[float, float]]:
+    """Return default parameter bounds for the given method."""
+    if method == "pour-over":
+        return dict(POUR_OVER_DEFAULT_BOUNDS)
+    return dict(DEFAULT_BOUNDS)
+
+
+def _get_rounding_rules(method: str) -> dict[str, float]:
+    """Return rounding rules for the given method."""
+    if method == "pour-over":
+        return POUR_OVER_ROUNDING_RULES
+    return ROUNDING_RULES
 
 
 def _round_value(value: float, step: float) -> float:
@@ -56,6 +110,7 @@ def _round_value(value: float, step: float) -> float:
 
 def _resolve_bounds(
     overrides: dict | None,
+    method: str = "espresso",
 ) -> dict[str, tuple[float, float]]:
     """Merge per-bean overrides onto default bounds.
 
@@ -63,11 +118,12 @@ def _resolve_bounds(
         overrides: e.g. {"grind_setting": {"min": 18.0, "max": 22.0}}
                    Only parameters that differ from defaults need to be present.
                    None or {} means "use all defaults".
+        method: Brew method name — determines which default bounds to use.
 
     Returns:
-        Complete bounds dict for all 5 continuous parameters.
+        Complete bounds dict for all continuous parameters of the given method.
     """
-    bounds = dict(DEFAULT_BOUNDS)
+    bounds = _get_default_bounds(method)
     if overrides:
         for param, spec in overrides.items():
             if param in bounds and isinstance(spec, dict):
@@ -83,7 +139,11 @@ def _bounds_fingerprint(bounds: dict[str, tuple[float, float]]) -> str:
 
 
 class OptimizerService:
-    """Thread-safe BayBE campaign manager with disk persistence."""
+    """Thread-safe BayBE campaign manager with disk persistence.
+
+    Campaigns are keyed by: {bean_id}__{method}__{setup_id}
+    Legacy bare-UUID campaign files are migrated at startup.
+    """
 
     def __init__(self, campaigns_dir: Path):
         self._campaigns_dir = campaigns_dir
@@ -92,41 +152,81 @@ class OptimizerService:
         self._fingerprints: dict[str, str] = {}
         self._lock = threading.Lock()
 
-    def _campaign_path(self, bean_id: str) -> Path:
-        return self._campaigns_dir / f"{bean_id}.json"
+    def _campaign_path(self, campaign_key: str) -> Path:
+        return self._campaigns_dir / f"{campaign_key}.json"
 
-    def _fingerprint_path(self, bean_id: str) -> Path:
-        return self._campaigns_dir / f"{bean_id}.bounds"
+    def _fingerprint_path(self, campaign_key: str) -> Path:
+        return self._campaigns_dir / f"{campaign_key}.bounds"
 
     @staticmethod
     def _create_fresh_campaign(
         overrides: dict | None = None,
+        method: str = "espresso",
     ) -> Campaign:
-        """Create a hybrid BayBE campaign (continuous + categorical).
+        """Create a hybrid BayBE campaign for the given method.
 
         Args:
             overrides: Per-bean parameter range overrides.
                        e.g. {"grind_setting": {"min": 18.0, "max": 22.0}}
+            method: Brew method — determines parameter set (espresso vs pour-over).
         """
-        bounds = _resolve_bounds(overrides)
-        parameters = [
-            NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
-            NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
-            NumericalContinuousParameter(name="preinfusion_pct", bounds=bounds["preinfusion_pct"]),
-            NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
-            NumericalContinuousParameter(name="target_yield", bounds=bounds["target_yield"]),
-            CategoricalParameter(name="saturation", values=["yes", "no"], encoding="OHE"),
-        ]
+        bounds = _resolve_bounds(overrides, method)
+        if method == "pour-over":
+            parameters = [
+                NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
+                NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
+                NumericalContinuousParameter(name="bloom_weight", bounds=bounds["bloom_weight"]),
+                NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
+                NumericalContinuousParameter(name="brew_volume", bounds=bounds["brew_volume"]),
+            ]
+        else:
+            # espresso and all other methods — 5 continuous + 1 categorical
+            parameters = [
+                NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
+                NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
+                NumericalContinuousParameter(
+                    name="preinfusion_pct", bounds=bounds["preinfusion_pct"]
+                ),
+                NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
+                NumericalContinuousParameter(name="target_yield", bounds=bounds["target_yield"]),
+                CategoricalParameter(name="saturation", values=["yes", "no"], encoding="OHE"),
+            ]
         searchspace = SearchSpace.from_product(parameters=parameters)
         target = NumericalTarget(name="taste")
         objective = SingleTargetObjective(target=target)
         recommender = TwoPhaseMetaRecommender(recommender=BotorchRecommender(), switch_after=5)
         return Campaign(searchspace=searchspace, objective=objective, recommender=recommender)
 
+    def migrate_legacy_campaigns(self) -> int:
+        """Migrate old bare-UUID campaign files to new key format.
+
+        Old format: {bean_id}.json / {bean_id}.bounds
+        New format: {bean_id}__espresso__none.json / {bean_id}__espresso__none.bounds
+
+        Returns:
+            Number of campaign files migrated.
+        """
+        migrated = 0
+        for json_file in sorted(self._campaigns_dir.glob("*.json")):
+            stem = json_file.stem
+            if is_legacy_key(stem):
+                new_key = make_campaign_key(stem, "espresso", None)
+                new_json = self._campaigns_dir / f"{new_key}.json"
+                new_bounds = self._campaigns_dir / f"{new_key}.bounds"
+                # Only migrate if target doesn't already exist
+                if not new_json.exists():
+                    json_file.rename(new_json)
+                    old_bounds = self._campaigns_dir / f"{stem}.bounds"
+                    if old_bounds.exists() and not new_bounds.exists():
+                        old_bounds.rename(new_bounds)
+                    migrated += 1
+        return migrated
+
     def get_or_create_campaign(
         self,
-        bean_id: str,
+        campaign_key: str,
         overrides: dict | None = None,
+        method: str = "espresso",
     ) -> Campaign:
         """Get campaign from cache, disk, or create fresh. Thread-safe.
 
@@ -135,68 +235,73 @@ class OptimizerService:
         rebuilt from its existing measurements with the new bounds.
 
         Args:
-            bean_id: UUID of the bean.
+            campaign_key: Compound key "{bean_id}__{method}__{setup_id}".
             overrides: Per-bean parameter range overrides (from Bean.parameter_overrides).
+            method: Brew method for parameter set selection.
         """
-        current_fp = _bounds_fingerprint(_resolve_bounds(overrides))
+        current_fp = _bounds_fingerprint(_resolve_bounds(overrides, method))
 
         with self._lock:
             # Load from disk if not cached
-            if bean_id not in self._cache:
-                path = self._campaign_path(bean_id)
-                fp_path = self._fingerprint_path(bean_id)
+            if campaign_key not in self._cache:
+                path = self._campaign_path(campaign_key)
+                fp_path = self._fingerprint_path(campaign_key)
                 if path.exists():
-                    self._cache[bean_id] = Campaign.from_json(path.read_text())
-                    self._fingerprints[bean_id] = (
+                    self._cache[campaign_key] = Campaign.from_json(path.read_text())
+                    self._fingerprints[campaign_key] = (
                         fp_path.read_text().strip() if fp_path.exists() else ""
                     )
                 else:
-                    self._cache[bean_id] = self._create_fresh_campaign(overrides)
-                    self._fingerprints[bean_id] = current_fp
-                    self._save_campaign_unlocked(bean_id)
+                    self._cache[campaign_key] = self._create_fresh_campaign(overrides, method)
+                    self._fingerprints[campaign_key] = current_fp
+                    self._save_campaign_unlocked(campaign_key)
 
             # Check if overrides changed → rebuild with new bounds
-            stored_fp = self._fingerprints.get(bean_id, "")
+            stored_fp = self._fingerprints.get(campaign_key, "")
             if stored_fp and stored_fp != current_fp:
-                old_campaign = self._cache[bean_id]
+                old_campaign = self._cache[campaign_key]
                 measurements_df = old_campaign.measurements
-                new_campaign = self._create_fresh_campaign(overrides)
+                new_campaign = self._create_fresh_campaign(overrides, method)
                 if not measurements_df.empty:
-                    baybe_cols = BAYBE_PARAM_COLUMNS + ["taste"]
+                    param_cols = _get_param_columns(method)
+                    baybe_cols = param_cols + ["taste"]
                     # Allow out-of-range measurements: historical data from the
                     # old bounds is still informative for the surrogate model.
                     new_campaign.add_measurements(
                         measurements_df[baybe_cols],
                         numerical_measurements_must_be_within_tolerance=False,
                     )
-                self._cache[bean_id] = new_campaign
-                self._fingerprints[bean_id] = current_fp
-                self._save_campaign_unlocked(bean_id)
+                self._cache[campaign_key] = new_campaign
+                self._fingerprints[campaign_key] = current_fp
+                self._save_campaign_unlocked(campaign_key)
 
-            return self._cache[bean_id]
+            return self._cache[campaign_key]
 
     async def recommend(
         self,
-        bean_id: str,
+        campaign_key: str,
         overrides: dict | None = None,
+        method: str = "espresso",
     ) -> dict:
         """Generate a recommendation. Runs in thread pool (BayBE blocks 3-10s).
 
         Args:
-            bean_id: UUID of the bean.
+            campaign_key: Compound key "{bean_id}__{method}__{setup_id}".
             overrides: Per-bean parameter range overrides.
+            method: Brew method for parameter set selection.
         """
 
         def _recommend():
-            campaign = self.get_or_create_campaign(bean_id, overrides)
+            campaign = self.get_or_create_campaign(campaign_key, overrides, method)
             with self._lock:
                 campaign.clear_cache()
                 rec_df = campaign.recommend(batch_size=1)
-                self._save_campaign_unlocked(bean_id)
+                self._save_campaign_unlocked(campaign_key)
             rec = rec_df.iloc[0].to_dict()
 
             # Round to practical precision
-            for param, step in ROUNDING_RULES.items():
+            rounding = _get_rounding_rules(method)
+            for param, step in rounding.items():
                 if param in rec:
                     rec[param] = _round_value(float(rec[param]), step)
 
@@ -208,58 +313,65 @@ class OptimizerService:
 
     def add_measurement(
         self,
-        bean_id: str,
+        campaign_key: str,
         measurement: dict,
         overrides: dict | None = None,
+        method: str = "espresso",
     ) -> None:
         """Record a measurement. Runs synchronously (fast).
 
         Args:
-            bean_id: UUID of the bean.
-            measurement: dict with 6 BayBE param keys + "taste".
+            campaign_key: Compound key "{bean_id}__{method}__{setup_id}".
+            measurement: dict with method-specific BayBE param keys + "taste".
                          Extra keys (recommendation_id, etc.) are filtered out.
             overrides: Per-bean parameter range overrides.
+            method: Brew method for parameter set selection.
         """
-        campaign = self.get_or_create_campaign(bean_id, overrides)
-        # Only include BayBE columns + taste
-        baybe_data = {k: measurement[k] for k in BAYBE_PARAM_COLUMNS + ["taste"]}
+        campaign = self.get_or_create_campaign(campaign_key, overrides, method)
+        # Only include method-appropriate BayBE columns + taste
+        param_cols = _get_param_columns(method)
+        baybe_data = {k: measurement[k] for k in param_cols + ["taste"] if k in measurement}
         df = pd.DataFrame([baybe_data])
         with self._lock:
             campaign.add_measurements(df)
-            self._save_campaign_unlocked(bean_id)
+            self._save_campaign_unlocked(campaign_key)
 
     def rebuild_campaign(
         self,
-        bean_id: str,
+        campaign_key: str,
         measurements_df: pd.DataFrame,
         overrides: dict | None = None,
+        method: str = "espresso",
     ) -> Campaign:
         """Disaster recovery: rebuild campaign from measurement data.
 
         Args:
-            bean_id: UUID of the bean.
+            campaign_key: Compound key "{bean_id}__{method}__{setup_id}".
             measurements_df: DataFrame with BayBE columns + taste.
             overrides: Per-bean parameter range overrides.
+            method: Brew method for parameter set selection.
         """
-        campaign = self._create_fresh_campaign(overrides)
+        campaign = self._create_fresh_campaign(overrides, method)
         if not measurements_df.empty:
-            baybe_cols = BAYBE_PARAM_COLUMNS + ["taste"]
+            param_cols = _get_param_columns(method)
+            baybe_cols = param_cols + ["taste"]
             campaign.add_measurements(
                 measurements_df[baybe_cols],
                 numerical_measurements_must_be_within_tolerance=False,
             )
-        current_fp = _bounds_fingerprint(_resolve_bounds(overrides))
+        current_fp = _bounds_fingerprint(_resolve_bounds(overrides, method))
         with self._lock:
-            self._cache[bean_id] = campaign
-            self._fingerprints[bean_id] = current_fp
-            self._save_campaign_unlocked(bean_id)
+            self._cache[campaign_key] = campaign
+            self._fingerprints[campaign_key] = current_fp
+            self._save_campaign_unlocked(campaign_key)
         return campaign
 
     def get_recommendation_insights(
         self,
-        bean_id: str,
+        campaign_key: str,
         rec_dict: dict,
         overrides: dict | None = None,
+        method: str = "espresso",
     ) -> dict:
         """Compute insight metadata for a recommendation.
 
@@ -274,7 +386,7 @@ class OptimizerService:
 
         Must be called *after* recommend() completes (they both use _lock separately).
         """
-        campaign = self.get_or_create_campaign(bean_id, overrides)
+        campaign = self.get_or_create_campaign(campaign_key, overrides, method)
 
         with self._lock:
             meta_rec = campaign.recommender
@@ -329,7 +441,8 @@ class OptimizerService:
 
             if not is_random and shot_count >= 2:
                 try:
-                    rec_df = pd.DataFrame([{k: rec_dict[k] for k in BAYBE_PARAM_COLUMNS}])
+                    param_cols = _get_param_columns(method)
+                    rec_df = pd.DataFrame([{k: rec_dict[k] for k in param_cols if k in rec_dict}])
                     stats = campaign.posterior_stats(rec_df)
                     predicted_mean = round(float(stats["taste_mean"].iloc[0]), 1)
                     predicted_std = round(float(stats["taste_std"].iloc[0]), 1)
@@ -351,10 +464,10 @@ class OptimizerService:
             "shot_count": shot_count,
         }
 
-    def _save_campaign_unlocked(self, bean_id: str) -> None:
+    def _save_campaign_unlocked(self, campaign_key: str) -> None:
         """Save campaign JSON + bounds fingerprint to disk. Must be called with lock held."""
-        campaign = self._cache[bean_id]
-        self._campaign_path(bean_id).write_text(campaign.to_json())
-        fp = self._fingerprints.get(bean_id, "")
+        campaign = self._cache[campaign_key]
+        self._campaign_path(campaign_key).write_text(campaign.to_json())
+        fp = self._fingerprints.get(campaign_key, "")
         if fp:
-            self._fingerprint_path(bean_id).write_text(fp)
+            self._fingerprint_path(campaign_key).write_text(fp)

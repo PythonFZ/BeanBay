@@ -29,6 +29,15 @@ async def lifespan(app: FastAPI):
     # Initialize optimizer service
     app.state.optimizer = OptimizerService(settings.campaigns_dir)
 
+    # Migrate legacy campaign files (bare bean_id → new key format)
+    import logging as _logging
+
+    _migrated = app.state.optimizer.migrate_legacy_campaigns()
+    if _migrated:
+        _logging.getLogger(__name__).info(
+            "Migrated %d legacy campaign file(s) to new key format", _migrated
+        )
+
     yield
     # Shutdown: nothing to clean up
 
