@@ -145,6 +145,7 @@ def test_trigger_recommend_generates_and_redirects(active_client):
     mock_optimizer = MagicMock()
     mock_optimizer.recommend = AsyncMock(return_value=fake_rec)
     mock_optimizer.get_recommendation_insights = MagicMock(return_value=fake_insights)
+    mock_optimizer.get_transfer_metadata = MagicMock(return_value=None)
     app.state.optimizer = mock_optimizer
 
     response = active_client.post("/brew/recommend", follow_redirects=False)

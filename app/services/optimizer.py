@@ -14,6 +14,12 @@ import json
 import threading
 import uuid
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from app.models.bean import Bean
 
 import pandas as pd
 from baybe.campaign import Campaign
@@ -244,6 +250,8 @@ class OptimizerService:
         campaign_key: str,
         overrides: dict | None = None,
         method: str = "espresso",
+        target_bean: "Bean | None" = None,
+        db: "Session | None" = None,
     ) -> Campaign:
         """Get campaign from cache, disk, or create fresh. Thread-safe.
 
@@ -251,11 +259,20 @@ class OptimizerService:
         (i.e. the user changed parameter overrides), the campaign is
         rebuilt from its existing measurements with the new bounds.
 
+        When creating a fresh campaign and target_bean + db are provided,
+        attempts to use transfer learning if similar beans exist.
+
         Args:
             campaign_key: Compound key "{bean_id}__{method}__{setup_id}".
             overrides: Per-bean parameter range overrides (from Bean.parameter_overrides).
             method: Brew method for parameter set selection.
+            target_bean: Bean ORM object for transfer learning lookup (optional).
+            db: SQLAlchemy Session for similarity queries (optional).
         """
+        # Import here to avoid circular imports at module load time
+        from app.services.similarity import SimilarityService
+        from app.services.transfer_learning import build_transfer_campaign
+
         current_fp = _bounds_fingerprint(_resolve_bounds(overrides, method))
 
         with self._lock:
@@ -269,7 +286,33 @@ class OptimizerService:
                         fp_path.read_text().strip() if fp_path.exists() else ""
                     )
                 else:
-                    self._cache[campaign_key] = self._create_fresh_campaign(overrides, method)
+                    # Try transfer learning for new campaigns when bean+db provided
+                    campaign = None
+                    if target_bean is not None and db is not None:
+                        similar_beans = SimilarityService().find_similar_beans(
+                            target_bean, method, db
+                        )
+                        if similar_beans:
+                            result = build_transfer_campaign(
+                                target_bean, similar_beans, method, overrides, db
+                            )
+                            if result is not None:
+                                campaign, metadata = result
+                                # Write transfer metadata file
+                                transfer_path = self._campaigns_dir / f"{campaign_key}.transfer"
+                                transfer_path.write_text(
+                                    json.dumps(
+                                        {
+                                            "contributing_beans": metadata.contributing_beans,
+                                            "total_training_measurements": metadata.total_training_measurements,
+                                        }
+                                    )
+                                )
+
+                    if campaign is None:
+                        campaign = self._create_fresh_campaign(overrides, method)
+
+                    self._cache[campaign_key] = campaign
                     self._fingerprints[campaign_key] = current_fp
                     self._save_campaign_unlocked(campaign_key)
 
@@ -281,11 +324,15 @@ class OptimizerService:
                 new_campaign = self._create_fresh_campaign(overrides, method)
                 if not measurements_df.empty:
                     param_cols = _get_param_columns(method)
-                    baybe_cols = param_cols + ["taste"]
+                    # For transfer campaigns the measurements include bean_task — filter to
+                    # only the standard BayBE columns so we can add them to a fresh campaign.
+                    available_cols = [
+                        c for c in param_cols + ["taste"] if c in measurements_df.columns
+                    ]
                     # Allow out-of-range measurements: historical data from the
                     # old bounds is still informative for the surrogate model.
                     new_campaign.add_measurements(
-                        measurements_df[baybe_cols],
+                        measurements_df[available_cols],
                         numerical_measurements_must_be_within_tolerance=False,
                     )
                 self._cache[campaign_key] = new_campaign
@@ -294,11 +341,20 @@ class OptimizerService:
 
             return self._cache[campaign_key]
 
+    def get_transfer_metadata(self, campaign_key: str) -> dict | None:
+        """Return transfer metadata dict if this campaign was seeded via transfer learning."""
+        path = self._campaigns_dir / f"{campaign_key}.transfer"
+        if path.exists():
+            return json.loads(path.read_text())
+        return None
+
     async def recommend(
         self,
         campaign_key: str,
         overrides: dict | None = None,
         method: str = "espresso",
+        target_bean: "Bean | None" = None,
+        db: "Session | None" = None,
     ) -> dict:
         """Generate a recommendation. Runs in thread pool (BayBE blocks 3-10s).
 
@@ -306,10 +362,14 @@ class OptimizerService:
             campaign_key: Compound key "{bean_id}__{method}__{setup_id}".
             overrides: Per-bean parameter range overrides.
             method: Brew method for parameter set selection.
+            target_bean: Bean ORM object for transfer learning lookup (optional).
+            db: SQLAlchemy Session for similarity queries (optional).
         """
 
         def _recommend():
-            campaign = self.get_or_create_campaign(campaign_key, overrides, method)
+            campaign = self.get_or_create_campaign(
+                campaign_key, overrides, method, target_bean=target_bean, db=db
+            )
             with self._lock:
                 campaign.clear_cache()
                 rec_df = campaign.recommend(batch_size=1)
@@ -334,6 +394,7 @@ class OptimizerService:
         measurement: dict,
         overrides: dict | None = None,
         method: str = "espresso",
+        target_bean_id: str | None = None,
     ) -> None:
         """Record a measurement. Runs synchronously (fast).
 
@@ -343,11 +404,15 @@ class OptimizerService:
                          Extra keys (recommendation_id, etc.) are filtered out.
             overrides: Per-bean parameter range overrides.
             method: Brew method for parameter set selection.
+            target_bean_id: Bean ID to set as bean_task for transfer learning campaigns.
         """
         campaign = self.get_or_create_campaign(campaign_key, overrides, method)
         # Only include method-appropriate BayBE columns + taste
         param_cols = _get_param_columns(method)
         baybe_data = {k: measurement[k] for k in param_cols + ["taste"] if k in measurement}
+        # For transfer learning campaigns, include the bean_task column
+        if target_bean_id is not None and self.get_transfer_metadata(campaign_key) is not None:
+            baybe_data["bean_task"] = target_bean_id
         df = pd.DataFrame([baybe_data])
         with self._lock:
             campaign.add_measurements(df)

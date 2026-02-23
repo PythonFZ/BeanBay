@@ -16,6 +16,17 @@
 
 {% include "brew/_recommendation_insights.html" %}
 
+{% if transfer_metadata %}
+<div class="transfer-badge mb-md">
+  <span class="badge badge-info">✦ Seeded from {{ transfer_metadata.contributing_beans | length }} similar bean{% if transfer_metadata.contributing_beans | length != 1 %}s{% endif %}</span>
+  <div class="transfer-details">
+    {% for b in transfer_metadata.contributing_beans %}
+    <span class="transfer-bean-tag">{{ b.name }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Rate this shot -->
 <div class="card">
   <h2 class="card-title mb-md">Rate This Shot</h2>

@@ -209,7 +209,13 @@ async def trigger_recommend(request: Request, db: Session = Depends(get_db)):
     method = _get_method_from_setup(active_setup)
 
     optimizer = request.app.state.optimizer
-    rec = await optimizer.recommend(campaign_key, overrides=bean.parameter_overrides, method=method)
+    rec = await optimizer.recommend(
+        campaign_key,
+        overrides=bean.parameter_overrides,
+        method=method,
+        target_bean=bean,
+        db=db,
+    )
 
     # Compute recommendation insights (explore vs exploit explanation + predicted taste)
     insights = optimizer.get_recommendation_insights(
@@ -218,6 +224,10 @@ async def trigger_recommend(request: Request, db: Session = Depends(get_db)):
     rec["insights"] = insights
     rec["method"] = method
     rec["setup_id"] = str(active_setup.id) if active_setup else None
+
+    # Retrieve transfer metadata (set on first campaign creation if transfer learning applied)
+    transfer_metadata = optimizer.get_transfer_metadata(campaign_key)
+    rec["transfer_metadata"] = transfer_metadata
 
     # Store recommendation to disk (survives server restarts)
     rec_id = rec["recommendation_id"]
@@ -250,6 +260,7 @@ async def show_recommendation(
 
     ratio = _brew_ratio(rec.get("dose_in", 0), rec.get("target_yield", 0))
     insights = rec.get("insights", {})
+    transfer_metadata = rec.get("transfer_metadata")
 
     return templates.TemplateResponse(
         request,
@@ -260,6 +271,7 @@ async def show_recommendation(
             "recommendation_id": recommendation_id,
             "ratio": ratio,
             "insights": insights,
+            "transfer_metadata": transfer_metadata,
         },
     )
 
@@ -406,7 +418,11 @@ async def record_measurement(
                 "taste": taste,
             }
         optimizer.add_measurement(
-            campaign_key, measurement_data, overrides=bean.parameter_overrides, method=method
+            campaign_key,
+            measurement_data,
+            overrides=bean.parameter_overrides,
+            method=method,
+            target_bean_id=str(bean.id),
         )
 
     # Clean up pending recommendation (from both in-memory and file store)

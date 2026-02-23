@@ -1881,3 +1881,38 @@ body {
 .setup-card-retired {
   opacity: 0.6;
 }
+
+/* Transfer learning badge */
+.transfer-badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.badge-info {
+  background: #2a3a4a;
+  color: #7ab8e0;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.transfer-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  width: 100%;
+}
+
+.transfer-bean-tag {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+}
