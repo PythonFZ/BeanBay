@@ -12,6 +12,28 @@ Runs as a single Docker container. No cloud, no accounts — just your espresso 
 
 ---
 
+## How It Works
+
+<p align="center">
+  <img src="assets/3.png" width="250" alt="Brew page — select setup and bean, then get a recommendation"/>
+  <img src="assets/4.png" width="250" alt="Recipe recommendation — optimized grind, temp, dose, yield and more"/>
+  <img src="assets/5.png" width="250" alt="Rate your shot — taste score, extraction time, flavor profile"/>
+</p>
+
+**1. Choose your setup and bean** → **2. Get an AI-optimized recipe** → **3. Brew, taste, and rate**
+
+The optimizer starts with random exploration to map the parameter space, then progressively narrows in on your best recipe. Every shot — even failed ones — teaches it something.
+
+<p align="center">
+  <img src="assets/6.png" width="250" alt="Insights — optimization status, progress chart, parameter map"/>
+  <img src="assets/2.png" width="250" alt="Equipment management — brew setups, grinders, brewers, filters, water"/>
+  <img src="assets/1.png" width="250" alt="Navigation sidebar"/>
+</p>
+
+**Track your progress** with optimization status, score charts, and parameter maps. **Manage your equipment** — grinders, brewers, filters, water recipes — organized into brew setups. Supports both espresso and pour-over methods with transfer learning across similar beans.
+
+---
+
 ## Quick Start (Docker)
 
 ```bash
