@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models.bean import Bean
@@ -26,7 +26,11 @@ def _build_shot_dicts(
     db: Session, bean_id: Optional[str], min_taste: Optional[float]
 ) -> list[dict]:
     """Query measurements with optional filters, return enriched dicts."""
-    query = db.query(Measurement).join(Bean, Measurement.bean_id == Bean.id)
+    query = (
+        db.query(Measurement)
+        .join(Bean, Measurement.bean_id == Bean.id)
+        .options(joinedload(Measurement.brew_setup))
+    )
 
     if bean_id:
         query = query.filter(Measurement.bean_id == bean_id)
@@ -59,6 +63,7 @@ def _build_shot_dicts(
                 "target_yield": m.target_yield,
                 "brew_ratio": brew_ratio,
                 "flavor_tags": tags,
+                "brew_setup_name": m.brew_setup.name if m.brew_setup else None,
             }
         )
     return shots
@@ -274,6 +279,7 @@ async def shot_edit_save(
         "target_yield": m.target_yield,
         "brew_ratio": brew_ratio,
         "flavor_tags": shot["flavor_tags_list"],
+        "brew_setup_name": m.brew_setup.name if m.brew_setup else None,
     }
 
     # Render updated shot row for oob swap
