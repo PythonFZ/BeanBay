@@ -1,0 +1,24 @@
+{# Compact brew setup card — used in the Brew Setups section of equipment/index.html #}
+<div class="setup-card">
+  <div class="setup-card-name">{{ setup.name }}</div>
+  <div class="setup-card-components">
+    {% if setup.brewer %}
+      <span class="setup-card-component">{{ setup.brewer.name }}</span>
+    {% endif %}
+    {% if setup.grinder %}
+      <span class="setup-card-component">{{ setup.grinder.name }}</span>
+    {% endif %}
+    {% if setup.paper %}
+      <span class="setup-card-component">{{ setup.paper.name }}</span>
+    {% endif %}
+    {% if setup.water_recipe %}
+      <span class="setup-card-component">{{ setup.water_recipe.name }}</span>
+    {% endif %}
+    {% if setup.brew_method %}
+      <span class="setup-card-component">{{ setup.brew_method.name }}</span>
+    {% endif %}
+  </div>
+  <div class="card-actions">
+    <a href="/equipment/setups/{{ setup.id }}/edit" class="btn btn-secondary btn-sm">Edit</a>
+  </div>
+</div>

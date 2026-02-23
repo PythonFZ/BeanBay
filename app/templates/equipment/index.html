@@ -16,6 +16,41 @@
   </label>
 </div>
 
+<!-- ── Brew Setups ───────────────────────────────────────────── -->
+<button
+  class="collapsible-toggle"
+  onclick="this.nextElementSibling.classList.toggle('open'); this.setAttribute('aria-expanded', this.nextElementSibling.classList.contains('open'))"
+  aria-expanded="true"
+>
+  <div class="equipment-section-title">
+    Brew Setups
+    <span class="badge badge-count">{{ setup_count }}</span>
+  </div>
+  <span aria-hidden="true">&#9662;</span>
+</button>
+<div class="collapsible-content open" id="setup-section">
+  <div style="padding-top: var(--spacing-sm);">
+    <a
+      href="/equipment/setups/new"
+      class="btn btn-secondary btn-sm"
+      style="display:inline-block; margin-bottom: var(--spacing-sm);"
+    >
+      + Create New Setup
+    </a>
+    <div id="setup-list">
+      {% if setups %}
+        {% for setup in setups %}
+          {% include "equipment/_setup_card.html" %}
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding: var(--spacing-lg) 0;" id="setup-empty">
+          <div class="empty-state-text">No setups yet — create your first one above.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 <!-- ── Grinders ─────────────────────────────────────────────── -->
 <button
   class="collapsible-toggle"
