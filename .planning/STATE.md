@@ -1,7 +1,7 @@
 # Project State: BeanBay
 
 **Last updated:** 2026-02-23
-**Current phase:** Phase 15 — Multi-Method Brewing ✅ COMPLETE
+**Current phase:** Phase 16 — Cross-Brew Transfer Learning ✅ COMPLETE
 
 ## Project Reference
 
@@ -17,28 +17,28 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 | v1 MVP | 1-6 | 16 | ✅ Shipped | 2026-02-22 |
 | v0.1.0 Release & Deploy | 7-9 | 5 | ✅ Shipped | 2026-02-22 |
 | v0.1.1 UX Polish & Manual Brew | 10-12 | 8 | ✅ Shipped | 2026-02-22 |
-| v0.2.0 Multi-Method & Intelligence | 13+ | TBD | 🔄 Planning | 2026-02-22 |
+| v0.2.0 Multi-Method & Intelligence | 13-16 | 11 | ✅ Shipped | 2026-02-23 |
 
 ## Current Position
 
-Phase: 15 of 16 (Multi-Method Brewing) — ✅ Complete
-Plan: 3 of 3 complete
-Status: Phase complete — ready for Phase 16
-Last activity: 2026-02-23 — Completed 15-03-PLAN.md (multi-method tests + setup context badge in history, 210 tests)
+Phase: 16 of 16 (Cross-Brew Transfer Learning) — ✅ Complete
+Plan: 2 of 2 complete
+Status: Phase 16 complete — v0.2.0 feature-complete
+Last activity: 2026-02-23 — Completed 16-02-PLAN.md (transfer learning wire-up, 240 tests)
 
-Progress: [███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 73% (11/15 v0.2.0 plans est.)
+Progress: [████████████████████████████████████████████] 100% (13/13 v0.2.0 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-  - Total plans completed: 38 (v1: 16, v0.1.0: 5, v0.1.1: 8, v0.2.0: 9)
-  - Total phases completed: 15 complete, 16 pending
-  - All milestones shipped same day (Feb 22, 2026)
+  - Total plans completed: 41 (v1: 16, v0.1.0: 5, v0.1.1: 8, v0.2.0: 12)
+  - Total phases completed: 16 complete
+  - All milestones shipped same day (Feb 22-23, 2026)
 
 ## Accumulated Context
 
 ### Key Technical Decisions
-See: .planning/PROJECT.md (Key Decisions table — 22 decisions tracked)
+See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Branding
 - **Name:** BeanBay | **Domain:** beanbay.coffee
@@ -62,6 +62,12 @@ See: .planning/PROJECT.md (Key Decisions table — 22 decisions tracked)
 - **Legacy migration at startup:** `migrate_legacy_campaigns()` runs in `main.py` lifespan, transparently maps old `{bean_id}` keys to `{bean_id}__espresso__None`
 - **brew_setup_name in shot dict:** Template has no ORM access, so `brew_setup_name` added as plain key to shot dicts in `_build_shot_dicts()` (not ORM relationship access)
 
+### Phase 16 Key Decisions
+- **Transfer metadata as .transfer sidecar file:** Consistent with .bounds sidecar pattern; easy presence-check without loading campaign
+- **transfer_metadata stored in pending recommendation dict:** Survives server restarts; show_recommendation reads metadata without extra optimizer call
+- **TYPE_CHECKING guard for Bean/Session imports in optimizer.py:** Avoids circular import at module load time; type hints only, not runtime
+- **None return when no training data:** Even with matching similar_beans, if no actual DB measurements exist for those beans, returns None gracefully
+
 ### Quick Tasks Completed
 
 | ID | Task | Date |
@@ -72,13 +78,14 @@ See: .planning/PROJECT.md (Key Decisions table — 22 decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-23
-- **What happened:** Executed Phase 15 (3/3 plans). Campaign key scoped to bean+method+setup, pour-over param set, brew_setup_id recorded on Measurement, setup context badge in history. 210/210 tests passing.
-- **Where we left off:** Phase 15 complete (3/3 plans done). Ready for Phase 16.
+- **What happened:** Executed Phase 16 (2/2 plans). SimilarityService, TransferLearningService, full optimizer wire-up, router integration, template badge. 240/240 tests passing.
+- **Where we left off:** Phase 16 complete. v0.2.0 feature-complete.
 
 ### Next Steps
-1. Plan Phase 16 (Cross-Brew Transfer Learning)
-2. Execute Phase 16 plans
+1. Tag v0.2.0 release
+2. Update Docker image
+3. Plan next milestone (backlog)
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-23 — Phase 15 complete (3/3 plans, campaign_key by bean+method+setup, pour-over params, 210 tests)*
+*Last updated: 2026-02-23 — Phase 16 complete (2/2 plans, transfer learning fully wired, 240 tests)*
