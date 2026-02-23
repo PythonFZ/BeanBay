@@ -138,6 +138,42 @@ def _bounds_fingerprint(bounds: dict[str, tuple[float, float]]) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()[:16]
 
 
+def _build_parameters(
+    bounds: dict[str, tuple[float, float]],
+    method: str = "espresso",
+) -> list:
+    """Build BayBE parameter list for the given method and resolved bounds.
+
+    Extracted so both OptimizerService and TransferLearningService can share
+    the parameter-building logic without code duplication.
+
+    Args:
+        bounds: Resolved parameter bounds (from _resolve_bounds).
+        method: Brew method — determines parameter set.
+
+    Returns:
+        List of BayBE parameter objects.
+    """
+    if method == "pour-over":
+        return [
+            NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
+            NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
+            NumericalContinuousParameter(name="bloom_weight", bounds=bounds["bloom_weight"]),
+            NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
+            NumericalContinuousParameter(name="brew_volume", bounds=bounds["brew_volume"]),
+        ]
+    else:
+        # espresso and all other methods — 5 continuous + 1 categorical
+        return [
+            NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
+            NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
+            NumericalContinuousParameter(name="preinfusion_pct", bounds=bounds["preinfusion_pct"]),
+            NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
+            NumericalContinuousParameter(name="target_yield", bounds=bounds["target_yield"]),
+            CategoricalParameter(name="saturation", values=["yes", "no"], encoding="OHE"),
+        ]
+
+
 class OptimizerService:
     """Thread-safe BayBE campaign manager with disk persistence.
 
@@ -171,26 +207,7 @@ class OptimizerService:
             method: Brew method — determines parameter set (espresso vs pour-over).
         """
         bounds = _resolve_bounds(overrides, method)
-        if method == "pour-over":
-            parameters = [
-                NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
-                NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
-                NumericalContinuousParameter(name="bloom_weight", bounds=bounds["bloom_weight"]),
-                NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
-                NumericalContinuousParameter(name="brew_volume", bounds=bounds["brew_volume"]),
-            ]
-        else:
-            # espresso and all other methods — 5 continuous + 1 categorical
-            parameters = [
-                NumericalContinuousParameter(name="grind_setting", bounds=bounds["grind_setting"]),
-                NumericalContinuousParameter(name="temperature", bounds=bounds["temperature"]),
-                NumericalContinuousParameter(
-                    name="preinfusion_pct", bounds=bounds["preinfusion_pct"]
-                ),
-                NumericalContinuousParameter(name="dose_in", bounds=bounds["dose_in"]),
-                NumericalContinuousParameter(name="target_yield", bounds=bounds["target_yield"]),
-                CategoricalParameter(name="saturation", values=["yes", "no"], encoding="OHE"),
-            ]
+        parameters = _build_parameters(bounds, method)
         searchspace = SearchSpace.from_product(parameters=parameters)
         target = NumericalTarget(name="taste")
         objective = SingleTargetObjective(target=target)
