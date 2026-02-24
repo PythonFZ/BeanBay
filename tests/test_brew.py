@@ -7,6 +7,7 @@ import uuid
 from app.main import app
 from app.models.bean import Bean
 from app.models.measurement import Measurement
+from app.models.pending_recommendation import PendingRecommendation
 
 
 # ---------------------------------------------------------------------------
@@ -161,15 +162,14 @@ def test_trigger_recommend_generates_and_redirects(active_client):
 # ---------------------------------------------------------------------------
 
 
-def test_show_recommendation_displays_params(active_client, sample_bean):
+def test_show_recommendation_displays_params(active_client, sample_bean, db_session):
     """GET /brew/recommend/{id} shows recipe params in large display."""
     rec_id = str(uuid.uuid4())
     rec = _make_rec(rec_id)
 
-    # Seed pending_recommendations in app state
-    if not hasattr(app.state, "pending_recommendations"):
-        app.state.pending_recommendations = {}
-    app.state.pending_recommendations[rec_id] = rec
+    # Seed pending recommendation in DB
+    db_session.add(PendingRecommendation(recommendation_id=rec_id, recommendation_data=rec))
+    db_session.commit()
 
     response = active_client.get(f"/brew/recommend/{rec_id}")
     assert response.status_code == 200
@@ -532,7 +532,7 @@ def test_record_with_flavor_tags(active_client, sample_bean, db_session):
 # ---------------------------------------------------------------------------
 
 
-def test_recommendation_shows_insights(active_client, sample_bean):
+def test_recommendation_shows_insights(active_client, sample_bean, db_session):
     """GET /brew/recommend/{id} shows phase_label from insights in the response."""
     rec_id = str(uuid.uuid4())
     rec = _make_rec(rec_id)
@@ -546,9 +546,9 @@ def test_recommendation_shows_insights(active_client, sample_bean):
         "shot_count": 0,
     }
 
-    if not hasattr(app.state, "pending_recommendations"):
-        app.state.pending_recommendations = {}
-    app.state.pending_recommendations[rec_id] = rec
+    # Seed pending recommendation in DB
+    db_session.add(PendingRecommendation(recommendation_id=rec_id, recommendation_data=rec))
+    db_session.commit()
 
     response = active_client.get(f"/brew/recommend/{rec_id}")
     assert response.status_code == 200
@@ -556,7 +556,7 @@ def test_recommendation_shows_insights(active_client, sample_bean):
     assert "Exploring randomly" in response.text
 
 
-def test_recommendation_insights_no_prediction_first_shot(active_client, sample_bean):
+def test_recommendation_insights_no_prediction_first_shot(active_client, sample_bean, db_session):
     """First recommendation (random phase) shows no predicted_range in response."""
     rec_id = str(uuid.uuid4())
     rec = _make_rec(rec_id)
@@ -570,9 +570,9 @@ def test_recommendation_insights_no_prediction_first_shot(active_client, sample_
         "shot_count": 0,
     }
 
-    if not hasattr(app.state, "pending_recommendations"):
-        app.state.pending_recommendations = {}
-    app.state.pending_recommendations[rec_id] = rec
+    # Seed pending recommendation in DB
+    db_session.add(PendingRecommendation(recommendation_id=rec_id, recommendation_data=rec))
+    db_session.commit()
 
     response = active_client.get(f"/brew/recommend/{rec_id}")
     assert response.status_code == 200

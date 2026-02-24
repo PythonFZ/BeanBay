@@ -122,8 +122,8 @@ def test_is_legacy_key_new_format():
 
 
 def test_legacy_migration_renames_file(tmp_path):
-    """migrate_legacy_campaigns renames {uuid}.json to {uuid}__espresso__none.json."""
-    from app.services.optimizer import OptimizerService
+    """migrate_legacy_campaign_files renames {uuid}.json to {uuid}__espresso__none.json."""
+    from app.services.migration import migrate_legacy_campaign_files
 
     campaigns_dir = tmp_path / "campaigns"
     campaigns_dir.mkdir()
@@ -136,8 +136,7 @@ def test_legacy_migration_renames_file(tmp_path):
     # We don't actually load it, just rename it — write a placeholder
     old_json.write_text("{}")
 
-    optimizer = OptimizerService(campaigns_dir)
-    count = optimizer.migrate_legacy_campaigns()
+    count = migrate_legacy_campaign_files(campaigns_dir)
 
     assert count == 1
     # New file exists
@@ -148,8 +147,8 @@ def test_legacy_migration_renames_file(tmp_path):
 
 
 def test_legacy_migration_skips_existing(tmp_path):
-    """migrate_legacy_campaigns does not overwrite if new key file already exists."""
-    from app.services.optimizer import OptimizerService
+    """migrate_legacy_campaign_files does not overwrite if new key file already exists."""
+    from app.services.migration import migrate_legacy_campaign_files
 
     campaigns_dir = tmp_path / "campaigns"
     campaigns_dir.mkdir()
@@ -161,8 +160,7 @@ def test_legacy_migration_skips_existing(tmp_path):
     old_json.write_text('{"old": true}')
     new_json.write_text('{"new": true}')
 
-    optimizer = OptimizerService(campaigns_dir)
-    count = optimizer.migrate_legacy_campaigns()
+    count = migrate_legacy_campaign_files(campaigns_dir)
 
     # Should skip (new already exists)
     assert count == 0
@@ -176,11 +174,14 @@ def test_legacy_migration_skips_existing(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_optimizer_pour_over_campaign_has_bloom_param(tmp_campaigns_dir):
+def test_optimizer_pour_over_campaign_has_bloom_param(db_session):
     """OptimizerService pour-over campaign includes bloom_weight parameter."""
     from app.services.optimizer import OptimizerService
 
-    optimizer = OptimizerService(tmp_campaigns_dir)
+    def _factory():
+        return db_session
+
+    optimizer = OptimizerService(_factory)
     campaign_key = make_campaign_key("bean1", "pour-over", "setup1")
     campaign = optimizer.get_or_create_campaign(campaign_key, method="pour-over")
 
@@ -192,11 +193,14 @@ def test_optimizer_pour_over_campaign_has_bloom_param(tmp_campaigns_dir):
     assert "preinfusion_pct" not in param_names
 
 
-def test_optimizer_espresso_campaign_has_saturation(tmp_campaigns_dir):
+def test_optimizer_espresso_campaign_has_saturation(db_session):
     """OptimizerService espresso campaign includes saturation categorical parameter."""
     from app.services.optimizer import OptimizerService
 
-    optimizer = OptimizerService(tmp_campaigns_dir)
+    def _factory():
+        return db_session
+
+    optimizer = OptimizerService(_factory)
     campaign_key = make_campaign_key("bean1", "espresso", None)
     campaign = optimizer.get_or_create_campaign(campaign_key, method="espresso")
 
