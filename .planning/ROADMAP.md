@@ -6,6 +6,7 @@
 - ✅ **v0.1.0 Release & Deploy** — Phases 7-9 (shipped 2026-02-22)
 - ✅ **v0.1.1 UX Polish & Manual Brew** — Phases 10-12 (shipped 2026-02-22)
 - ✅ **v0.2.0 Multi-Method & Intelligence** — Phases 13-16 (shipped 2026-02-23)
+- 🔄 **v0.3.0 Equipment Intelligence & Parameter Evolution** — Phases 17-22
 
 ## Phases
 
@@ -30,146 +31,293 @@
 
 </details>
 
-### Phase 13: Data Model Evolution & Bean Metadata
+<details>
+<summary>✅ v0.2.0 Multi-Method & Intelligence (Phases 13-16) — SHIPPED 2026-02-23</summary>
 
-**Goal:** Database schema supports equipment, brew methods, brew setups, and enhanced bean metadata — the foundation everything else builds on
+4 phases, 13 plans. Equipment management (grinders, brewers, papers, water), brew setups, multi-method brewing (espresso + pour-over), method-scoped campaigns, enhanced bean metadata (process, variety, bags), cross-brew transfer learning via BayBE TaskParameter. 240 tests.
 
-**Depends on:** Nothing (schema-first, no UI yet)
-**Requirements:** DATA-01, DATA-02, DATA-03, META-01, META-02, META-03, UI-03
-
-**Why this first:** Every subsequent phase (equipment UI, brew method selection, transfer learning) depends on these models existing. The data model is the most expensive thing to change later. This phase also extends the bean model with process/variety/bags — metadata that transfer learning (Phase 16) needs for similarity matching.
-
-**What gets built:**
-- New SQLAlchemy models: BrewMethod, Grinder, Brewer, Paper, WaterRecipe, BrewSetup
-- Extended Bean model: roast_date, process, variety fields
-- New Bag model (multiple bags per coffee, optional cost)
-- Measurement updated to reference BrewSetup
-- Alembic migrations for all schema changes
-- Data migration: existing measurements get a default "espresso" method + default setup
-- Bean detail page updated to show/edit enhanced metadata (process, variety, roast date, bags)
-
-**Plans:** 3 plans
-
-Plans:
-- [x] 13-01-PLAN.md — New SQLAlchemy models + extended Bean/Measurement + model tests
-- [x] 13-02-PLAN.md — Alembic migration with data migration for existing measurements
-- [x] 13-03-PLAN.md — Bean metadata UI + bag management on detail page
-
-**Success Criteria:**
-1. All new models exist with proper relationships and constraints
-2. Alembic migration runs cleanly on existing database with data
-3. Existing measurements are associated with a default espresso brew setup
-4. Bean create/edit forms include optional process, variety, roast_date fields
-5. Bag management (add bag, view bags) works on bean detail page
-6. All existing tests pass; new model tests added
-
-### Phase 14: Equipment Management
-
-**Goal:** User can create and manage all equipment types (grinders, brewers, papers, water recipes) and assemble them into brew setups
-
-**Depends on:** Phase 13 (models must exist)
-**Requirements:** EQUIP-01, EQUIP-02, EQUIP-03, EQUIP-04, EQUIP-05, EQUIP-06, UI-01
-
-**What gets built:**
-- Equipment management section in navigation
-- Grinder CRUD: name, dial type (stepped with step size, or stepless)
-- Brewer CRUD: name, associated method type
-- Paper/filter CRUD: name, optional description
-- Water recipe CRUD: name, mineral composition (GH, KH, Ca, Mg, Na, Cl, SO4 — all optional), notes
-- Brew setup assembly: pick grinder + brewer + paper + water → named setup
-- Grind setting range becomes grinder-specific (not global default)
-
-**Plans:** 5 plans
-
-Plans:
-- [x] 14-01-PLAN.md — Schema migration + model updates (equipment fields, retire lifecycle, brewer-method association)
-- [x] 14-02-PLAN.md — Equipment router, page layout, grinder/brewer CRUD with modal forms
-- [x] 14-03-PLAN.md — Paper/water recipe CRUD + equipment tests
-- [x] 14-04-PLAN.md — Brew setup assembly wizard (multi-step)
-- [x] 14-05-PLAN.md — Retire/restore lifecycle, brew page setup selection, comprehensive tests
-
-**Success Criteria:**
-1. User can create, edit, retire/restore grinders with stepped/stepless dial configuration
-2. User can create, edit, retire/restore brewers with method association
-3. User can create, edit, retire/restore papers/filters
-4. User can create, edit, retire/restore water recipes with optional mineral details and notes
-5. User can assemble equipment into named brew setups via wizard
-6. Equipment pages are accessible from main navigation
-7. Phone-first UI with 48px+ touch targets maintained
-8. Brew page shows setup + bean selection panels
-9. Retire-only lifecycle with auto-cascade to setups
-
-### Phase 15: Multi-Method Brewing & Setup Integration
-
-**Goal:** Brew flow supports multiple methods — user selects a brew setup before getting recommendations, and each method+setup+bean combo gets its own BayBE campaign
-
-**Depends on:** Phase 14 (equipment + setups must exist)
-**Requirements:** METHOD-01, METHOD-02, METHOD-03, UI-02, UI-04
-
-**What gets built:**
-- Brew method selection in brew flow (espresso, pour-over, other)
-- Method-specific parameter sets: espresso keeps current 6 params; pour-over adds bloom (g or % of brew volume)
-- Brew setup selection/creation integrated into brew page
-- Campaign scoping: campaign key = bean_id + method + setup_id (not just bean_id)
-- OptimizerService updated to handle method-specific parameters and setup-scoped campaigns
-- Existing data migration: all existing campaigns mapped to default espresso setup
-- Backward compatibility: espresso-only users see no disruption
-
-**Success Criteria:**
-1. User can select a brew method when starting a brew session
-2. Pour-over method shows bloom parameter; espresso shows current 6 params
-3. User can select or create a brew setup before getting recommendations
-4. Each bean+method+setup combination has its own BayBE campaign
-5. Existing espresso data works seamlessly with a default setup
-6. History, insights, analytics pages show method/setup context
-7. All existing tests pass; new method-specific tests added
-
-### Phase 16: Cross-Brew Transfer Learning
-
-**Goal:** New beans with known properties get smarter first recommendations by learning from similar beans in history, instead of starting from random exploration
-
-**Depends on:** Phase 13 (bean metadata — process, variety for similarity matching), Phase 15 (method-scoped campaigns with matching search spaces)
-**Requirements:** INTEL-01, INTEL-02, INTEL-03, INTEL-04
-
-**Why this last:** Transfer learning requires: (a) bean metadata for similarity matching (Phase 13), (b) method-scoped campaigns with matching parameter spaces (Phase 15), and (c) enough historical data structure to find "similar" beans. It's the capstone feature — the key differentiator that makes BeanBay smarter over time.
-
-**What gets built:**
-- Similarity matching service: find beans with matching process + variety that have measurements in the same method+parameter configuration
-- BayBE TaskParameter integration: training tasks from similar beans, test task for new bean
-- Transfer learning activation logic: only when search spaces match and similar beans exist
-- UI indicator: show when transfer learning was applied, which beans contributed
-- Fallback: graceful degradation to standard random exploration when no similar beans found
-
-**Success Criteria:**
-1. When creating a campaign for a bean with process+variety metadata, system finds similar beans
-2. Similar beans' measurements are fed as training tasks via BayBE TaskParameter
-3. First recommendation for new bean is informed by similar beans (not purely random)
-4. Transfer learning only activates when search spaces match
-5. User can see transfer learning status and contributing beans
-6. Falls back gracefully to random exploration when no matches found
-7. Existing beans without metadata work normally (no transfer learning, no errors)
+</details>
 
 ---
 
-## Phase Ordering Rationale
+## v0.3.0 — Equipment Intelligence & Parameter Evolution
+
+**Theme:** Make BeanBay's optimizer aware of what your machine can actually do. Replace hardcoded parameter sets with a capability-driven system where the Brewer declares its capabilities, and BayBE's search space is built dynamically. Add 5 new brew methods, migrate campaign storage to DB, and modernize the frontend with daisyUI.
+
+**Key decisions:**
+- Equipment modeling is **capability-driven, not tier-based**. A brewer declares what it can do (capability flags). Tiers are derived for UX progressive disclosure, not stored.
+- `preinfusion_pct` (55-100%) is replaced with physical-unit `preinfusion_time` (seconds) + optional `preinfusion_pressure` (bar).
+- `saturation` parameter is deprecated — redundant with preinfusion time (0 = no saturation, >0 = saturation).
+- Parameter Registry pattern (`PARAMETER_REGISTRY` dict) makes adding new methods trivial and drives dynamic search space building.
+- Campaign JSON files migrate into a `campaigns` DB table. `pending_recommendations.json` moves to DB. Data separate from app for easy backups.
+- Frontend Phase 1: htmx + Tailwind + daisyUI (coffee theme) — low effort, big visual improvement.
+
+**Research basis:** `.planning/research/ESPRESSO_MACHINE_CAPABILITIES.md`, `.planning/research/BREWING_PARAMETERS.md`
 
 ```
-Phase 13 (Data Model)
-    ↓
-Phase 14 (Equipment UI)
-    ↓
-Phase 15 (Multi-Method Brewing)
-    ↓
-Phase 16 (Transfer Learning)
+Dependency Graph:
+
+   17 (Campaign DB) ─────────────────────────┐
+                                              │
+   18 (Brewer Caps) → 19 (Param Registry)    ├── v0.3.0
+                       ├→ 20 (Espresso Evo)  │
+                       └→ 21 (New Methods)    │
+                                              │
+   22 (Frontend daisyUI) ────────────────────┘
+
+Wave 1: Phases 17, 18, 22 (independent — parallel)
+Wave 2: Phase 19 (depends on 18)
+Wave 3: Phases 20, 21 (parallel — both depend on 19)
 ```
 
-**Sequential, not parallel.** Each phase builds directly on the previous:
-- 13 creates the models that 14 needs to build CRUD for
-- 14 creates the equipment/setups that 15 needs for brew flow integration
-- 15 creates method-scoped campaigns that 16 needs for matching search spaces
-- 16 is the capstone — it needs everything else in place
+### Phase 17: Campaign Storage Migration
 
-**Why not parallel phases?** Unlike v0.1.1 where nav and taste UX were independent, every v0.2.0 feature depends on the data model (Phase 13). Equipment UI can't exist without equipment models. Methods can't be selected without setups existing. Transfer learning can't match without metadata + method-scoped campaigns.
+**Goal:** Campaign state and pending recommendations live in SQLite instead of JSON files on disk — cleaner data management, atomic operations, easier backup/restore, and data lives separate from app code
+
+**Depends on:** Nothing (independent architectural improvement)
+**Requirements:** Campaign JSON → DB table, pending_recommendations.json → DB table, backward-compatible migration, campaign rebuild from measurements still works
+
+**Why this phase:** Campaign files (JSON on disk) are the most fragile part of BeanBay's architecture. Moving them to SQLite enables atomic writes, proper backup (single DB file), and eliminates file I/O race conditions. This is the highest-priority architectural change identified in research. Independent of capability work — can run in parallel.
+
+**What gets built:**
+- New `Campaign` SQLAlchemy model: `id`, `campaign_key` (unique), `campaign_json` (text blob), `bounds_fingerprint`, `transfer_metadata` (nullable JSON), `created_at`, `updated_at`
+- New `PendingRecommendation` model: `id`, `campaign_key`, `recommendation_data` (JSON), `recommendation_id` (unique), `created_at`
+- OptimizerService refactored: reads/writes campaign state to DB instead of `{key}.json` files
+- Migration script: reads existing `.json`/`.bounds`/`.transfer` files, inserts into DB
+- Startup migration: runs once, moves all campaign files to DB, leaves originals as backup
+- `rebuild_campaign` still works (measurements in SQLite are source of truth)
+- Data directory becomes optional (only for legacy compatibility during migration)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — to be created by /gsd-plan-phase
+
+**Success Criteria:**
+1. All campaign state stored in SQLite `campaigns` table
+2. Pending recommendations stored in `pending_recommendations` table
+3. Existing campaign files migrated automatically on first startup after upgrade
+4. OptimizerService works identically (same API, thread-safe, in-memory cache + DB persistence)
+5. Campaign rebuild from measurements works as before
+6. All existing tests pass; new storage tests added
+7. Data directory can be deleted after successful migration (campaigns + pending_recs)
+
+### Phase 18: Brewer Capability Model
+
+**Goal:** Brewers declare their capabilities (temperature control, pre-infusion, pressure profiling, flow control) via structured flags, enabling the optimizer to build equipment-aware search spaces
+
+**Depends on:** Nothing (model extension, independent of campaign storage)
+**Requirements:** Capability columns on Brewer, create/edit UI for capabilities, existing brewers get sensible defaults
+
+**Why this phase:** The Brewer model currently has no concept of what a machine can do — it's just a name. The entire capability-driven parameter system depends on brewers having capability flags. This is Phase A from the espresso machine capabilities research: "Low effort, high impact."
+
+**What gets built:**
+- Brewer model extended with capability columns:
+  - `temp_control_type`: enum `none` / `preset` / `pid` / `profiling` (default: `pid`)
+  - `temp_min`, `temp_max`, `temp_step`: floats for temperature range/resolution
+  - `preinfusion_type`: enum `none` / `fixed` / `timed` / `adjustable_pressure` / `programmable` / `manual` (default: `none`)
+  - `preinfusion_max_time`: float (seconds)
+  - `pressure_control_type`: enum `fixed` / `opv_adjustable` / `electronic` / `manual_profiling` / `programmable` (default: `fixed`)
+  - `pressure_min`, `pressure_max`: floats (bar)
+  - `flow_control_type`: enum `none` / `manual_paddle` / `manual_valve` / `programmable` (default: `none`)
+  - `has_bloom`: boolean (default: `false`)
+  - `stop_mode`: enum `manual` / `timed` / `volumetric` / `gravimetric` (default: `manual`)
+- Alembic migration adding columns with defaults (non-breaking for existing data)
+- Brewer create/edit forms updated with capability fields (progressive disclosure — basic fields shown first, advanced expandable)
+- `derive_tier(brewer)` utility function for UX tier labels (Tier 1-5, derived not stored)
+- Existing brewers default to `temp_control_type="pid"`, all others at `none`/`fixed`/`false`
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — to be created by /gsd-plan-phase
+
+**Success Criteria:**
+1. Brewer model has all capability columns with appropriate defaults
+2. Alembic migration runs cleanly on existing databases
+3. Existing brewers retain their data and get sensible default capabilities
+4. Brewer create/edit UI shows capability fields with progressive disclosure
+5. `derive_tier()` correctly classifies machines (Gaggia stock → T1, Sage DB → T3, Decent DE1 → T5)
+6. No impact on existing optimizer behavior (capabilities stored but not yet consumed)
+7. All existing tests pass; new capability model tests added
+
+### Phase 19: Parameter Registry & Dynamic Search Space
+
+**Goal:** Replace hardcoded `_build_parameters()` with a data-driven `PARAMETER_REGISTRY` that maps method → parameter definitions, enabling dynamic search space construction based on method + brewer capabilities
+
+**Depends on:** Phase 18 (brewer capabilities must exist to drive parameter selection)
+**Requirements:** PARAMETER_REGISTRY dict for all 7 methods, capability-aware parameter building, backward-compatible with existing campaigns
+
+**Why this phase:** The current optimizer has hardcoded espresso and pour-over parameter sets. Adding any new method or making espresso parameters equipment-aware requires replacing this with a registry pattern. This is the architectural pivot that unlocks Phases 20 and 21.
+
+**What gets built:**
+- `PARAMETER_REGISTRY` dict defining core + advanced parameters for all 7 methods (espresso, pour-over, french-press, aeropress, turkish, moka-pot, cold-brew) with `requires` capability conditions
+- `build_parameters_for_setup(method, brewer, overrides)` function replacing `_build_parameters()`
+- Dynamic parameter filtering: parameters with `requires` conditions are included/excluded based on brewer capability flags
+- Default bounds and rounding rules moved into registry (eliminating separate `DEFAULT_BOUNDS`, `POUR_OVER_DEFAULT_BOUNDS`, etc.)
+- Backward compatibility: espresso with `temp_control_type=pid` + no other capabilities → produces same 5+1 params as current
+- Pour-over backward compatibility: same 5 params as current
+- Method-specific grind range suggestions via `METHOD_GRIND_PERCENTAGES` (percentage-based defaults from grinder range)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — to be created by /gsd-plan-phase
+
+**Success Criteria:**
+1. `PARAMETER_REGISTRY` defines parameters for all 7 brew methods
+2. `build_parameters_for_setup()` dynamically builds BayBE parameters from registry + capabilities
+3. Espresso campaigns with current default brewer produce identical parameters as before (backward compatible)
+4. Pour-over campaigns produce identical parameters as before
+5. Parameters correctly filtered by brewer capabilities (e.g., no temperature if `temp_control_type=none`)
+6. Grind range suggestions work for all method × grinder combinations
+7. All existing tests pass; registry and dynamic building tests added
+
+### Phase 20: Espresso Parameter Evolution
+
+**Goal:** Espresso parameters evolve from the current flat set to a capability-driven model — `preinfusion_pct` → `preinfusion_time`, `saturation` deprecated, new parameters (brew_pressure, pressure_profile, bloom_pause, flow_rate) available based on machine capabilities
+
+**Depends on:** Phase 18 (brewer capabilities), Phase 19 (parameter registry for dynamic building)
+**Requirements:** New espresso params in Measurement table, preinfusion_pct migration, saturation deprecation, capability-conditional UI, existing data preserved
+
+**Why this phase:** This is where the research hits the codebase. Users with capable machines (Sage DB, Lelit Bianca, Decent DE1) get parameters their machines actually support. Users with basic machines see only what they can control. The `preinfusion_pct` → `preinfusion_time` migration makes parameters physically meaningful.
+
+**What gets built:**
+- New nullable columns on Measurement: `preinfusion_time`, `preinfusion_pressure`, `brew_pressure`, `pressure_profile`, `bloom_pause`, `flow_rate`, `temp_profile`, `brew_mode`
+- Alembic migration for new columns (nullable — no impact on existing rows)
+- `preinfusion_pct` → `preinfusion_time` data migration for existing measurements:
+  - Linear mapping: `preinfusion_time = ((pct - 55) / 45) * preinfusion_max_time`
+  - Default `preinfusion_max_time = 15s` (Sage DB range)
+  - `preinfusion_pct` column kept but excluded from new BayBE campaigns
+- `saturation` excluded from new BayBE campaigns (column kept for historical data)
+- Recommendation display and recording updated for new parameters
+- Brew form shows capability-appropriate parameters:
+  - Tier 1: grind, dose, yield (3 params)
+  - Tier 2: + temperature (4 params)
+  - Tier 3: + preinfusion_time (5 params)
+  - Tier 4: + brew_pressure and/or pressure_profile (5-6 params)
+  - Tier 5: + flow_rate, preinfusion_pressure, bloom_pause (6-8 params)
+- Campaign migration: new campaigns use new params; existing campaigns rebuilt on next access if brewer capabilities are set
+- `brew_mode` categorical: `pressure_priority` / `flow_priority` for machines that support both (e.g., Decent DE1, Meticulous Espresso)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — to be created by /gsd-plan-phase
+
+**Success Criteria:**
+1. New espresso parameters stored in Measurement table
+2. `preinfusion_pct` data migrated to `preinfusion_time` for existing measurements
+3. `saturation` no longer included in new BayBE campaigns
+4. Brew form dynamically shows/hides parameters based on brewer capabilities
+5. Tier 1 machine users see only 3 parameters; Tier 5 see up to 8
+6. Existing campaigns continue to work (backward compatible)
+7. New campaigns use physical-unit parameters (seconds, bar, ml/s)
+8. Recommendation display adapts to show only relevant parameters
+9. All existing tests pass; parameter evolution tests added
+
+### Phase 21: New Brew Methods
+
+**Goal:** Add 5 new brew methods (french-press, aeropress, turkish, moka-pot, cold-brew) with method-specific parameters from the registry, extending BeanBay from 2 methods to 7
+
+**Depends on:** Phase 19 (parameter registry must exist to define method parameters)
+**Requirements:** New methods in BrewMethod table, new param columns on Measurement, method-specific brew forms, campaign creation for new methods
+
+**Why this phase:** The parameter registry (Phase 19) makes adding new methods trivial — each method is a dict entry. This phase exercises that architecture by adding 5 methods at once. Users who brew with AeroPress, French Press, etc. can now optimize those too.
+
+**What gets built:**
+- 5 new BrewMethod seed entries: `french-press`, `aeropress`, `turkish`, `moka-pot`, `cold-brew`
+- New nullable columns on Measurement for method-specific params not already present:
+  - `water_amount` (ml — french-press, aeropress, turkish, moka-pot, cold-brew)
+  - `steep_time` (seconds — french-press, aeropress, cold-brew; minutes stored for cold-brew display)
+  - `agitation` (categorical — french-press, aeropress)
+  - `num_pours` (discrete — pour-over advanced)
+  - `heat_level` (categorical — turkish, moka-pot)
+  - `preheat_water` (categorical — moka-pot)
+  - `brew_temp` (categorical — cold-brew: fridge/room_temp)
+  - `brew_method_variant` (categorical — aeropress: standard/inverted)
+  - `num_boils` (discrete — turkish)
+- Method-specific brew forms (dynamic, driven by registry):
+  - Core params always shown
+  - Advanced params in expandable section
+- Method selection in equipment → brewer assignment (brewer can be linked to multiple methods)
+- Brewer-method association extended: new methods linkable to brewers
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — to be created by /gsd-plan-phase
+
+**Success Criteria:**
+1. All 7 brew methods available in BeanBay (espresso, pour-over, french-press, aeropress, turkish, moka-pot, cold-brew)
+2. Each method's parameters come from PARAMETER_REGISTRY
+3. Method-specific brew forms show correct parameters
+4. Campaigns created per method with correct search spaces
+5. BayBE optimization works for all new methods (recommend + record cycle)
+6. New measurement columns nullable (no impact on existing data)
+7. All existing tests pass; new method tests added for at least 3 of the 5 new methods
+
+### Phase 22: Frontend Modernization — daisyUI
+
+**Goal:** Replace the current hand-rolled CSS with Tailwind CSS + daisyUI component library using the built-in `coffee` theme — consistent design system, responsive components, dark mode support, dramatically improved visual polish
+
+**Depends on:** Nothing (independent of backend phases — can run in parallel with any wave)
+**Requirements:** Tailwind + daisyUI integrated, all pages restyled, existing functionality preserved, phone-first responsive
+
+**Why this phase:** The current CSS is hand-rolled and growing unwieldy. daisyUI provides a complete component library (buttons, cards, modals, forms, drawers) with a built-in `coffee` theme that matches BeanBay's identity perfectly. This is the "Phase 1" frontend recommendation from research: low effort, big visual improvement.
+
+**What gets built:**
+- Tailwind CSS + daisyUI installed and configured
+- `coffee` theme activated as default (daisyUI built-in — warm browns, cream accents)
+- Base template updated with Tailwind/daisyUI classes
+- All pages restyled with daisyUI components:
+  - Buttons → `btn`, `btn-primary`, `btn-ghost`
+  - Cards → `card`, `card-body`
+  - Forms → `input`, `select`, `range`, `toggle`
+  - Navigation → `navbar`, `drawer` (replaces custom hamburger/drawer)
+  - Modals → `modal` (replaces custom modal pattern)
+  - Tables → `table` (replaces custom table styles)
+  - Badges → `badge` (replaces custom badge styles)
+  - Alerts/toasts → `alert`
+- Responsive layout preserved (phone-first, desktop sidebar)
+- 48px+ touch targets maintained
+- Dark theme via daisyUI theme system (no custom CSS variables needed)
+- Custom CSS reduced to layout-specific overrides only
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — to be created by /gsd-plan-phase
+
+**Success Criteria:**
+1. Tailwind CSS + daisyUI installed and configured with `coffee` theme
+2. All pages render correctly with new styling
+3. Responsive behavior preserved (phone hamburger/drawer, desktop sidebar)
+4. Touch targets remain ≥48px on phone
+5. Visual consistency across all pages (same component patterns everywhere)
+6. Custom CSS reduced by >60% (daisyUI handles most styling)
+7. All existing functionality works unchanged
+8. All existing tests pass
+
+---
+
+## Phase Ordering Rationale (v0.3.0)
+
+```
+Wave 1 (parallel):  17 (Campaign DB)     18 (Brewer Caps)     22 (Frontend daisyUI)
+                                                ↓
+Wave 2:                                  19 (Param Registry)
+                                          ↓            ↓
+Wave 3 (parallel):                  20 (Espresso)  21 (New Methods)
+```
+
+**Three independent roots:** Phases 17, 18, and 22 have no dependencies on each other and can execute in parallel (Wave 1). Campaign DB migration is pure infrastructure. Brewer capabilities extend the model. Frontend modernization is CSS-only — no backend changes.
+
+**Phase 19 is the architectural pivot:** It depends on Phase 18 (brewer capability flags must exist for capability-driven parameter filtering) but is independent of Phases 17 and 22. The Parameter Registry replaces hardcoded `_build_parameters()` and unlocks both espresso evolution and new methods.
+
+**Phases 20 and 21 are parallel leaves:** Both consume the Parameter Registry from Phase 19 but don't depend on each other. Espresso evolution modifies existing parameters while new methods add entirely new ones — no file conflicts.
+
+**Phase 22 (daisyUI) runs independently** at any point — it only touches templates and static assets.
 
 ## Progress
 
@@ -182,3 +330,9 @@ Phase 16 (Transfer Learning)
 | 14 | v0.2.0 | 5/5 | Complete | 2026-02-23 |
 | 15 | v0.2.0 | 3/3 | Complete | 2026-02-23 |
 | 16 | v0.2.0 | 2/2 | Complete | 2026-02-23 |
+| 17 | v0.3.0 | 0/? | Planned | — |
+| 18 | v0.3.0 | 0/? | Planned | — |
+| 19 | v0.3.0 | 0/? | Planned | — |
+| 20 | v0.3.0 | 0/? | Planned | — |
+| 21 | v0.3.0 | 0/? | Planned | — |
+| 22 | v0.3.0 | 0/? | Planned | — |
