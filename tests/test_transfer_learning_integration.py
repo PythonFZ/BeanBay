@@ -125,7 +125,7 @@ def test_no_transfer_learning_when_no_similar_beans(db_session, optimizer_servic
 
 
 def test_transfer_file_written_when_transfer_learning_activates(db_session, optimizer_service):
-    """A .transfer metadata file is written when transfer learning activates."""
+    """Transfer metadata is stored in DB when transfer learning activates."""
     source = make_bean(db_session, "Source", process="natural", variety="Bourbon")
     target = make_bean(db_session, "Target", process="natural", variety="Bourbon")
     for _ in range(4):
@@ -135,20 +135,20 @@ def test_transfer_file_written_when_transfer_learning_activates(db_session, opti
     optimizer_service.get_or_create_campaign(
         campaign_key, method="espresso", target_bean=target, db=db_session
     )
-    transfer_path = optimizer_service._campaigns_dir / f"{campaign_key}.transfer"
-    assert transfer_path.exists()
+    metadata = optimizer_service.get_transfer_metadata(campaign_key)
+    assert metadata is not None
 
 
 def test_no_transfer_file_for_standard_campaign(db_session, optimizer_service):
-    """No .transfer metadata file is written when no transfer learning occurs."""
+    """No transfer metadata stored in DB when no transfer learning occurs."""
     target = make_bean(db_session, "Unique Bean", process="washed", variety="Geisha")
 
     campaign_key = campaign_key_for(target)
     optimizer_service.get_or_create_campaign(
         campaign_key, method="espresso", target_bean=target, db=db_session
     )
-    transfer_path = optimizer_service._campaigns_dir / f"{campaign_key}.transfer"
-    assert not transfer_path.exists()
+    metadata = optimizer_service.get_transfer_metadata(campaign_key)
+    assert metadata is None
 
 
 def test_get_transfer_metadata_returns_dict_for_transfer_campaign(db_session, optimizer_service):
@@ -257,4 +257,4 @@ def test_espresso_and_pour_over_dont_cross_seed(db_session, optimizer_service):
     )
     # No espresso data from source → fresh campaign with no measurements
     assert campaign.measurements.empty
-    assert not (optimizer_service._campaigns_dir / f"{campaign_key}.transfer").exists()
+    assert optimizer_service.get_transfer_metadata(campaign_key) is None
