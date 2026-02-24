@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 17+18+22 in progress (Wave 2 — all independent)
-Plan: 17-01 ✅, 17-02 ✅, 18-01 ✅, 22-01 ✅, 22-02 ✅, 22-04 ✅, 22-05 ✅ — 7 plans complete across waves
-Status: Phase 17 Plan 03 remains (test fixture updates); Phase 22 Plan 06 ready (remaining templates)
-Last activity: 2026-02-24 — Completed 22-05-PLAN.md (7 insights/analytics templates restyled with daisyUI, Chart.js preserved)
+Phase: 18+22 in progress (Wave 1 — both independent)
+Plan: 17-01 ✅, 17-02 ✅, 17-03 ✅, 18-01 ✅, 22-01 ✅, 22-02 ✅, 22-04 ✅, 22-05 ✅ — 8 plans complete across waves
+Status: Phase 17 COMPLETE. Phase 22 Plan 06 ready (remaining templates). Phase 18 Plan 02 ready.
+Last activity: 2026-02-24 — Completed Phase 17 (Campaign Storage Migration) — all 3 plans done
 
-Progress: [███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] ~13% (7/~18 v0.3.0 plans)
+Progress: [████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] ~15% (8/~18 v0.3.0 plans)
 
 ## Performance Metrics
 
@@ -84,6 +84,10 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 - **Idempotency via check-before-insert:** Simple query before each insert, skip if row exists. Clear, auditable. No UPSERT complexity needed for a once-per-startup migration.
 - **Original files left as backup after migration:** migrate_campaigns_to_db() and migrate_pending_to_db() do NOT delete the source files. Cleanup is manual after confirming successful migration.
 
+### Phase 17 Plan 03 Key Decisions
+- **Per-test ephemeral in-memory SQLite for migration tests:** Migration functions call session.commit()/close() internally, which breaks the shared db_session fixture's rollback isolation. Each migration test gets its own engine+session via migration_engine fixture — no cross-test contamination.
+- **Session factory fixture pattern:** `def _test_session_factory(): return db_session` — simple closure lets OptimizerService share the test's DB connection for rollback-based cleanup.
+
 ### Phase 16 Key Decisions
 - **Transfer metadata as .transfer sidecar file:** Consistent with .bounds sidecar pattern; easy presence-check without loading campaign
 - **transfer_metadata stored in pending recommendation dict:** Survives server restarts; show_recommendation reads metadata without extra optimizer call
@@ -138,14 +142,15 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-24
-- **What happened:** Executed Phase 22 Plan 05. Restyled 7 insights/analytics templates. insights/index.html uses daisyUI card pattern; _convergence_badge.html uses badge badge-lg with color variants; _progress_chart.html and _heatmap_chart.html preserve chart-container class and all Chart.js JavaScript exactly. analytics/index.html uses daisyUI cards; _stats_card.html preserves stats-grid custom class with Tailwind stat items; _comparison_table.html preserves comparison-list/comparison-bean/recipe-grid with Tailwind param blocks.
-- **Where we left off:** Phase 22 Plan 05 complete. Next: Phase 22 Plan 06 (remaining templates).
+- **What happened:** Completed Phase 17 (Campaign Storage Migration). Plan 17-03: updated conftest.py with session_factory-based optimizer_service fixture; updated test_optimizer.py with DB assertions instead of file checks; updated test_brew.py with PendingRecommendation DB seeding instead of app.state dict; updated test_brew_multimethod.py with standalone migrate_legacy_campaign_files() and session factory; created test_migration.py with 11 new migration tests using per-test ephemeral SQLite for isolation. Fixed critical test isolation bug where migration functions' session.commit()/close() broke rollback isolation. 278 tests pass, 6 pre-existing failures only.
+- **Where we left off:** Phase 17 complete. Phase 22 Plan 06 and Phase 18 Plan 02 are next candidates.
 
 ### Next Steps
-1. Execute Phase 22 Plan 06 — remaining templates with daisyUI
-2. Execute Phase 17 Plan 03 — test fixture updates + new migration tests (17-03-PLAN.md)
-3. Wave 1/2 phases (17, 18, 22) are independent — can continue in any order
+1. Execute Phase 22 Plan 06 — remaining templates + cleanup with daisyUI
+2. Execute Phase 18 Plan 02 — Brewer capability route updates + form progressive disclosure
+3. Fix 3 test_transfer_learning_integration.py failures (update to use DB-based transfer metadata assertions)
+4. Wave 1/2 phases (18, 22) are independent — can continue in any order
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-24 — Completed 22-05 (7 insights/analytics templates → daisyUI cards, Chart.js preserved, custom layout classes kept)*
+*Last updated: 2026-02-24 — Phase 17 COMPLETE (Campaign Storage Migration — 3 plans, 8 commits, 278 tests passing)*
