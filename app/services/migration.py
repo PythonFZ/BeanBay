@@ -10,8 +10,50 @@ from pathlib import Path
 
 from app.models.campaign_state import CampaignState
 from app.models.pending_recommendation import PendingRecommendation
+from app.services.optimizer_key import is_legacy_key, make_campaign_key
 
 logger = logging.getLogger(__name__)
+
+
+def migrate_legacy_campaign_files(campaigns_dir: Path) -> int:
+    """Rename legacy bare-UUID campaign files to the new compound-key format.
+
+    Old format: {bean_id}.json / {bean_id}.bounds / {bean_id}.transfer
+    New format: {bean_id}__espresso__none.json / ...
+
+    This is a filesystem rename that must run *before* migrate_campaigns_to_db()
+    so that the DB migration picks up the correctly-named files.
+
+    Args:
+        campaigns_dir: Directory containing campaign files.
+
+    Returns:
+        Number of campaign files migrated (renamed) in this run.
+    """
+    if not campaigns_dir.exists():
+        return 0
+
+    migrated = 0
+    for json_file in sorted(campaigns_dir.glob("*.json")):
+        stem = json_file.stem
+        if is_legacy_key(stem):
+            new_key = make_campaign_key(stem, "espresso", None)
+            new_json = campaigns_dir / f"{new_key}.json"
+            new_bounds = campaigns_dir / f"{new_key}.bounds"
+            new_transfer = campaigns_dir / f"{new_key}.transfer"
+            # Only migrate if target doesn't already exist
+            if not new_json.exists():
+                json_file.rename(new_json)
+                old_bounds = campaigns_dir / f"{stem}.bounds"
+                if old_bounds.exists() and not new_bounds.exists():
+                    old_bounds.rename(new_bounds)
+                old_transfer = campaigns_dir / f"{stem}.transfer"
+                if old_transfer.exists() and not new_transfer.exists():
+                    old_transfer.rename(new_transfer)
+                migrated += 1
+                logger.info("Renamed legacy campaign %r to %r", stem, new_key)
+
+    return migrated
 
 
 def migrate_campaigns_to_db(session_factory, campaigns_dir: Path) -> int:
@@ -22,7 +64,8 @@ def migrate_campaigns_to_db(session_factory, campaigns_dir: Path) -> int:
     in the DB (idempotent). Leaves original files in place as backup.
 
     Args:
-        session_factory: Callable that returns a session context manager (e.g. SessionLocal).
+        session_factory: Callable that returns a new SQLAlchemy Session
+                         (e.g. SessionLocal — a plain sessionmaker, NOT a context manager).
         campaigns_dir: Directory containing campaign .json/.bounds/.transfer files.
 
     Returns:
@@ -33,7 +76,8 @@ def migrate_campaigns_to_db(session_factory, campaigns_dir: Path) -> int:
         return 0
 
     migrated = 0
-    with session_factory() as session:
+    session = session_factory()
+    try:
         for json_file in sorted(campaigns_dir.glob("*.json")):
             campaign_key = json_file.stem
 
@@ -86,6 +130,8 @@ def migrate_campaigns_to_db(session_factory, campaigns_dir: Path) -> int:
 
         if migrated:
             session.commit()
+    finally:
+        session.close()
 
     logger.info("Campaign migration complete: %d campaign(s) migrated", migrated)
     return migrated
@@ -99,7 +145,8 @@ def migrate_pending_to_db(session_factory, data_dir: Path) -> int:
     the DB (idempotent).
 
     Args:
-        session_factory: Callable that returns a session context manager (e.g. SessionLocal).
+        session_factory: Callable that returns a new SQLAlchemy Session
+                         (e.g. SessionLocal — a plain sessionmaker, NOT a context manager).
         data_dir: Directory containing pending_recommendations.json.
 
     Returns:
@@ -119,7 +166,8 @@ def migrate_pending_to_db(session_factory, data_dir: Path) -> int:
         return 0
 
     migrated = 0
-    with session_factory() as session:
+    session = session_factory()
+    try:
         for rec_id, rec_data in data.items():
             # Idempotency check — skip if row already exists
             exists = (
@@ -140,6 +188,8 @@ def migrate_pending_to_db(session_factory, data_dir: Path) -> int:
 
         if migrated:
             session.commit()
+    finally:
+        session.close()
 
     logger.info("Pending recommendation migration complete: %d record(s) migrated", migrated)
     return migrated

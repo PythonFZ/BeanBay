@@ -8,8 +8,13 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
 from app.routers import analytics, beans, brew, equipment, history, insights
+from app.services.migration import (
+    migrate_campaigns_to_db,
+    migrate_legacy_campaign_files,
+    migrate_pending_to_db,
+)
 from app.services.optimizer import OptimizerService
 
 # Import models so they're registered with Base
@@ -19,24 +24,34 @@ import app.models  # noqa: F401
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup/shutdown lifecycle."""
-    # Startup: ensure directories exist
+    import logging as _logging
+
+    _log = _logging.getLogger(__name__)
+
+    # Startup: ensure data directory exists
     settings.data_dir.mkdir(parents=True, exist_ok=True)
-    settings.campaigns_dir  # property creates dir on access
 
     # Create tables if they don't exist (no-op if Alembic already ran)
     Base.metadata.create_all(bind=engine)
 
-    # Initialize optimizer service
-    app.state.optimizer = OptimizerService(settings.campaigns_dir)
+    # Rename legacy campaign files (bare bean_id → new key format) before DB migration
+    campaigns_dir = settings.data_dir / "campaigns"
+    _migrated_files = migrate_legacy_campaign_files(campaigns_dir)
+    if _migrated_files:
+        _log.info("Renamed %d legacy campaign file(s) to new key format", _migrated_files)
 
-    # Migrate legacy campaign files (bare bean_id → new key format)
-    import logging as _logging
+    # Migrate campaign files from disk into DB (idempotent)
+    _migrated_campaigns = migrate_campaigns_to_db(SessionLocal, campaigns_dir)
+    if _migrated_campaigns:
+        _log.info("Migrated %d campaign(s) from disk to DB", _migrated_campaigns)
 
-    _migrated = app.state.optimizer.migrate_legacy_campaigns()
-    if _migrated:
-        _logging.getLogger(__name__).info(
-            "Migrated %d legacy campaign file(s) to new key format", _migrated
-        )
+    # Migrate pending recommendations from disk into DB (idempotent)
+    _migrated_pending = migrate_pending_to_db(SessionLocal, settings.data_dir)
+    if _migrated_pending:
+        _log.info("Migrated %d pending recommendation(s) from disk to DB", _migrated_pending)
+
+    # Initialize optimizer service with DB-backed session factory
+    app.state.optimizer = OptimizerService(SessionLocal)
 
     yield
     # Shutdown: nothing to clean up

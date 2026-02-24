@@ -13,7 +13,6 @@ Implements the core espresso optimization workflow:
 
 import json
 import uuid
-from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -21,11 +20,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
 from app.models.bean import Bean
 from app.models.brew_setup import BrewSetup
 from app.models.measurement import Measurement
+from app.models.pending_recommendation import PendingRecommendation
 from app.routers.beans import _get_active_bean
 from app.services.optimizer import (
     DEFAULT_BOUNDS,
@@ -42,48 +41,25 @@ templates = Jinja2Templates(directory="app/templates")
 # Helpers
 # ---------------------------------------------------------------------------
 
-_PENDING_FILE = "pending_recommendations.json"
+
+def _save_pending(db: Session, rec_id: str, rec: dict) -> None:
+    """Persist a pending recommendation to the DB."""
+    existing = db.query(PendingRecommendation).filter_by(recommendation_id=rec_id).first()
+    if existing is None:
+        db.add(PendingRecommendation(recommendation_id=rec_id, recommendation_data=rec))
+        db.commit()
 
 
-def _pending_path(data_dir: Path) -> Path:
-    """Return path to the pending recommendations JSON file."""
-    return data_dir / _PENDING_FILE
+def _load_pending(db: Session, rec_id: str) -> Optional[dict]:
+    """Load a single pending recommendation from the DB, or None if not found."""
+    row = db.query(PendingRecommendation).filter_by(recommendation_id=rec_id).first()
+    return row.recommendation_data if row is not None else None
 
 
-def _save_pending(data_dir: Path, rec_id: str, rec: dict) -> None:
-    """Persist a pending recommendation to disk."""
-    path = _pending_path(data_dir)
-    try:
-        data = json.loads(path.read_text()) if path.exists() else {}
-    except (json.JSONDecodeError, OSError):
-        data = {}
-    data[rec_id] = rec
-    path.write_text(json.dumps(data))
-
-
-def _load_pending(data_dir: Path, rec_id: str) -> Optional[dict]:
-    """Load a single pending recommendation from disk, or None if not found."""
-    path = _pending_path(data_dir)
-    if not path.exists():
-        return None
-    try:
-        data = json.loads(path.read_text())
-        return data.get(rec_id)
-    except (json.JSONDecodeError, OSError):
-        return None
-
-
-def _remove_pending(data_dir: Path, rec_id: str) -> None:
-    """Remove a pending recommendation from disk."""
-    path = _pending_path(data_dir)
-    if not path.exists():
-        return
-    try:
-        data = json.loads(path.read_text())
-        data.pop(rec_id, None)
-        path.write_text(json.dumps(data))
-    except (json.JSONDecodeError, OSError):
-        pass
+def _remove_pending(db: Session, rec_id: str) -> None:
+    """Remove a pending recommendation from the DB."""
+    db.query(PendingRecommendation).filter_by(recommendation_id=rec_id).delete()
+    db.commit()
 
 
 def _require_active_bean(request: Request, db: Session) -> Optional[Bean]:
@@ -229,9 +205,9 @@ async def trigger_recommend(request: Request, db: Session = Depends(get_db)):
     transfer_metadata = optimizer.get_transfer_metadata(campaign_key)
     rec["transfer_metadata"] = transfer_metadata
 
-    # Store recommendation to disk (survives server restarts)
+    # Store recommendation to DB (survives server restarts)
     rec_id = rec["recommendation_id"]
-    _save_pending(settings.data_dir, rec_id, rec)
+    _save_pending(db, rec_id, rec)
 
     return RedirectResponse(url=f"/brew/recommend/{rec_id}", status_code=303)
 
@@ -247,12 +223,7 @@ async def show_recommendation(
     if not bean:
         return RedirectResponse(url="/beans", status_code=303)
 
-    pending = getattr(request.app.state, "pending_recommendations", {})
-    rec = pending.get(recommendation_id)
-
-    if not rec:
-        # Try file-based store (survives server restarts; also covers cold start)
-        rec = _load_pending(settings.data_dir, recommendation_id)
+    rec = _load_pending(db, recommendation_id)
 
     if not rec:
         # Recommendation not found or invalid ID → back to brew
@@ -425,10 +396,8 @@ async def record_measurement(
             target_bean_id=str(bean.id),
         )
 
-    # Clean up pending recommendation (from both in-memory and file store)
-    pending = getattr(request.app.state, "pending_recommendations", {})
-    pending.pop(recommendation_id, None)
-    _remove_pending(settings.data_dir, recommendation_id)
+    # Clean up pending recommendation from DB
+    _remove_pending(db, recommendation_id)
 
     return RedirectResponse(url="/brew", status_code=303)
 
