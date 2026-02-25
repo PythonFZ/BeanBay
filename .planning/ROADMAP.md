@@ -345,4 +345,4 @@ Wave 3 (parallel):                  20 (Espresso)  21 (New Methods)
 | 19 | v0.3.0 | 0/3 | Planned | — |
 | 20 | v0.3.0 | 0/? | Planned | — |
 | 21 | v0.3.0 | 0/? | Planned | — |
-| 22 | v0.3.0 | 0/6 | Planned | — |
+| 22 | v0.3.0 | 6/6 | Complete | 2026-02-26 |
