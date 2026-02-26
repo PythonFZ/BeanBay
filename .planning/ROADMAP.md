@@ -201,9 +201,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Schema & Registry: rename preinfusion_pct, saturation rework, missing registry entries, Alembic migration
-- [ ] 20-02-PLAN.md — Brewer wiring: thread brewer into campaigns, structural fingerprint, outdated detection, rebuild prompt
-- [ ] 20-03-PLAN.md — Template & UI: dynamic best.html, param hints, "new" badge, flat ordered display
+- [x] 20-01-PLAN.md — Schema & Registry: rename preinfusion_pct, saturation rework, missing registry entries, Alembic migration
+- [x] 20-02-PLAN.md — Brewer wiring: thread brewer into campaigns, structural fingerprint, outdated detection, rebuild prompt
+- [x] 20-03-PLAN.md — Template & UI: dynamic best.html, param hints, "new" badge, flat ordered display
 
 **Success Criteria:**
 1. `preinfusion_pct` renamed to `preinfusion_pressure_pct` across entire codebase
@@ -243,10 +243,10 @@ Plans:
 - Method selection in equipment → brewer assignment (brewer can be linked to multiple methods)
 - Brewer-method association extended: new methods linkable to brewers
 
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD — to be created by /gsd-plan-phase
+- [ ] 21-01-PLAN.md — Method-aware template rendering (recipe card, shot modal, brew index, history wiring)
 
 **Success Criteria:**
 1. All 7 brew methods available in BeanBay (espresso, pour-over, french-press, aeropress, turkish, moka-pot, cold-brew)
@@ -338,6 +338,6 @@ Wave 3 (parallel):                  20 (Espresso)  21 (New Methods)
 | 17 | v0.3.0 | 3/3 | Complete | 2026-02-24 |
 | 18 | v0.3.0 | 2/2 | Complete | 2026-02-25 |
 | 19 | v0.3.0 | 3/3 | Complete | 2026-02-26 |
-| 20 | v0.3.0 | 0/3 | Planned | — |
+| 20 | v0.3.0 | 3/3 | Complete | 2026-02-26 |
 | 21 | v0.3.0 | 0/? | Planned | — |
 | 22 | v0.3.0 | 6/6 | Complete | 2026-02-26 |
