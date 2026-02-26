@@ -28,11 +28,11 @@ def test_root_shows_welcome_when_empty(client):
     assert "Add Your First Bean" in response.text
 
 
-def test_root_redirects_to_beans_when_beans_exist(client, sample_bean):
-    """GET / redirects to /beans when beans exist."""
+def test_root_shows_dashboard_when_beans_exist(client, sample_bean):
+    """GET / shows dashboard when beans exist (no longer redirects to /beans)."""
     response = client.get("/", follow_redirects=False)
-    assert response.status_code == 303
-    assert response.headers["location"] == "/beans"
+    assert response.status_code == 200
+    assert "Dashboard" in response.text
 
 
 # --- Bean list ---
