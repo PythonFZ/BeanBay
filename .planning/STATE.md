@@ -22,11 +22,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 23-v030-pre-release-fixes (Plan 3 of 3 complete — phase COMPLETE)
-Status: Phase 23 complete — all pre-release fixes done
-Last activity: 2026-02-26 — Completed 23-03-PLAN.md (setup wizard fix + UX polish)
+Phase: 24-home-dashboard (Plan 1 of 1 complete — phase COMPLETE)
+Status: Phase 24 complete — home dashboard shipped
+Last activity: 2026-02-26 — Completed 24-01-PLAN.md (dashboard route + template)
 
-Progress: All 5 milestones shipped (46 plans across 22 phases) + phase 23 complete (3/3 plans done)
+Progress: All 5 milestones shipped (46 plans across 22 phases) + phase 23 complete (3/3) + phase 24 complete (1/1)
 Ready for: v0.3.0 release (git tag, Docker image, changelog)
 
 ## Performance Metrics
@@ -141,6 +141,11 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 - **TYPE_CHECKING guard for Bean/Session imports in optimizer.py:** Avoids circular import at module load time; type hints only, not runtime
 - **None return when no training data:** Even with matching similar_beans, if no actual DB measurements exist for those beans, returns None gracefully
 
+### Phase 24 Plan 01 Key Decisions
+- **Root `/` renders `home.html` for returning users:** Assembles stats, recent_brews, active_bean in-route; `welcome.html` path for zero-bean users unchanged
+- **`.stats-grid` CSS reused on dashboard:** Consistent visual language with analytics page; no new CSS classes added
+- **Brand nav links changed from `/beans` to `/`:** Both mobile and sidebar brand links now point to home dashboard
+
 ### Phase 23 Plan 03 Key Decisions
 - **Error divs per-step (`id="step-N-error"`) rather than a single floating error:** Errors anchor visually to the step they belong to; clearer UX than a generic floating message
 - **Delegated `change` listener on `wizard-form`** clears all errors on any selection change — no need to wire per-radio handlers
@@ -211,8 +216,8 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-26
-- **What happened:** Completed plan 23-03. Fixed root-cause wizard bug (CSS show/hide missing). Replaced alert() validation with inline error divs. Polished confirmation step. Added loading state to submit. Phase 23 now complete (3/3 plans).
-- **Where we left off:** Phase 23 complete. Ready for v0.3.0 release.
+- **What happened:** Completed plan 24-01. Built home dashboard page at `/` with stats grid, active bean card, recent brews list, and quick actions. Brand links in nav updated to point to `/`. All 409 tests pass.
+- **Where we left off:** Phase 24 complete. Ready for v0.3.0 release.
 
 ### Next Steps
 1. v0.3.0 release (git tag, Docker image, changelog)
