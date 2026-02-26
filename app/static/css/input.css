@@ -322,6 +322,48 @@
     border-color: oklch(72% 0.123 63);
   }
 
+  /* ── Wizard step content panels — only active step is visible ── */
+  /* Plan 23-03: root cause fix — all 5 steps were visible simultaneously */
+  .wizard-step-content {
+    display: none;
+  }
+
+  .wizard-step-content.active {
+    display: block;
+  }
+
+  /* Wizard options container — vertical stack of radio cards */
+  .wizard-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Wizard option card text elements */
+  .wizard-option-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .wizard-option-meta {
+    color: oklch(70% 0.02 55);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+
+  /* "Add first" links at bottom of empty steps */
+  .wizard-add-link {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: oklch(72% 0.123 63);
+  }
+
+  .wizard-add-link:hover {
+    text-decoration: underline;
+  }
+
   /* Comparison list — bean comparison cards for analytics */
   .comparison-list {
     display: flex;
