@@ -189,9 +189,11 @@
 
 <script>
 (function() {
-  // Method-aware capability visibility — hide espresso-only fields
-  // when no pressurized method (espresso, moka-pot) is selected.
-  const PRESSURIZED_METHODS = ['espresso', 'moka-pot'];
+  // Method-aware capability visibility — only show espresso-specific
+  // capability fields (pre-infusion, pressure, flow control, bloom,
+  // stop mode) when "espresso" is selected.  Moka pots are pressurized
+  // but use fixed ~1.5 bar with no user-adjustable espresso features.
+  const ESPRESSO_METHODS = ['espresso'];
   const form = document.getElementById('brewer-form');
   if (!form) return;
 
@@ -199,14 +201,14 @@
   const espressoCaps = document.getElementById('espresso-capabilities');
   const tierBadge = document.getElementById('tier-badge');
 
-  function hasPressurizedMethod() {
+  function hasEspressoMethod() {
     return Array.from(checkboxes).some(function(cb) {
-      return cb.checked && PRESSURIZED_METHODS.indexOf(cb.dataset.methodName) !== -1;
+      return cb.checked && ESPRESSO_METHODS.indexOf(cb.dataset.methodName) !== -1;
     });
   }
 
   function updateVisibility() {
-    var show = hasPressurizedMethod();
+    var show = hasEspressoMethod();
     if (espressoCaps) espressoCaps.style.display = show ? '' : 'none';
     if (tierBadge) tierBadge.style.display = show ? '' : 'none';
   }
