@@ -86,6 +86,25 @@ def _bounds_fingerprint(bounds: dict[str, tuple[float, float]]) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()[:16]
 
 
+def _param_set_fingerprint(method: str, brewer) -> str:
+    """Stable hash of sorted parameter names for the given method + brewer.
+
+    Detects STRUCTURAL changes to the campaign's search space (params added/removed
+    due to brewer capability changes). Separate from _bounds_fingerprint which tracks
+    numeric range changes.
+
+    Args:
+        method: Brew method name.
+        brewer: Brewer ORM object (or None for legacy/Tier-1 campaigns).
+
+    Returns:
+        16-char hex hash of the sorted parameter name list.
+    """
+    param_names = sorted(get_param_columns(method, brewer))
+    canonical = json.dumps(param_names)
+    return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+
+
 class OptimizerService:
     """Thread-safe BayBE campaign manager with DB persistence.
 
@@ -101,11 +120,12 @@ class OptimizerService:
         self._transfer_metadata: dict[str, dict] = {}
         self._lock = threading.Lock()
 
-    def _load_from_db(self, campaign_key: str) -> tuple[str | None, str | None]:
-        """Load campaign JSON and bounds fingerprint from DB.
+    def _load_from_db(self, campaign_key: str) -> tuple[str | None, str | None, str | None, int]:
+        """Load campaign JSON, bounds fingerprint, param_set_fingerprint, and rebuild_declined from DB.
 
         Returns:
-            (campaign_json, fingerprint) tuple. Both None if campaign not found.
+            (campaign_json, bounds_fp, param_set_fp, rebuild_declined) tuple.
+            campaign_json and bounds_fp are None if campaign not found.
         """
         from app.models.campaign_state import CampaignState
 
@@ -113,15 +133,20 @@ class OptimizerService:
         try:
             row = session.query(CampaignState).filter_by(campaign_key=campaign_key).first()
             if row is None:
-                return None, None
+                return None, None, None, 0
             # Also populate transfer metadata cache if present
             if row.transfer_metadata:
                 self._transfer_metadata[campaign_key] = row.transfer_metadata
-            return row.campaign_json, row.bounds_fingerprint
+            return (
+                row.campaign_json,
+                row.bounds_fingerprint,
+                row.param_set_fingerprint,
+                row.rebuild_declined or 0,
+            )
         finally:
             session.close()
 
-    def _save_to_db(self, campaign_key: str) -> None:
+    def _save_to_db(self, campaign_key: str, param_set_fp: str | None = None) -> None:
         """Upsert campaign JSON + fingerprint to DB. Must be called with lock held."""
         from app.models.campaign_state import CampaignState
 
@@ -139,6 +164,7 @@ class OptimizerService:
                     campaign_json=campaign_json,
                     bounds_fingerprint=fingerprint or None,
                     transfer_metadata=transfer_meta,
+                    param_set_fingerprint=param_set_fp,
                 )
                 session.add(row)
             else:
@@ -146,6 +172,8 @@ class OptimizerService:
                 row.bounds_fingerprint = fingerprint or None
                 if transfer_meta is not None:
                     row.transfer_metadata = transfer_meta
+                if param_set_fp is not None:
+                    row.param_set_fingerprint = param_set_fp
             session.commit()
         finally:
             session.close()
@@ -154,6 +182,7 @@ class OptimizerService:
     def _create_fresh_campaign(
         overrides: dict | None = None,
         method: str = "espresso",
+        brewer=None,
     ) -> Campaign:
         """Create a hybrid BayBE campaign for the given method.
 
@@ -161,8 +190,9 @@ class OptimizerService:
             overrides: Per-bean parameter range overrides.
                        e.g. {"grind_setting": {"min": 18.0, "max": 22.0}}
             method: Brew method — determines parameter set (espresso vs pour-over).
+            brewer: Brewer ORM object (or None for Tier 1 / legacy campaigns).
         """
-        parameters = build_parameters_for_setup(method, brewer=None, overrides=overrides)
+        parameters = build_parameters_for_setup(method, brewer=brewer, overrides=overrides)
         searchspace = SearchSpace.from_product(parameters=parameters)
         target = NumericalTarget(name="taste")
         objective = SingleTargetObjective(target=target)
@@ -176,6 +206,7 @@ class OptimizerService:
         method: str = "espresso",
         target_bean: "Bean | None" = None,
         db: "Session | None" = None,
+        brewer=None,
     ) -> Campaign:
         """Get campaign from cache, DB, or create fresh. Thread-safe.
 
@@ -192,6 +223,7 @@ class OptimizerService:
             method: Brew method for parameter set selection.
             target_bean: Bean ORM object for transfer learning lookup (optional).
             db: SQLAlchemy Session for similarity queries (optional).
+            brewer: Brewer ORM object for capability-gated parameter selection (optional).
         """
         # Import here to avoid circular imports at module load time
         from app.services.similarity import SimilarityService
@@ -202,7 +234,7 @@ class OptimizerService:
         with self._lock:
             # Load from DB if not cached
             if campaign_key not in self._cache:
-                campaign_json, stored_fp = self._load_from_db(campaign_key)
+                campaign_json, stored_fp = self._load_from_db(campaign_key)[:2]
                 if campaign_json is not None:
                     self._cache[campaign_key] = Campaign.from_json(campaign_json)
                     self._fingerprints[campaign_key] = stored_fp or ""
@@ -215,7 +247,7 @@ class OptimizerService:
                         )
                         if similar_beans:
                             result = build_transfer_campaign(
-                                target_bean, similar_beans, method, overrides, db
+                                target_bean, similar_beans, method, overrides, db, brewer=brewer
                             )
                             if result is not None:
                                 campaign, metadata = result
@@ -226,20 +258,23 @@ class OptimizerService:
                                 }
 
                     if campaign is None:
-                        campaign = self._create_fresh_campaign(overrides, method)
+                        campaign = self._create_fresh_campaign(overrides, method, brewer)
 
                     self._cache[campaign_key] = campaign
                     self._fingerprints[campaign_key] = current_fp
-                    self._save_to_db(campaign_key)
+                    # Store param_set_fingerprint for structural change detection
+                    self._save_to_db(
+                        campaign_key, param_set_fp=_param_set_fingerprint(method, brewer)
+                    )
 
             # Check if overrides changed → rebuild with new bounds
             stored_fp = self._fingerprints.get(campaign_key, "")
             if stored_fp and stored_fp != current_fp:
                 old_campaign = self._cache[campaign_key]
                 measurements_df = old_campaign.measurements
-                new_campaign = self._create_fresh_campaign(overrides, method)
+                new_campaign = self._create_fresh_campaign(overrides, method, brewer)
                 if not measurements_df.empty:
-                    param_cols = get_param_columns(method)
+                    param_cols = get_param_columns(method, brewer)
                     # For transfer campaigns the measurements include bean_task — filter to
                     # only the standard BayBE columns so we can add them to a fresh campaign.
                     available_cols = [
@@ -282,6 +317,7 @@ class OptimizerService:
         method: str = "espresso",
         target_bean: "Bean | None" = None,
         db: "Session | None" = None,
+        brewer=None,
     ) -> dict:
         """Generate a recommendation. Runs in thread pool (BayBE blocks 3-10s).
 
@@ -291,11 +327,12 @@ class OptimizerService:
             method: Brew method for parameter set selection.
             target_bean: Bean ORM object for transfer learning lookup (optional).
             db: SQLAlchemy Session for similarity queries (optional).
+            brewer: Brewer ORM object for capability-gated parameter selection (optional).
         """
 
         def _recommend():
             campaign = self.get_or_create_campaign(
-                campaign_key, overrides, method, target_bean=target_bean, db=db
+                campaign_key, overrides, method, target_bean=target_bean, db=db, brewer=brewer
             )
             with self._lock:
                 campaign.clear_cache()
@@ -322,6 +359,7 @@ class OptimizerService:
         overrides: dict | None = None,
         method: str = "espresso",
         target_bean_id: str | None = None,
+        brewer=None,
     ) -> None:
         """Record a measurement. Runs synchronously (fast).
 
@@ -332,10 +370,11 @@ class OptimizerService:
             overrides: Per-bean parameter range overrides.
             method: Brew method for parameter set selection.
             target_bean_id: Bean ID to set as bean_task for transfer learning campaigns.
+            brewer: Brewer ORM object for capability-gated parameter selection (optional).
         """
-        campaign = self.get_or_create_campaign(campaign_key, overrides, method)
+        campaign = self.get_or_create_campaign(campaign_key, overrides, method, brewer=brewer)
         # Only include method-appropriate BayBE columns + taste
-        param_cols = get_param_columns(method)
+        param_cols = get_param_columns(method, brewer)
         baybe_data = {k: measurement[k] for k in param_cols + ["taste"] if k in measurement}
         # For transfer learning campaigns, include the bean_task column
         if target_bean_id is not None and self.get_transfer_metadata(campaign_key) is not None:
@@ -351,6 +390,7 @@ class OptimizerService:
         measurements_df: pd.DataFrame,
         overrides: dict | None = None,
         method: str = "espresso",
+        brewer=None,
     ) -> Campaign:
         """Disaster recovery: rebuild campaign from measurement data.
 
@@ -359,20 +399,23 @@ class OptimizerService:
             measurements_df: DataFrame with BayBE columns + taste.
             overrides: Per-bean parameter range overrides.
             method: Brew method for parameter set selection.
+            brewer: Brewer ORM object for capability-gated parameter selection (optional).
         """
-        campaign = self._create_fresh_campaign(overrides, method)
+        campaign = self._create_fresh_campaign(overrides, method, brewer)
         if not measurements_df.empty:
-            param_cols = get_param_columns(method)
+            param_cols = get_param_columns(method, brewer)
             baybe_cols = param_cols + ["taste"]
+            available_cols = [c for c in baybe_cols if c in measurements_df.columns]
             campaign.add_measurements(
-                measurements_df[baybe_cols],
+                measurements_df[available_cols],
                 numerical_measurements_must_be_within_tolerance=False,
             )
         current_fp = _bounds_fingerprint(_resolve_bounds(overrides, method))
+        new_param_fp = _param_set_fingerprint(method, brewer)
         with self._lock:
             self._cache[campaign_key] = campaign
             self._fingerprints[campaign_key] = current_fp
-            self._save_to_db(campaign_key)
+            self._save_to_db(campaign_key, param_set_fp=new_param_fp)
         return campaign
 
     def get_recommendation_insights(
@@ -381,6 +424,7 @@ class OptimizerService:
         rec_dict: dict,
         overrides: dict | None = None,
         method: str = "espresso",
+        brewer=None,
     ) -> dict:
         """Compute insight metadata for a recommendation.
 
@@ -395,7 +439,7 @@ class OptimizerService:
 
         Must be called *after* recommend() completes (they both use _lock separately).
         """
-        campaign = self.get_or_create_campaign(campaign_key, overrides, method)
+        campaign = self.get_or_create_campaign(campaign_key, overrides, method, brewer=brewer)
 
         with self._lock:
             meta_rec = campaign.recommender
@@ -450,7 +494,7 @@ class OptimizerService:
 
             if not is_random and shot_count >= 2:
                 try:
-                    param_cols = get_param_columns(method)
+                    param_cols = get_param_columns(method, brewer)
                     rec_df = pd.DataFrame([{k: rec_dict[k] for k in param_cols if k in rec_dict}])
                     stats = campaign.posterior_stats(rec_df)
                     predicted_mean = round(float(stats["taste_mean"].iloc[0]), 1)
@@ -472,3 +516,122 @@ class OptimizerService:
             "predicted_range": predicted_range,
             "shot_count": shot_count,
         }
+
+    # ---------------------------------------------------------------------------
+    # Campaign outdated detection — structural param set changes
+    # ---------------------------------------------------------------------------
+
+    def is_campaign_outdated(self, campaign_key: str, method: str, brewer) -> bool:
+        """Check if the campaign's param set is outdated relative to the current brewer config.
+
+        Returns True if the stored param_set_fingerprint differs from what the current
+        brewer would produce (i.e. the brewer gained/lost capabilities since campaign creation).
+        Returns False if fingerprints match, or no stored fingerprint (legacy campaigns).
+
+        Args:
+            campaign_key: Compound key for the campaign.
+            method: Brew method name.
+            brewer: Current Brewer ORM object (or None).
+        """
+        _, _, stored_param_fp, _ = self._load_from_db(campaign_key)
+        if not stored_param_fp:
+            # No fingerprint stored → legacy campaign, don't nag
+            return False
+        current_param_fp = _param_set_fingerprint(method, brewer)
+        return stored_param_fp != current_param_fp
+
+    def was_rebuild_declined(self, campaign_key: str) -> bool:
+        """Return True if the user has declined the rebuild prompt for this campaign.
+
+        Decline levels: 0 = not declined, 1 = declined once (reminder shown once more),
+        2 = permanently declined (never show again).
+        """
+        _, _, _, rebuild_declined = self._load_from_db(campaign_key)
+        return rebuild_declined >= 2
+
+    def decline_rebuild(self, campaign_key: str) -> None:
+        """Increment the rebuild_declined counter for this campaign.
+
+        First decline (0→1): user will see one more reminder next time.
+        Second decline (1→2): permanently silenced — no more prompts.
+        """
+        from app.models.campaign_state import CampaignState
+
+        session = self._session_factory()
+        try:
+            row = session.query(CampaignState).filter_by(campaign_key=campaign_key).first()
+            if row is not None:
+                current = row.rebuild_declined or 0
+                row.rebuild_declined = min(current + 1, 2)
+                session.commit()
+        finally:
+            session.close()
+
+    def accept_rebuild(
+        self,
+        campaign_key: str,
+        method: str,
+        brewer,
+        overrides: dict | None = None,
+    ) -> Campaign:
+        """Rebuild the campaign with the current brewer's parameter set.
+
+        Migrates existing measurements to the new parameter set (measurements that
+        have values for all new params are kept; others are dropped). Clears
+        rebuild_declined and updates param_set_fingerprint.
+
+        Args:
+            campaign_key: Compound key for the campaign.
+            method: Brew method name.
+            brewer: Current Brewer ORM object.
+            overrides: Per-bean parameter range overrides.
+        """
+        from app.models.campaign_state import CampaignState
+
+        # Get existing measurements
+        existing = self._cache.get(campaign_key)
+        measurements_df: pd.DataFrame
+        if existing is not None:
+            measurements_df = existing.measurements
+        else:
+            campaign_json, _, _, _ = self._load_from_db(campaign_key)
+            if campaign_json is not None:
+                measurements_df = Campaign.from_json(campaign_json).measurements
+            else:
+                measurements_df = pd.DataFrame()
+
+        # Build fresh campaign with new param set
+        new_campaign = self._create_fresh_campaign(overrides, method, brewer)
+        if not measurements_df.empty:
+            new_param_cols = get_param_columns(method, brewer)
+            required_cols = new_param_cols + ["taste"]
+            # Only migrate rows that have all new param columns
+            valid_rows = measurements_df.dropna(
+                subset=[c for c in new_param_cols if c in measurements_df.columns]
+            )
+            if not valid_rows.empty:
+                migrate_cols = [c for c in required_cols if c in valid_rows.columns]
+                new_campaign.add_measurements(
+                    valid_rows[migrate_cols],
+                    numerical_measurements_must_be_within_tolerance=False,
+                )
+
+        current_fp = _bounds_fingerprint(_resolve_bounds(overrides, method))
+        new_param_fp = _param_set_fingerprint(method, brewer)
+
+        with self._lock:
+            self._cache[campaign_key] = new_campaign
+            self._fingerprints[campaign_key] = current_fp
+            self._save_to_db(campaign_key, param_set_fp=new_param_fp)
+
+        # Clear rebuild_declined flag
+        session = self._session_factory()
+        try:
+            row = session.query(CampaignState).filter_by(campaign_key=campaign_key).first()
+            if row is not None:
+                row.rebuild_declined = 0
+                session.commit()
+        finally:
+            session.close()
+
+        return new_campaign

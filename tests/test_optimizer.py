@@ -7,6 +7,7 @@ from app.models.campaign_state import CampaignState
 from app.services.optimizer import (
     OptimizerService,
     _bounds_fingerprint,
+    _param_set_fingerprint,
     _resolve_bounds,
 )
 from app.services.optimizer_key import make_campaign_key
@@ -378,3 +379,168 @@ async def test_insights_bayesian_early_phase(optimizer_service):
     assert insights["phase_label"] == "Learning"
     assert "learning" in insights["explanation"].lower()
     assert insights["shot_count"] == 6
+
+
+# --- _param_set_fingerprint tests ---
+
+
+def test_param_set_fingerprint_stable():
+    """Same method + brewer produces the same fingerprint."""
+    fp1 = _param_set_fingerprint("espresso", None)
+    fp2 = _param_set_fingerprint("espresso", None)
+    assert fp1 == fp2
+    assert len(fp1) == 16
+
+
+def test_param_set_fingerprint_changes_with_brewer():
+    """Different brewer capability configs produce different fingerprints."""
+
+    class MockBrewer:
+        """Minimal mock simulating a brewer with extra capability flags."""
+
+        preinfusion_type = "timed"
+        pressure_control_type = "none"
+        flow_control_type = "none"
+        temp_control_type = "fixed"
+        has_bloom = False
+
+    fp_no_brewer = _param_set_fingerprint("espresso", None)
+    fp_with_brewer = _param_set_fingerprint("espresso", MockBrewer())
+    # preinfusion_type=timed unlocks preinfusion_time → different param set
+    assert fp_no_brewer != fp_with_brewer
+
+
+def test_param_set_fingerprint_none_brewer_gives_tier1():
+    """brewer=None gives only Tier 1 params (no capability-gated params)."""
+    params = get_param_columns("espresso", None)
+    # Tier 1 espresso: grind_setting, temperature, dose_in, target_yield
+    assert set(params) == {"grind_setting", "temperature", "dose_in", "target_yield"}
+
+
+# --- Campaign outdated detection tests ---
+
+
+async def test_param_set_fingerprint_stored_on_creation(optimizer_service, db_session):
+    """New campaigns store param_set_fingerprint in DB."""
+    key = make_campaign_key("fp-store-bean", "espresso", None)
+    optimizer_service.get_or_create_campaign(key)
+
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    assert row is not None
+    assert row.param_set_fingerprint is not None
+    assert row.param_set_fingerprint == _param_set_fingerprint("espresso", None)
+
+
+async def test_is_campaign_outdated_returns_false_for_matching_brewer(
+    optimizer_service, db_session
+):
+    """is_campaign_outdated returns False when brewer has same capabilities."""
+    key = make_campaign_key("not-outdated-bean", "espresso", None)
+    optimizer_service.get_or_create_campaign(key, brewer=None)
+
+    result = optimizer_service.is_campaign_outdated(key, "espresso", None)
+    assert result is False
+
+
+async def test_is_campaign_outdated_returns_true_when_brewer_changes(optimizer_service, db_session):
+    """is_campaign_outdated returns True when brewer unlocks new params."""
+
+    class MockBrewerWithPreinfusion:
+        preinfusion_type = "timed"
+        pressure_control_type = "none"
+        flow_control_type = "none"
+        temp_control_type = "fixed"
+        has_bloom = False
+
+    key = make_campaign_key("outdated-bean", "espresso", None)
+    # Create campaign with brewer=None (Tier 1 only)
+    optimizer_service.get_or_create_campaign(key, brewer=None)
+
+    # Now check with a brewer that has preinfusion (unlocks preinfusion_time)
+    result = optimizer_service.is_campaign_outdated(key, "espresso", MockBrewerWithPreinfusion())
+    assert result is True
+
+
+async def test_is_campaign_outdated_false_for_no_stored_fingerprint(optimizer_service, db_session):
+    """is_campaign_outdated returns False for legacy campaigns with no fingerprint."""
+    key = make_campaign_key("legacy-bean", "espresso", None)
+    # Create campaign without fingerprint (simulating legacy campaign)
+    optimizer_service.get_or_create_campaign(key, brewer=None)
+
+    # Manually clear the fingerprint to simulate legacy
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    row.param_set_fingerprint = None
+    db_session.commit()
+    # Clear the in-memory cache so it re-reads from DB
+    optimizer_service._cache.pop(key, None)
+    optimizer_service._fingerprints.pop(key, None)
+
+    # Should not nag about outdated
+    result = optimizer_service.is_campaign_outdated(key, "espresso", None)
+    assert result is False
+
+
+async def test_decline_rebuild_increments_counter(optimizer_service, db_session):
+    """decline_rebuild increments the rebuild_declined counter (0→1→2)."""
+    key = make_campaign_key("decline-bean", "espresso", None)
+    optimizer_service.get_or_create_campaign(key, brewer=None)
+
+    # Initially not declined
+    assert not optimizer_service.was_rebuild_declined(key)
+
+    # First decline: 0 → 1
+    optimizer_service.decline_rebuild(key)
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    db_session.refresh(row)
+    assert row.rebuild_declined == 1
+
+    # was_rebuild_declined is False at level 1 (still shows reminder)
+    assert not optimizer_service.was_rebuild_declined(key)
+
+    # Second decline: 1 → 2 (permanently silenced)
+    optimizer_service.decline_rebuild(key)
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    db_session.refresh(row)
+    assert row.rebuild_declined == 2
+    assert optimizer_service.was_rebuild_declined(key)
+
+
+async def test_decline_rebuild_caps_at_2(optimizer_service, db_session):
+    """decline_rebuild never exceeds 2 (calling more times is idempotent at 2)."""
+    key = make_campaign_key("cap-decline-bean", "espresso", None)
+    optimizer_service.get_or_create_campaign(key, brewer=None)
+
+    for _ in range(5):
+        optimizer_service.decline_rebuild(key)
+
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    db_session.refresh(row)
+    assert row.rebuild_declined == 2
+
+
+async def test_accept_rebuild_resets_declined_and_updates_fingerprint(
+    optimizer_service, db_session
+):
+    """accept_rebuild rebuilds campaign, clears rebuild_declined, updates fingerprint."""
+    key = make_campaign_key("accept-rebuild-bean", "espresso", None)
+
+    # Create initial campaign (brewer=None, Tier 1)
+    optimizer_service.get_or_create_campaign(key, brewer=None)
+
+    # Decline once
+    optimizer_service.decline_rebuild(key)
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    db_session.refresh(row)
+    assert row.rebuild_declined == 1
+
+    # Accept rebuild with same brewer (no param change, just resetting)
+    new_campaign = optimizer_service.accept_rebuild(key, "espresso", None)
+    assert new_campaign is not None
+
+    # rebuild_declined should be reset to 0
+    row = db_session.query(CampaignState).filter_by(campaign_key=key).first()
+    db_session.refresh(row)
+    assert row.rebuild_declined == 0
+
+    # param_set_fingerprint should match current config
+    assert row.param_set_fingerprint == _param_set_fingerprint("espresso", None)
