@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 19 — Parameter Registry & Dynamic Search Space ✅ COMPLETE
-Plan: 19-01 ✅, 19-02 ✅, 19-03 ✅ — 3/3 plans complete
-Status: Phases 17, 18, 19, 22 all COMPLETE. Next: Phase 20 (Espresso Parameter Evolution) or Phase 21 (New Methods) — both depend on Phase 19 ✅.
-Last activity: 2026-02-26 — Completed Phase 19 (Parameter Registry). 337 tests passing. VERIFICATION.md: passed 7/7.
+Phase: 20 — Espresso Parameter Evolution 🔄 In Progress
+Plan: 20-01 ✅ — 1/3 plans complete
+Status: Phase 20 started. Plan 01 complete (schema + registry foundation). Next: Plan 02 (brewer context wiring into campaigns).
+Last activity: 2026-02-26 — Completed Phase 20 Plan 01 (Schema & Registry Foundation). 389 tests passing.
 
-Progress: [███████████████░░░░░░░░░░░░░░░░░░░░░░░░░░] ~35% (14/~18 v0.3.0 plans)
+Progress: [████████████████░░░░░░░░░░░░░░░░░░░░░░░░░] ~37% (15/~18 v0.3.0 plans)
 
 ## Performance Metrics
 
@@ -41,7 +41,12 @@ Progress: [███████████████░░░░░░░░
 ### Key Technical Decisions
 See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
-### Phase 19 Plan 02 Key Decisions
+### Phase 20 Plan 01 Key Decisions
+- **preinfusion_pct → preinfusion_pressure_pct is a pure column rename (no data conversion):** Column always stored pump pressure %; the conversion formula in f7a2c91b3d04 was factually wrong and removed
+- **saturation is NOT deprecated/legacy:** Reworked to active boolean toggle gated by `flow_control_type in (manual_paddle, manual_valve, programmable)`
+- **saturation_flow_rate on Brewer (not Measurement):** Fixed ml/s the brewer performs during saturation — not a per-shot BayBE optimization parameter
+- **Boolean gate syntax `brewer.has_bloom == True`:** Extended `requires_check()` to handle `== True/False` in addition to `in (...)` membership tests
+- **New params: preinfusion_pressure (1.0-6.0 bar), bloom_pause (0.0-10.0s), temp_profile [flat/ramp_up/ramp_down]**
 - **Backward-compat re-exports kept in optimizer.py:** Routers can continue importing DEFAULT_BOUNDS etc. from optimizer until Plan 03 removes them (Plan 03 already did)
 - **transfer_learning.py: _resolve_bounds no longer needed:** build_parameters_for_setup() accepts overrides directly; import of _resolve_bounds eliminated
 - **test_optimizer.py imports from parameter_registry:** ESPRESSO_PARAMS/ESPRESSO_BOUNDS defined at module level from registry functions — tests no longer couple to optimizer's internal constant names
@@ -167,12 +172,13 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-26
-- **What happened:** Completed Phase 19 Plan 02 — refactored optimizer.py (removed hardcoded constants + private helpers, wired to parameter_registry, added backward-compat re-exports) and test_optimizer.py (ESPRESSO_PARAMS/ESPRESSO_BOUNDS from registry). Phase 19 now fully complete with all 3 plans and SUMMARYs done. 337/337 tests pass.
-- **Where we left off:** Phase 19 complete. Next: Phase 20 — Advanced Espresso Parameters.
+- **What happened:** Completed Phase 20 Plan 01 — schema rename (preinfusion_pct→preinfusion_pressure_pct), saturation rework (legacy→active gated), new Alembic migration 6d76407e7f4e, new registry entries (preinfusion_pressure, bloom_pause, temp_profile), requires_check() boolean extension. 389/389 tests pass.
+- **Where we left off:** Phase 20 Plan 01 complete. Next: Phase 20 Plan 02 — brewer context wiring into OptimizerService campaigns.
 
 ### Next Steps
-1. Phase 20 — Advanced Espresso Parameters (depends on Phase 19 — now complete)
-2. Phase 21 — New Brew Methods (parallel with Phase 20, both depend on Phase 19)
+1. Phase 20 Plan 02 — Wire brewer context into OptimizerService.get_or_create_campaign()
+2. Phase 20 Plan 03 — Brew UI capability-driven parameter display
+3. Phase 21 — New Brew Methods (parallel with Phase 20, both depend on Phase 19)
 
 ---
 *State initialized: 2026-02-21*
