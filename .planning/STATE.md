@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 20 — Espresso Parameter Evolution 🔄 In Progress
-Plan: 20-01 ✅ — 1/3 plans complete
-Status: Phase 20 started. Plan 01 complete (schema + registry foundation). Next: Plan 02 (brewer context wiring into campaigns).
-Last activity: 2026-02-26 — Completed Phase 20 Plan 01 (Schema & Registry Foundation). 389 tests passing.
+Plan: 20-02 ✅ — 2/3 plans complete
+Status: Phase 20 in progress. Plans 01+02 complete. Next: Plan 03 (Brew UI capability-driven parameter display).
+Last activity: 2026-02-26 — Completed Phase 20 Plan 02 (Brewer Context Wiring + Campaign Outdated Detection). 405 tests passing.
 
-Progress: [████████████████░░░░░░░░░░░░░░░░░░░░░░░░░] ~37% (15/~18 v0.3.0 plans)
+Progress: [████████████████░░░░░░░░░░░░░░░░░░░░░░░░░] ~38% (16/~18 v0.3.0 plans)
 
 ## Performance Metrics
 
@@ -40,6 +40,14 @@ Progress: [████████████████░░░░░░░
 
 ### Key Technical Decisions
 See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
+
+### Phase 20 Plan 02 Key Decisions
+- **Two separate fingerprints:** `_param_set_fingerprint` (structural: params added/removed) vs `_bounds_fingerprint` (numeric range changes) — conflating them would miss structural changes or over-trigger rebuilds
+- **`rebuild_declined` is Integer (0/1/2):** "remind once then quiet" needs three states — not declined / declined once (gets one more reminder) / permanently silenced
+- **`is_campaign_outdated` returns False when no stored fingerprint:** Legacy campaigns predate fingerprinting; nagging users to rebuild legacy campaigns is disruptive
+- **`was_rebuild_declined` returns True only at level 2:** Level 1 = declined once but gets one more reminder; level 2 = permanent silence
+- **Campaign outdated UX shows diff vs Tier 1 (not vs stored fingerprint):** Simpler — always shows "new params your brewer adds vs baseline"
+- **`history.py` delete_batch groups by (method, setup_id):** Multiple measurements under different setups → different campaign keys; flat bean_id grouping was a pre-existing bug
 
 ### Phase 20 Plan 01 Key Decisions
 - **preinfusion_pct → preinfusion_pressure_pct is a pure column rename (no data conversion):** Column always stored pump pressure %; the conversion formula in f7a2c91b3d04 was factually wrong and removed
@@ -172,13 +180,12 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-26
-- **What happened:** Completed Phase 20 Plan 01 — schema rename (preinfusion_pct→preinfusion_pressure_pct), saturation rework (legacy→active gated), new Alembic migration 6d76407e7f4e, new registry entries (preinfusion_pressure, bloom_pause, temp_profile), requires_check() boolean extension. 389/389 tests pass.
-- **Where we left off:** Phase 20 Plan 01 complete. Next: Phase 20 Plan 02 — brewer context wiring into OptimizerService campaigns.
+- **What happened:** Completed Phase 20 Plan 02 — brewer context wired through all campaign creation paths, structural param_set_fingerprint + rebuild_declined columns added, outdated detection + rebuild/decline UX complete, history.py delete_batch now method-aware. 405/405 tests pass.
+- **Where we left off:** Phase 20 Plan 02 complete. Next: Phase 20 Plan 03 — Brew UI capability-driven parameter display.
 
 ### Next Steps
-1. Phase 20 Plan 02 — Wire brewer context into OptimizerService.get_or_create_campaign()
-2. Phase 20 Plan 03 — Brew UI capability-driven parameter display
-3. Phase 21 — New Brew Methods (parallel with Phase 20, both depend on Phase 19)
+1. Phase 20 Plan 03 — Brew UI capability-driven parameter display (param_defs already in templates)
+2. Phase 21 — New Brew Methods (parallel with Phase 20)
 
 ---
 *State initialized: 2026-02-21*
