@@ -5,13 +5,15 @@ import pytest
 
 from app.models.campaign_state import CampaignState
 from app.services.optimizer import (
-    DEFAULT_BOUNDS,
-    BAYBE_PARAM_COLUMNS,
     OptimizerService,
     _bounds_fingerprint,
     _resolve_bounds,
 )
 from app.services.optimizer_key import make_campaign_key
+from app.services.parameter_registry import get_default_bounds, get_param_columns
+
+ESPRESSO_PARAMS = get_param_columns("espresso")
+ESPRESSO_BOUNDS = get_default_bounds("espresso")
 
 
 pytestmark = pytest.mark.slow
@@ -37,7 +39,7 @@ async def test_recommend_returns_all_params(optimizer_service):
     rec = await optimizer_service.recommend(key)
 
     assert isinstance(rec, dict)
-    for param in BAYBE_PARAM_COLUMNS:
+    for param in ESPRESSO_PARAMS:
         assert param in rec, f"Missing param: {param}"
 
     assert "recommendation_id" in rec
@@ -70,12 +72,12 @@ async def test_add_measurement_and_recommend_again(optimizer_service, db_session
     rec1 = await optimizer_service.recommend(key)
 
     # Add measurement with recommended params
-    params = {k: rec1[k] for k in BAYBE_PARAM_COLUMNS}
+    params = {k: rec1[k] for k in ESPRESSO_PARAMS}
     optimizer_service.add_measurement(key, {**params, "taste": 7.5})
 
     # Second recommendation should work
     rec2 = await optimizer_service.recommend(key)
-    assert all(p in rec2 for p in BAYBE_PARAM_COLUMNS)
+    assert all(p in rec2 for p in ESPRESSO_PARAMS)
 
     # Campaign row was updated in DB
     row = (
@@ -91,7 +93,7 @@ async def test_campaign_persistence_across_restart(optimizer_service, db_session
 
     # Create campaign and add measurement
     rec = await optimizer_service.recommend(key)
-    params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    params = {k: rec[k] for k in ESPRESSO_PARAMS}
     optimizer_service.add_measurement(key, {**params, "taste": 8.0})
 
     # Create new service instance (simulates restart — empty cache, same DB)
@@ -106,14 +108,14 @@ async def test_campaign_persistence_across_restart(optimizer_service, db_session
 
     # Should be able to recommend
     rec2 = await new_service.recommend(key)
-    assert all(p in rec2 for p in BAYBE_PARAM_COLUMNS)
+    assert all(p in rec2 for p in ESPRESSO_PARAMS)
 
 
 async def test_campaign_json_size_hybrid(optimizer_service, db_session):
     """Hybrid campaign JSON is <500KB (vs 20MB with discrete)."""
     key = make_campaign_key("size-bean", "espresso", None)
     rec = await optimizer_service.recommend(key)
-    params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    params = {k: rec[k] for k in ESPRESSO_PARAMS}
     optimizer_service.add_measurement(key, {**params, "taste": 7.0})
 
     row = (
@@ -156,16 +158,16 @@ async def test_rebuild_campaign(optimizer_service):
 
     # Should be able to recommend from rebuilt campaign
     rec = await optimizer_service.recommend(key)
-    assert all(p in rec for p in BAYBE_PARAM_COLUMNS)
+    assert all(p in rec for p in ESPRESSO_PARAMS)
 
 
 # --- Parameter override tests ---
 
 
 def test_resolve_bounds_defaults():
-    """_resolve_bounds with no overrides returns DEFAULT_BOUNDS."""
-    assert _resolve_bounds(None) == DEFAULT_BOUNDS
-    assert _resolve_bounds({}) == DEFAULT_BOUNDS
+    """_resolve_bounds with no overrides returns ESPRESSO_BOUNDS."""
+    assert _resolve_bounds(None) == ESPRESSO_BOUNDS
+    assert _resolve_bounds({}) == ESPRESSO_BOUNDS
 
 
 def test_resolve_bounds_partial_override():
@@ -174,8 +176,8 @@ def test_resolve_bounds_partial_override():
     bounds = _resolve_bounds(overrides)
     assert bounds["grind_setting"] == (18.0, 22.0)
     # Other params unchanged
-    assert bounds["temperature"] == DEFAULT_BOUNDS["temperature"]
-    assert bounds["dose_in"] == DEFAULT_BOUNDS["dose_in"]
+    assert bounds["temperature"] == ESPRESSO_BOUNDS["temperature"]
+    assert bounds["dose_in"] == ESPRESSO_BOUNDS["dose_in"]
 
 
 def test_resolve_bounds_partial_min_only():
@@ -186,10 +188,10 @@ def test_resolve_bounds_partial_min_only():
 
 
 def test_resolve_bounds_ignores_unknown_params():
-    """_resolve_bounds ignores parameters not in DEFAULT_BOUNDS."""
+    """_resolve_bounds ignores parameters not in ESPRESSO_BOUNDS."""
     overrides = {"unknown_param": {"min": 1.0, "max": 10.0}}
     bounds = _resolve_bounds(overrides)
-    assert bounds == DEFAULT_BOUNDS
+    assert bounds == ESPRESSO_BOUNDS
 
 
 def test_bounds_fingerprint_stable():
@@ -230,7 +232,7 @@ async def test_campaign_invalidation_on_override_change(optimizer_service):
 
     # Create campaign with default bounds and add a measurement
     rec1 = await optimizer_service.recommend(key)
-    params = {k: rec1[k] for k in BAYBE_PARAM_COLUMNS}
+    params = {k: rec1[k] for k in ESPRESSO_PARAMS}
     optimizer_service.add_measurement(key, {**params, "taste": 7.0})
 
     campaign_before = optimizer_service.get_or_create_campaign(key)
@@ -297,7 +299,7 @@ async def test_insights_bayesian_phase(optimizer_service):
     rec = await optimizer_service.recommend(key)
 
     # Add 5 measurements so campaign switches to Bayesian phase
-    params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    params = {k: rec[k] for k in ESPRESSO_PARAMS}
     for taste in [6.0, 7.0, 7.5, 8.0, 8.5]:
         optimizer_service.add_measurement(key, {**params, "taste": taste})
 
@@ -324,7 +326,7 @@ async def test_insights_with_improvement(optimizer_service):
 
     # Add 9 measurements — early ones low taste, last 3 higher (shows improvement)
     # 9 shots → shot_count=9 >= 8 → phase="bayesian"
-    base_params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    base_params = {k: rec[k] for k in ESPRESSO_PARAMS}
     for taste in [5.0, 6.0, 5.5, 6.0, 5.5, 6.0, 7.0, 8.0, 8.5]:
         optimizer_service.add_measurement(key, {**base_params, "taste": taste})
 
@@ -345,17 +347,17 @@ async def test_recommend_no_crash_on_second_call(optimizer_service):
     # First call
     rec1 = await optimizer_service.recommend(key)
     assert isinstance(rec1, dict)
-    for param in BAYBE_PARAM_COLUMNS:
+    for param in ESPRESSO_PARAMS:
         assert param in rec1
 
     # Add a measurement between calls
-    params = {k: rec1[k] for k in BAYBE_PARAM_COLUMNS}
+    params = {k: rec1[k] for k in ESPRESSO_PARAMS}
     optimizer_service.add_measurement(key, {**params, "taste": 7.0})
 
     # Second call must NOT raise NotImplementedError (BayBE cache guard bug)
     rec2 = await optimizer_service.recommend(key)
     assert isinstance(rec2, dict)
-    for param in BAYBE_PARAM_COLUMNS:
+    for param in ESPRESSO_PARAMS:
         assert param in rec2
     assert "recommendation_id" in rec2
 
@@ -367,7 +369,7 @@ async def test_insights_bayesian_early_phase(optimizer_service):
     rec = await optimizer_service.recommend(key)
 
     # Add 6 measurements → shot_count=6, which is >= 5 (Bayesian mode) but < 8 (bayesian_early)
-    base_params = {k: rec[k] for k in BAYBE_PARAM_COLUMNS}
+    base_params = {k: rec[k] for k in ESPRESSO_PARAMS}
     for taste in [6.0, 6.5, 7.0, 7.0, 7.5, 7.5]:
         optimizer_service.add_measurement(key, {**base_params, "taste": taste})
 
