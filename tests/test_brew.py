@@ -834,7 +834,7 @@ def test_manual_form_has_range_data_attributes(active_client, sample_bean):
 
 def test_trigger_recommend_passes_brewer_to_optimizer(active_client):
     """POST /brew/recommend with no active setup passes brewer=None to optimizer."""
-    from unittest.mock import MagicMock, call
+    from unittest.mock import MagicMock
 
     fake_rec = _make_rec()
     fake_insights = {

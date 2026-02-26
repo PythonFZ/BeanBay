@@ -632,7 +632,6 @@ async def show_campaign_outdated(
     brewer = active_setup.brewer if active_setup else None
 
     # Compute which params are new (in current brewer set but not in current campaign)
-    from app.services.optimizer import _param_set_fingerprint
     from app.services.parameter_registry import get_param_columns
 
     current_params = set(get_param_columns(method, brewer))
