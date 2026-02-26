@@ -1,7 +1,7 @@
 # Project State: BeanBay
 
 **Last updated:** 2026-02-27
-**Current phase:** 25-ux-bean-flow
+**Current phase:** 25-ux-bean-flow (COMPLETE)
 
 ## Project Reference
 
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 25-ux-bean-flow (Plan 1 of 2 complete)
-Status: Phase 25 in progress — UX bean flow polish
-Last activity: 2026-02-27 — Completed 25-01-PLAN.md (sidebar cleanup + insights bean picker)
+Phase: 25-ux-bean-flow (Plan 2 of 2 complete — PHASE COMPLETE)
+Status: Phase 25 complete — UX bean flow polish done
+Last activity: 2026-02-27 — Completed 25-02-PLAN.md (analytics per-bean filter + history filter visible)
 
-Progress: All 5 milestones shipped (46 plans across 22 phases) + phase 23 complete (3/3) + phase 24 complete (1/1) + phase 25 plan 1/2 complete
-Ready for: Phase 25 Plan 02 execution (analytics per-bean filter + history filter visible)
+Progress: All 5 milestones shipped (46 plans across 22 phases) + phase 23 complete (3/3) + phase 24 complete (1/1) + phase 25 complete (2/2)
+Ready for: v0.3.0 release (git tag, Docker image, changelog)
 
 ## Performance Metrics
 
@@ -40,6 +40,12 @@ Ready for: Phase 25 Plan 02 execution (analytics per-bean filter + history filte
 
 ### Key Technical Decisions
 See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
+
+### Phase 25 Plan 02 Key Decisions
+- **Pass `beans`, `selected_bean_id`, `selected_bean` to analytics template:** Dropdown needs full list; conditional heading needs bean object; selected state needs string ID
+- **`comparison=[]` when `bean_id` set:** Skip unnecessary cross-bean DB work; comparison is meaningless when already filtered to one bean
+- **`onchange window.location` (not htmx) for analytics bean dropdown:** Full page context changes on filter switch; simpler than targeting a partial
+- **History filter: remove collapse entirely:** Simpler than pre-checking checkbox; always-visible card produces the desired behavior without JS or attribute tricks
 
 ### Phase 25 Plan 01 Key Decisions
 - **Sidebar active-bean indicator removed:** Nav is now navigation-only; `active_bean` variable kept in route contexts for brew page and dashboard (those still use it)
@@ -222,16 +228,15 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-27
-- **What happened:** Executed Phase 25 Plan 01. Removed active-bean indicator from sidebar, added dashboard intro paragraph, and added bean picker dropdown to insights page with query param support.
-- **Where we left off:** 25-01 complete (2/2 tasks, 410 tests passing). Phase 25 Plan 02 ready to execute.
-- **Stopped at:** Completed 25-01-PLAN.md
+- **What happened:** Executed Phase 25 Plan 02. Added per-bean filter to analytics page (`?bean_id=` query param), made history filter panel always visible (removed collapse wrapper). 413 tests passing.
+- **Where we left off:** Phase 25 complete (both plans done). Ready for v0.3.0 release.
+- **Stopped at:** Completed 25-02-PLAN.md
 - **Resume file:** None
 
 ### Next Steps
-1. Execute Phase 25 Plan 02 (analytics per-bean filter + history filter visible)
-2. Verify Phase 25 complete (both plans done)
-3. v0.3.0 release (git tag, Docker image, changelog)
+1. v0.3.0 release (git tag, Docker image, changelog)
+2. Phase 25 post-ship retrospective (optional)
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-27 — Phase 25 Plan 01 complete*
+*Last updated: 2026-02-27 — Phase 25 Plan 02 complete (Phase 25 DONE)*
