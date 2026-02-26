@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 19 — Parameter Registry & Dynamic Search Space (in progress)
-Plan: 19-03 ✅ complete
-Status: Phase 19 in progress — 3/3 plans complete (pending 19-02 SUMMARY)
-Last activity: 2026-02-26 — Completed 19-03-PLAN.md (router migration + transfer_learning bug fix, 337/337 tests pass)
+Phase: 19 — Parameter Registry & Dynamic Search Space ✅ COMPLETE (3/3 plans)
+Plan: 19-02 ✅ complete (SUMMARY created 2026-02-26)
+Status: Phase 19 fully complete — all plans and SUMMARYs done
+Last activity: 2026-02-26 — Completed 19-02-PLAN.md (optimizer.py + test_optimizer.py refactor, 337/337 tests pass)
 
-Progress: [██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] ~33% (14/~18 v0.3.0 plans)
+Progress: [████████████████░░░░░░░░░░░░░░░░░░░░░░░░░] ~38% (15/~18 v0.3.0 plans)
 
 ## Performance Metrics
 
@@ -40,6 +40,11 @@ Progress: [██████████████░░░░░░░░░
 
 ### Key Technical Decisions
 See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
+
+### Phase 19 Plan 02 Key Decisions
+- **Backward-compat re-exports kept in optimizer.py:** Routers can continue importing DEFAULT_BOUNDS etc. from optimizer until Plan 03 removes them (Plan 03 already did)
+- **transfer_learning.py: _resolve_bounds no longer needed:** build_parameters_for_setup() accepts overrides directly; import of _resolve_bounds eliminated
+- **test_optimizer.py imports from parameter_registry:** ESPRESSO_PARAMS/ESPRESSO_BOUNDS defined at module level from registry functions — tests no longer couple to optimizer's internal constant names
 
 ### Phase 19 Plan 03 Key Decisions
 - **Router imports from parameter_registry directly:** brew.py, beans.py, history.py no longer import DEFAULT_BOUNDS or BAYBE_PARAM_COLUMNS from optimizer.py
@@ -162,13 +167,13 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ### Last Session
 - **Date:** 2026-02-26
-- **What happened:** Completed Phase 19 Plan 03 — migrated brew.py, beans.py, history.py from optimizer.py constants to parameter_registry imports. Fixed ghost function references in transfer_learning.py (NameError on _build_parameters/_get_param_columns). All 337 tests pass.
-- **Where we left off:** Phase 19: 3/3 plans complete (19-02 SUMMARY may be pending from parallel wave).
+- **What happened:** Completed Phase 19 Plan 02 — refactored optimizer.py (removed hardcoded constants + private helpers, wired to parameter_registry, added backward-compat re-exports) and test_optimizer.py (ESPRESSO_PARAMS/ESPRESSO_BOUNDS from registry). Phase 19 now fully complete with all 3 plans and SUMMARYs done. 337/337 tests pass.
+- **Where we left off:** Phase 19 complete. Next: Phase 20 — Advanced Espresso Parameters.
 
 ### Next Steps
-1. Phase 19 Plan 02 SUMMARY (if not yet created — was in parallel wave with 19-03)
-2. Phase 20 — Advanced Espresso Parameters (depends on Phase 19 complete)
+1. Phase 20 — Advanced Espresso Parameters (depends on Phase 19 — now complete)
+2. Phase 21 — New Brew Methods (parallel with Phase 20, both depend on Phase 19)
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-25 — Phase 18 COMPLETE (Brewer Capability Model — 2 plans, 34 new tests, 284 total passing)*
+*Last updated: 2026-02-26 — Phase 19 COMPLETE (Parameter Registry & Dynamic Search Space — 3 plans, 337 tests passing)*
