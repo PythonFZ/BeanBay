@@ -21,8 +21,9 @@
     </div>
   </div>
 
-  <!-- Brew Again form — pre-fills recommendation endpoint with best params -->
+    <!-- Brew Again form — pre-fills recommendation endpoint with best params -->
   <form method="post" action="/brew/record" id="brew-again-form">
+    {% set brew_method = method if method is defined else 'espresso' %}
     <!-- Fresh UUID per visit — allows re-brewing best recipe multiple times -->
     <input type="hidden" name="recommendation_id" value="{{ best_session_id }}">
     {# Dynamic hidden inputs — driven by param_defs so all Phase 20+ params are forwarded correctly #}
@@ -62,6 +63,21 @@
 
     <!-- Extraction time (optional) -->
     <div class="form-control mb-4">
+      {% if brew_method == 'cold-brew' %}
+      <label class="label" for="extraction_time">
+        <span class="label-text">Brew Time (minutes, optional)</span>
+      </label>
+      <input
+        type="number"
+        id="extraction_time"
+        name="extraction_time"
+        class="input input-bordered w-full"
+        placeholder="e.g. 720"
+        min="60"
+        max="2880"
+        step="1"
+      >
+      {% elif brew_method == 'espresso' or not brew_method %}
       <label class="label" for="extraction_time">
         <span class="label-text">Extraction Time (seconds, optional)</span>
       </label>
@@ -75,9 +91,24 @@
         max="120"
         step="1"
       >
+      {% else %}
+      <label class="label" for="extraction_time">
+        <span class="label-text">Brew Time (seconds, optional)</span>
+      </label>
+      <input
+        type="number"
+        id="extraction_time"
+        name="extraction_time"
+        class="input input-bordered w-full"
+        placeholder="e.g. 240"
+        min="5"
+        max="1800"
+        step="1"
+      >
+      {% endif %}
     </div>
 
-    <!-- Failed shot toggle -->
+    <!-- Failed shot/brew toggle -->
     <div class="form-control mb-4">
       <label class="flex items-center gap-4 min-h-12 cursor-pointer">
         <input
@@ -89,7 +120,11 @@
           onchange="toggleFailed(this)"
         >
         <span class="label-text">
+          {% if brew_method == 'espresso' or not brew_method %}
           ⚠️ Failed shot (choked / gusher)
+          {% else %}
+          ⚠️ Failed brew
+          {% endif %}
         </span>
       </label>
       <label class="label">

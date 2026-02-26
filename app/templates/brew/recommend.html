@@ -65,7 +65,8 @@
 <!-- Rate this shot -->
 <div class="card bg-base-200 border border-base-300">
   <div class="card-body p-4">
-    <h2 class="card-title mb-4">Rate This Shot</h2>
+    {% set brew_method = method if method is defined else (rec.method if rec is mapping and rec.method is defined else 'espresso') %}
+    <h2 class="card-title mb-4">{% if brew_method == 'espresso' or not brew_method %}Rate This Shot{% else %}Rate This Brew{% endif %}</h2>
 
     <form method="post" action="/brew/record">
       <!-- Hidden recipe params -->
@@ -121,6 +122,21 @@
 
       <!-- Extraction time (optional) -->
       <div class="form-control mb-4">
+        {% if brew_method == 'cold-brew' %}
+        <label class="label" for="extraction_time">
+          <span class="label-text">Brew Time (minutes, optional)</span>
+        </label>
+        <input
+          type="number"
+          id="extraction_time"
+          name="extraction_time"
+          class="input input-bordered w-full"
+          placeholder="e.g. 720"
+          min="60"
+          max="2880"
+          step="1"
+        >
+        {% elif brew_method == 'espresso' or not brew_method %}
         <label class="label" for="extraction_time">
           <span class="label-text">Extraction Time (seconds, optional)</span>
         </label>
@@ -134,9 +150,24 @@
           max="120"
           step="1"
         >
+        {% else %}
+        <label class="label" for="extraction_time">
+          <span class="label-text">Brew Time (seconds, optional)</span>
+        </label>
+        <input
+          type="number"
+          id="extraction_time"
+          name="extraction_time"
+          class="input input-bordered w-full"
+          placeholder="e.g. 240"
+          min="5"
+          max="1800"
+          step="1"
+        >
+        {% endif %}
       </div>
 
-      <!-- Failed shot toggle -->
+      <!-- Failed shot/brew toggle -->
       <div class="form-control mb-4">
         <label class="flex items-center gap-4 min-h-12 cursor-pointer">
           <input
@@ -148,7 +179,11 @@
             onchange="toggleFailed(this)"
           >
           <span class="label-text">
+            {% if brew_method == 'espresso' or not brew_method %}
             ⚠️ Failed shot (choked / gusher)
+            {% else %}
+            ⚠️ Failed brew
+            {% endif %}
           </span>
         </label>
         <label class="label">
