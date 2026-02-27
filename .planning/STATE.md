@@ -217,6 +217,7 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 |----|------|------|
 | 001 | Fix CI test DB isolation | 2026-02-22 |
 | 002 | Style brew select dropdowns to match dark theme | 2026-02-23 |
+| 003 | Add demo link to README | 2026-02-27 |
 
 ### Known Bugs
 
@@ -230,7 +231,7 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 - **Date:** 2026-02-27
 - **What happened:** Executed Phase 25 Plan 02. Added per-bean filter to analytics page (`?bean_id=` query param), made history filter panel always visible (removed collapse wrapper). 413 tests passing.
 - **Where we left off:** Phase 25 complete (both plans done). Ready for v0.3.0 release.
-- **Stopped at:** Completed 25-02-PLAN.md
+- **Stopped at:** Completed 25-02-PLAN.md; quick task 003 complete (demo link in README)
 - **Resume file:** None
 
 ### Next Steps
@@ -239,4 +240,4 @@ See: .planning/PROJECT.md (Key Decisions table — 22+ decisions tracked)
 
 ---
 *State initialized: 2026-02-21*
-*Last updated: 2026-02-27 — Phase 25 Plan 02 complete (Phase 25 DONE)*
+*Last updated: 2026-02-27 — Phase 25 Plan 02 complete (Phase 25 DONE); Quick task 003 complete (demo link)*
