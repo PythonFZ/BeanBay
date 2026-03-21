@@ -14,11 +14,18 @@ from beanbay.dependencies import SessionDep, validate_sort
 from beanbay.models.bean import (
     Bag,
     Bean,
+    BeanFlavorTagLink,
     BeanOriginLink,
     BeanProcessLink,
     BeanVarietyLink,
 )
-from beanbay.models.tag import BeanVariety, Origin, ProcessMethod, Roaster
+from beanbay.models.tag import (
+    BeanVariety,
+    FlavorTag,
+    Origin,
+    ProcessMethod,
+    Roaster,
+)
 from beanbay.schemas.bean import (
     BagCreate,
     BagRead,
@@ -26,6 +33,7 @@ from beanbay.schemas.bean import (
     BeanCreate,
     BeanRead,
     BeanUpdate,
+    OriginWithPercentage,
 )
 from beanbay.schemas.common import PaginatedResponse
 
@@ -42,12 +50,71 @@ router = APIRouter(tags=["Beans"])
 # ======================================================================
 
 
+def _set_bean_origins(
+    session: Session,
+    bean: Bean,
+    origin_ids: list[uuid.UUID] | None,
+    origins: list[OriginWithPercentage] | None,
+) -> None:
+    """Set origin M2M relationships on a bean.
+
+    Supports both plain ``origin_ids`` (no percentage) and
+    ``origins`` (with optional percentage).  If both are provided,
+    they are merged.
+
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    bean : Bean
+        The bean to update.
+    origin_ids : list[uuid.UUID] | None
+        Plain origin IDs to link (percentage = None).
+    origins : list[OriginWithPercentage] | None
+        Origin IDs with optional blend percentages.
+    """
+    if origin_ids is None and origins is None:
+        return
+
+    # Delete existing links
+    existing = session.exec(
+        select(BeanOriginLink).where(BeanOriginLink.bean_id == bean.id)
+    ).all()
+    for link in existing:
+        session.delete(link)
+    session.flush()
+
+    # Normalize both sources into (origin_id, percentage) pairs
+    pairs: list[tuple[uuid.UUID, float | None]] = []
+    if origin_ids is not None:
+        for oid in origin_ids:
+            pairs.append((oid, None))
+    if origins is not None:
+        for o in origins:
+            pairs.append((o.origin_id, o.percentage))
+
+    for oid, pct in pairs:
+        obj = session.get(Origin, oid)
+        if obj is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Origin with id '{oid}' not found.",
+            )
+        session.add(
+            BeanOriginLink(
+                bean_id=bean.id, origin_id=oid, percentage=pct
+            )
+        )
+
+
 def _set_bean_m2m(
     session: Session,
     bean: Bean,
     origin_ids: list[uuid.UUID] | None,
+    origins: list[OriginWithPercentage] | None,
     process_ids: list[uuid.UUID] | None,
     variety_ids: list[uuid.UUID] | None,
+    flavor_tag_ids: list[uuid.UUID] | None,
 ) -> None:
     """Set M2M relationships on a bean via link models.
 
@@ -61,29 +128,17 @@ def _set_bean_m2m(
     bean : Bean
         The bean to update.
     origin_ids : list[uuid.UUID] | None
-        Origin IDs to link.  ``None`` means don't touch.
+        Plain origin IDs to link (no percentage).  ``None`` means don't touch.
+    origins : list[OriginWithPercentage] | None
+        Origins with optional blend percentages.  ``None`` means don't touch.
     process_ids : list[uuid.UUID] | None
         ProcessMethod IDs to link.  ``None`` means don't touch.
     variety_ids : list[uuid.UUID] | None
         BeanVariety IDs to link.  ``None`` means don't touch.
+    flavor_tag_ids : list[uuid.UUID] | None
+        FlavorTag IDs to link.  ``None`` means don't touch.
     """
-    if origin_ids is not None:
-        existing = session.exec(
-            select(BeanOriginLink).where(
-                BeanOriginLink.bean_id == bean.id
-            )
-        ).all()
-        for link in existing:
-            session.delete(link)
-        session.flush()
-        for oid in origin_ids:
-            obj = session.get(Origin, oid)
-            if obj is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Origin with id '{oid}' not found.",
-                )
-            session.add(BeanOriginLink(bean_id=bean.id, origin_id=oid))
+    _set_bean_origins(session, bean, origin_ids, origins)
 
     if process_ids is not None:
         existing = session.exec(
@@ -120,6 +175,26 @@ def _set_bean_m2m(
                     detail=f"BeanVariety with id '{vid}' not found.",
                 )
             session.add(BeanVarietyLink(bean_id=bean.id, variety_id=vid))
+
+    if flavor_tag_ids is not None:
+        existing = session.exec(
+            select(BeanFlavorTagLink).where(
+                BeanFlavorTagLink.bean_id == bean.id
+            )
+        ).all()
+        for link in existing:
+            session.delete(link)
+        session.flush()
+        for fid in flavor_tag_ids:
+            obj = session.get(FlavorTag, fid)
+            if obj is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"FlavorTag with id '{fid}' not found.",
+                )
+            session.add(
+                BeanFlavorTagLink(bean_id=bean.id, flavor_tag_id=fid)
+            )
 
 
 # ======================================================================
@@ -275,6 +350,12 @@ def create_bean(
         name=payload.name,
         roaster_id=payload.roaster_id,
         notes=payload.notes,
+        roast_degree=payload.roast_degree,
+        bean_mix_type=payload.bean_mix_type,
+        bean_use_type=payload.bean_use_type,
+        decaf=payload.decaf,
+        url=payload.url,
+        ean=payload.ean,
     )
     session.add(db_bean)
     session.flush()  # Get the ID
@@ -283,8 +364,10 @@ def create_bean(
         session,
         db_bean,
         payload.origin_ids,
+        payload.origins if payload.origins else None,
         payload.process_ids,
         payload.variety_ids,
+        payload.flavor_tag_ids,
     )
 
     session.commit()
@@ -361,8 +444,10 @@ def update_bean(
 
     # Extract M2M IDs (don't pass them to sqlmodel_update)
     origin_ids = update_data.pop("origin_ids", None)
+    origins_raw = update_data.pop("origins", None)
     process_ids = update_data.pop("process_ids", None)
     variety_ids = update_data.pop("variety_ids", None)
+    flavor_tag_ids = update_data.pop("flavor_tag_ids", None)
 
     # Apply scalar updates
     db_bean.sqlmodel_update(update_data)
@@ -371,12 +456,23 @@ def update_bean(
 
     # Handle M2M only if provided (exclude_unset semantics)
     raw_unset = payload.model_dump(exclude_unset=True)
+
+    # Convert raw origins dicts back to OriginWithPercentage objects
+    origins_typed: list[OriginWithPercentage] | None = None
+    if "origins" in raw_unset and origins_raw is not None:
+        origins_typed = [
+            OriginWithPercentage(**o) if isinstance(o, dict) else o
+            for o in origins_raw
+        ]
+
     _set_bean_m2m(
         session,
         db_bean,
         origin_ids if "origin_ids" in raw_unset else None,
+        origins_typed,
         process_ids if "process_ids" in raw_unset else None,
         variety_ids if "variety_ids" in raw_unset else None,
+        flavor_tag_ids if "flavor_tag_ids" in raw_unset else None,
     )
 
     session.commit()

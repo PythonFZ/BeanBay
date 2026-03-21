@@ -141,12 +141,15 @@ class OriginRead(OriginBase):
         Soft-delete timestamp.
     is_retired : bool
         Computed from ``retired_at``.
+    percentage : float | None
+        Blend percentage (only populated when read via a Bean relationship).
     """
 
     id: uuid.UUID
     created_at: datetime
     retired_at: datetime | None
     is_retired: bool
+    percentage: float | None = None
 
     @model_validator(mode="before")
     @classmethod

@@ -13,6 +13,7 @@ ORIGINS = "/api/v1/origins"
 PROCESS_METHODS = "/api/v1/process-methods"
 BEAN_VARIETIES = "/api/v1/bean-varieties"
 ROASTERS = "/api/v1/roasters"
+FLAVOR_TAGS = "/api/v1/flavor-tags"
 
 
 # ======================================================================
@@ -375,3 +376,89 @@ class TestBagCRUD:
         # Only the non-retired bag should appear
         assert len(body["bags"]) == 1
         assert body["bags"][0]["weight"] == 300.0
+
+
+# ======================================================================
+# 11. Bean enrichment (new fields, flavor tags, origin percentages)
+# ======================================================================
+
+
+class TestBeanEnrichment:
+    """Tests for enriched Bean fields: roast_degree, mix/use type, etc."""
+
+    def test_create_bean_with_new_fields(self, client):
+        """Create a bean with all new scalar fields and verify response."""
+        resp = client.post(
+            BEANS,
+            json={
+                "name": "Ethiopia Guji",
+                "roast_degree": 4.5,
+                "bean_mix_type": "single_origin",
+                "bean_use_type": "filter",
+                "decaf": False,
+                "url": "https://roaster.example.com/guji",
+                "ean": "4012345678901",
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["roast_degree"] == 4.5
+        assert data["bean_mix_type"] == "single_origin"
+        assert data["bean_use_type"] == "filter"
+        assert data["decaf"] is False
+        assert data["url"] == "https://roaster.example.com/guji"
+        assert data["ean"] == "4012345678901"
+
+    def test_create_bean_defaults(self, client):
+        """Create a bean with no new fields and verify defaults."""
+        resp = client.post(BEANS, json={"name": "Simple Bean"})
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["roast_degree"] is None
+        assert data["bean_mix_type"] == "unknown"
+        assert data["bean_use_type"] is None
+        assert data["decaf"] is False
+
+    def test_create_bean_with_flavor_tags(self, client):
+        """Create a bean with flavor_tag_ids and verify nested tags."""
+        tag1 = client.post(FLAVOR_TAGS, json={"name": "cherry"}).json()
+        tag2 = client.post(FLAVOR_TAGS, json={"name": "chocolate"}).json()
+        resp = client.post(
+            BEANS,
+            json={
+                "name": "Flavor Tagged Bean",
+                "flavor_tag_ids": [tag1["id"], tag2["id"]],
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        tag_names = {t["name"] for t in data["flavor_tags"]}
+        assert tag_names == {"cherry", "chocolate"}
+
+    def test_bean_origin_with_percentage(self, client):
+        """Create a bean with origins containing blend percentages."""
+        origin = client.post(ORIGINS, json={"name": "Colombia"}).json()
+        resp = client.post(
+            BEANS,
+            json={
+                "name": "Blend Bean",
+                "bean_mix_type": "blend",
+                "origins": [
+                    {"origin_id": origin["id"], "percentage": 60.0}
+                ],
+            },
+        )
+        assert resp.status_code == 201
+
+    def test_bean_origin_plain_ids_still_works(self, client):
+        """Create a bean with plain origin_ids (backwards compat)."""
+        origin = client.post(ORIGINS, json={"name": "Kenya"}).json()
+        resp = client.post(
+            BEANS,
+            json={
+                "name": "Plain Origin Bean",
+                "origin_ids": [origin["id"]],
+            },
+        )
+        assert resp.status_code == 201
+        assert len(resp.json()["origins"]) == 1

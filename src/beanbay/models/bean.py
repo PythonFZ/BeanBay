@@ -16,6 +16,7 @@ from sqlalchemy import func
 from sqlmodel import Field, Relationship, SQLModel
 
 from beanbay.models.base import uuid4_default
+from beanbay.models.enums import BeanMixType, BeanUseType
 
 
 # ---------------------------------------------------------------------------
@@ -32,6 +33,8 @@ class BeanOriginLink(SQLModel, table=True):
         Foreign key to the bean.
     origin_id : uuid.UUID
         Foreign key to the origin.
+    percentage : float | None
+        Blend percentage for this origin (0--100). ``None`` if not specified.
     """
 
     __tablename__ = "bean_origins"  # type: ignore[assignment]
@@ -42,6 +45,7 @@ class BeanOriginLink(SQLModel, table=True):
     origin_id: uuid.UUID = Field(
         foreign_key="origins.id", primary_key=True
     )
+    percentage: float | None = None
 
 
 class BeanProcessLink(SQLModel, table=True):
@@ -86,6 +90,27 @@ class BeanVarietyLink(SQLModel, table=True):
     )
 
 
+class BeanFlavorTagLink(SQLModel, table=True):
+    """Link table between Bean and FlavorTag (roaster's claimed flavors).
+
+    Attributes
+    ----------
+    bean_id : uuid.UUID
+        Foreign key to the bean.
+    flavor_tag_id : uuid.UUID
+        Foreign key to the flavor tag.
+    """
+
+    __tablename__ = "bean_flavor_tags"  # type: ignore[assignment]
+
+    bean_id: uuid.UUID = Field(
+        foreign_key="beans.id", primary_key=True
+    )
+    flavor_tag_id: uuid.UUID = Field(
+        foreign_key="flavor_tags.id", primary_key=True
+    )
+
+
 # ---------------------------------------------------------------------------
 # Bean model
 # ---------------------------------------------------------------------------
@@ -104,6 +129,18 @@ class Bean(SQLModel, table=True):
         Foreign key to the roaster.
     notes : str | None
         Free-text notes.
+    roast_degree : float | None
+        Roast degree on a 0--10 scale.
+    bean_mix_type : BeanMixType
+        Whether the bean is single origin, blend, or unknown.
+    bean_use_type : BeanUseType | None
+        Roaster's intended use (filter, espresso, omni).
+    decaf : bool
+        Whether the bean is decaffeinated.
+    url : str | None
+        URL to the roaster's product page.
+    ean : str | None
+        EAN / barcode for the bean.
     created_at : datetime
         Row creation timestamp (server default).
     updated_at : datetime
@@ -120,6 +157,12 @@ class Bean(SQLModel, table=True):
         default=None, foreign_key="roasters.id"
     )
     notes: str | None = None
+    roast_degree: float | None = None
+    bean_mix_type: BeanMixType = Field(default=BeanMixType.UNKNOWN)
+    bean_use_type: BeanUseType | None = None
+    decaf: bool = Field(default=False)
+    url: str | None = None
+    ean: str | None = None
     created_at: datetime = Field(
         default=None,
         sa_column_kwargs={"server_default": func.now()},
@@ -142,6 +185,9 @@ class Bean(SQLModel, table=True):
     )
     varieties: list["BeanVariety"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
         link_model=BeanVarietyLink,
+    )
+    flavor_tags: list["FlavorTag"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
+        link_model=BeanFlavorTagLink,
     )
 
 

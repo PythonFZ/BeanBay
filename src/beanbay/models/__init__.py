@@ -17,6 +17,7 @@ accepts and returns these units. Frontend clients handle display conversion.
 from beanbay.models.bean import (  # noqa: F401
     Bag,
     Bean,
+    BeanFlavorTagLink,
     BeanOriginLink,
     BeanProcessLink,
     BeanVarietyLink,
