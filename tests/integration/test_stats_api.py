@@ -140,3 +140,92 @@ def _create_origin(client, name: str | None = None, **kwargs) -> str:
     resp = client.post(ORIGINS, json={"name": name, **kwargs})
     assert resp.status_code == 201
     return resp.json()["id"]
+
+
+# ======================================================================
+# GET /stats/brews
+# ======================================================================
+
+
+class TestBrewStats:
+    """Tests for GET /api/v1/stats/brews."""
+
+    def test_empty_state(self, client):
+        """No brews → zero counts, None averages."""
+        resp = client.get(STATS_BREWS)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 0
+        assert data["this_week"] == 0
+        assert data["this_month"] == 0
+        assert data["total_failed"] == 0
+        assert data["fail_rate"] is None
+        assert data["avg_dose_g"] is None
+        assert data["avg_yield_g"] is None
+        assert data["avg_brew_time_s"] is None
+        assert data["last_brewed_at"] is None
+        assert data["by_method"] == []
+
+    def test_with_brews(self, client):
+        """Seed brews and verify counts and averages."""
+        person_id = _create_person(client)
+        bean_id = _create_bean(client)
+        bag_id = _create_bag(client, bean_id)
+        method_id = _create_brew_method(client)
+        setup_id = _create_brew_setup(client, method_id)
+
+        # Create 2 brews: one successful, one failed
+        _create_brew(
+            client, bag_id, setup_id, person_id,
+            dose=18.0, yield_amount=36.0, total_time=30.0,
+        )
+        _create_brew(
+            client, bag_id, setup_id, person_id,
+            dose=20.0, yield_amount=40.0, total_time=25.0, is_failed=True,
+        )
+
+        resp = client.get(STATS_BREWS, params={"person_id": person_id})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 2
+        assert data["this_week"] == 2
+        assert data["this_month"] == 2
+        assert data["total_failed"] == 1
+        assert data["fail_rate"] == 0.5
+        assert data["avg_dose_g"] == 19.0
+        assert data["avg_yield_g"] == 38.0
+        assert data["avg_brew_time_s"] == 27.5
+        assert data["last_brewed_at"] is not None
+        assert len(data["by_method"]) == 1
+        assert data["by_method"][0]["count"] == 2
+
+    def test_person_filter(self, client):
+        """Stats only count brews for the specified person."""
+        person_a = _create_person(client)
+        person_b = _create_person(client)
+        bean_id = _create_bean(client)
+        bag_id = _create_bag(client, bean_id)
+        method_id = _create_brew_method(client)
+        setup_id = _create_brew_setup(client, method_id)
+
+        _create_brew(client, bag_id, setup_id, person_a, dose=18.0)
+        _create_brew(client, bag_id, setup_id, person_b, dose=20.0)
+
+        resp = client.get(STATS_BREWS, params={"person_id": person_a})
+        assert resp.status_code == 200
+        assert resp.json()["total"] == 1
+
+    def test_nonexistent_person_404(self, client):
+        """Explicit unknown person_id returns 404."""
+        fake_id = str(uuid.uuid4())
+        resp = client.get(STATS_BREWS, params={"person_id": fake_id})
+        assert resp.status_code == 404
+
+    def test_retired_person_404(self, client):
+        """Explicit retired person_id returns 404."""
+        person_id = _create_person(client)
+        resp = client.delete(f"{PEOPLE}/{person_id}")
+        assert resp.status_code == 200
+
+        resp = client.get(STATS_BREWS, params={"person_id": person_id})
+        assert resp.status_code == 404

@@ -22,6 +22,7 @@ from beanbay.routers.equipment import router as equipment_router
 from beanbay.routers.people import router as people_router
 from beanbay.routers.cuppings import router as cuppings_router
 from beanbay.routers.ratings import router as ratings_router
+from beanbay.routers.stats import router as stats_router
 
 
 @asynccontextmanager
@@ -63,6 +64,7 @@ _routers = [
     vendor_router, storage_type_router,
     people_router, equipment_router, beans_router,
     brew_setups_router, brews_router, cuppings_router, ratings_router,
+    stats_router,
 ]
 for _router in _routers:
     app.include_router(_router, prefix="/api/v1")
