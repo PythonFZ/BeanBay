@@ -91,7 +91,7 @@ def _get_ring_sizes(grinder: Grinder | None) -> list[tuple[float, float, float |
 
 def _compute_grind_display(
     grind_setting: float | None,
-    brew_setup: BrewSetup,
+    brew_setup: BrewSetup | None,
 ) -> str | None:
     """Compute grind_setting_display from a canonical float.
 
@@ -107,7 +107,7 @@ def _compute_grind_display(
     str | None
         The display string, or ``None`` if not computable.
     """
-    if grind_setting is None:
+    if grind_setting is None or brew_setup is None:
         return None
     grinder = brew_setup.grinder
     ring_sizes = _get_ring_sizes(grinder)
@@ -119,7 +119,7 @@ def _compute_grind_display(
 def _resolve_grind_setting(
     payload_grind_setting: float | None,
     payload_display: str | None,
-    brew_setup: BrewSetup,
+    brew_setup: BrewSetup | None,
 ) -> float | None:
     """Resolve the canonical grind setting from payload inputs.
 
@@ -141,7 +141,7 @@ def _resolve_grind_setting(
         The canonical grind setting.
     """
     if payload_display is not None:
-        grinder = brew_setup.grinder
+        grinder = brew_setup.grinder if brew_setup else None
         ring_sizes = _get_ring_sizes(grinder)
         if ring_sizes is None:
             return float(payload_display)
@@ -234,7 +234,7 @@ def _create_taste(
     return db_taste
 
 
-def _brew_to_list_read(brew: Brew, brew_setup: BrewSetup) -> dict[str, Any]:
+def _brew_to_list_read(brew: Brew, brew_setup: BrewSetup | None) -> BrewListRead:
     """Convert a Brew ORM object to BrewListRead dict.
 
     Parameters
@@ -246,32 +246,32 @@ def _brew_to_list_read(brew: Brew, brew_setup: BrewSetup) -> dict[str, Any]:
 
     Returns
     -------
-    dict[str, Any]
-        Dict suitable for BrewListRead validation.
+    BrewListRead
+        Summary representation of the brew for list views.
     """
     grind_display = _compute_grind_display(brew.grind_setting, brew_setup)
     bag = brew.bag
     bean_name = bag.bean.name if bag and bag.bean else "Unknown"
-    method = brew_setup.brew_method
+    method = brew_setup.brew_method if brew_setup else None
     brew_method_name = method.name if method else "Unknown"
     person_name = brew.person.name if brew.person else "Unknown"
     taste = brew.taste
     score = taste.score if taste else None
 
-    return {
-        "id": brew.id,
-        "grind_setting": brew.grind_setting,
-        "grind_setting_display": grind_display,
-        "dose": brew.dose,
-        "temperature": brew.temperature,
-        "is_failed": brew.is_failed,
-        "brewed_at": brew.brewed_at,
-        "created_at": brew.created_at,
-        "bean_name": bean_name,
-        "brew_method_name": brew_method_name,
-        "person_name": person_name,
-        "score": score,
-    }
+    return BrewListRead(
+        id=brew.id,
+        grind_setting=brew.grind_setting,
+        grind_setting_display=grind_display,
+        dose=brew.dose,
+        temperature=brew.temperature,
+        is_failed=brew.is_failed,
+        brewed_at=brew.brewed_at,
+        created_at=brew.created_at,
+        bean_name=bean_name,
+        brew_method_name=brew_method_name,
+        person_name=person_name,
+        score=score,
+    )
 
 
 def _brew_to_read(brew: Brew) -> dict[str, Any]:

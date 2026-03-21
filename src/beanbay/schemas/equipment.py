@@ -436,15 +436,15 @@ class BrewerRead(BrewerBase):
         data["is_retired"] = data.get("retired_at") is not None
 
         # Compute tier using a simple namespace object
-        class _BrewerProxy:
-            pass
+        from types import SimpleNamespace
 
-        proxy = _BrewerProxy()
-        proxy.flow_control_type = data.get("flow_control_type", "none")
-        proxy.pressure_control_type = data.get("pressure_control_type", "fixed")
-        proxy.preinfusion_type = data.get("preinfusion_type", "none")
-        proxy.temp_control_type = data.get("temp_control_type", "pid")
-        data["tier"] = derive_tier(proxy)
+        proxy = SimpleNamespace(
+            flow_control_type=data.get("flow_control_type", "none"),
+            pressure_control_type=data.get("pressure_control_type", "fixed"),
+            preinfusion_type=data.get("preinfusion_type", "none"),
+            temp_control_type=data.get("temp_control_type", "pid"),
+        )
+        data["tier"] = derive_tier(proxy)  # type: ignore[arg-type]
 
         # Ensure methods and stop_modes default to empty list
         if data.get("methods") is None:

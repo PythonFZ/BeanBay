@@ -1,5 +1,6 @@
 """Shared Pydantic schemas used across the BeanBay API."""
 
+from collections.abc import Sequence
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
@@ -12,7 +13,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
     Attributes
     ----------
-    items : list[T]
+    items : Sequence[T]
         The page of results.
     total : int
         Total number of matching records.
@@ -22,7 +23,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
         Number of items skipped.
     """
 
-    items: list[T]
+    items: Sequence[T]
     total: int
     limit: int
     offset: int

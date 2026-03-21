@@ -3,7 +3,7 @@
 from pint import UnitRegistry
 
 ureg = UnitRegistry(cache_folder=":auto:")
-Q_ = ureg.Quantity
+Q_ = ureg.Quantity  # type: ignore[type-arg]
 
 
 def convert_weight(value: float, to_imperial: bool) -> float:

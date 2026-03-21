@@ -264,7 +264,7 @@ def list_beans(
     stmt = stmt.offset(offset).limit(limit)
     items = session.exec(stmt).all()
 
-    return PaginatedResponse(
+    return PaginatedResponse(  # type: ignore[return-value]
         items=items,
         total=total,
         limit=limit,
@@ -537,7 +537,7 @@ def list_bean_bags(
     stmt = stmt.offset(offset).limit(limit)
     items = session.exec(stmt).all()
 
-    return PaginatedResponse(
+    return PaginatedResponse(  # type: ignore[return-value]
         items=items,
         total=total,
         limit=limit,
@@ -675,7 +675,7 @@ def list_bags(
     stmt = stmt.offset(offset).limit(limit)
     items = session.exec(stmt).all()
 
-    return PaginatedResponse(
+    return PaginatedResponse(  # type: ignore[return-value]
         items=items,
         total=total,
         limit=limit,

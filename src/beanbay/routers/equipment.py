@@ -136,7 +136,7 @@ def list_grinders(
     stmt = stmt.offset(offset).limit(limit)
 
     items = session.exec(stmt).all()
-    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)  # type: ignore[return-value]
 
 
 @router.post("/grinders", response_model=GrinderRead, status_code=201)
@@ -343,7 +343,7 @@ def list_brewers(
     stmt = stmt.offset(offset).limit(limit)
 
     items = session.exec(stmt).all()
-    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)  # type: ignore[return-value]
 
 
 @router.post("/brewers", response_model=BrewerRead, status_code=201)
@@ -507,7 +507,7 @@ def list_papers(
     stmt = stmt.offset(offset).limit(limit)
 
     items = session.exec(stmt).all()
-    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)  # type: ignore[return-value]
 
 
 @router.post("/papers", response_model=PaperRead, status_code=201)
@@ -669,7 +669,7 @@ def list_waters(
     stmt = stmt.offset(offset).limit(limit)
 
     items = session.exec(stmt).all()
-    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)  # type: ignore[return-value]
 
 
 @router.post("/waters", response_model=WaterRead, status_code=201)

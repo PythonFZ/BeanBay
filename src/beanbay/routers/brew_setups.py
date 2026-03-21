@@ -182,7 +182,7 @@ def list_brew_setups(
     stmt = stmt.offset(offset).limit(limit)
 
     items = session.exec(stmt).all()
-    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)  # type: ignore[return-value]
 
 
 @router.post("/brew-setups", response_model=BrewSetupRead, status_code=201)
