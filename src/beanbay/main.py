@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from sqlmodel import Session
 
+from beanbay.config import settings
 from beanbay.routers.lookup import (
     bean_variety_router,
     brew_method_router,
@@ -23,12 +25,28 @@ from beanbay.routers.ratings import router as ratings_router
 async def lifespan(app: FastAPI):
     """Application lifespan handler.
 
+    Run Alembic migrations to head, then seed default lookup data
+    and the default person record.
+
     Parameters
     ----------
     app : FastAPI
         The FastAPI application instance.
     """
-    # TODO: Alembic migrations, seeding
+    from alembic import command
+    from alembic.config import Config as AlembicConfig
+
+    from beanbay.database import engine
+    from beanbay.seed import seed_brew_methods, seed_default_person, seed_stop_modes
+
+    alembic_cfg = AlembicConfig("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+    with Session(engine) as session:
+        seed_brew_methods(session)
+        seed_stop_modes(session)
+        seed_default_person(session, settings.default_person_name)
+        session.commit()
     yield
 
 
