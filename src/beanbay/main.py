@@ -20,6 +20,7 @@ from beanbay.routers.brew_setups import router as brew_setups_router
 from beanbay.routers.brews import router as brews_router
 from beanbay.routers.equipment import router as equipment_router
 from beanbay.routers.people import router as people_router
+from beanbay.routers.cuppings import router as cuppings_router
 from beanbay.routers.ratings import router as ratings_router
 
 
@@ -60,7 +61,7 @@ _routers = [
     brew_method_router, stop_mode_router,
     vendor_router, storage_type_router,
     people_router, equipment_router, beans_router,
-    brew_setups_router, brews_router, ratings_router,
+    brew_setups_router, brews_router, cuppings_router, ratings_router,
 ]
 for _router in _routers:
     app.include_router(_router, prefix="/api/v1")

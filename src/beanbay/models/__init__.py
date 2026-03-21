@@ -28,6 +28,10 @@ from beanbay.models.brew import (  # noqa: F401
     BrewTaste,
     BrewTasteFlavorTagLink,
 )
+from beanbay.models.cupping import (  # noqa: F401
+    Cupping,
+    CuppingFlavorTagLink,
+)
 from beanbay.models.equipment import (  # noqa: F401
     Brewer,
     BrewerMethodLink,
