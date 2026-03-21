@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Button, IconButton, Stack } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -9,11 +9,6 @@ import { usePaginationParams } from '@/utils/pagination';
 import { paperHooks, type Paper } from '../hooks';
 import PaperFormDialog from '../components/PaperFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
-
-const columns: GridColDef[] = [
-  { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
-  { field: 'notes', headerName: 'Notes', flex: 1, minWidth: 150 },
-];
 
 export default function PapersPage() {
   const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
@@ -33,6 +28,42 @@ export default function PapersPage() {
       setDeleteTarget(null);
     }
   };
+
+  const columns: GridColDef[] = [
+    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
+    { field: 'notes', headerName: 'Notes', flex: 1, minWidth: 150 },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 88,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
+          <IconButton
+            size="small"
+            aria-label="Edit paper"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditPaper(params.row as Paper);
+              setFormOpen(true);
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Retire paper"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(params.row as Paper);
+            }}
+          >
+            <ArchiveIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ];
 
   return (
     <>

@@ -175,8 +175,21 @@ export default function CuppingFormDialog({ open, onClose, cupping }: CuppingFor
             label="Bag"
             queryKey={['bags']}
             fetchFn={async (q) => {
-              const { data } = await apiClient.get('/bags', { params: { q, limit: 50 } });
-              return data;
+              const [{ data }, { data: beansData }] = await Promise.all([
+                apiClient.get('/bags', { params: { q, limit: 50 } }),
+                apiClient.get('/beans', { params: { limit: 200 } }),
+              ]);
+              const beanMap = new Map<string, string>();
+              for (const bean of beansData.items) {
+                beanMap.set(bean.id, bean.name);
+              }
+              return {
+                ...data,
+                items: data.items.map((bag: any) => ({
+                  ...bag,
+                  name: `${beanMap.get(bag.bean_id) ?? 'Unknown'} — ${bag.weight}g${bag.roast_date ? ` (${bag.roast_date})` : ''}`,
+                })),
+              };
             }}
             value={bag}
             onChange={(v) => setBag(v as OptionItem | null)}

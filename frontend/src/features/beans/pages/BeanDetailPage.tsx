@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router';
 import {
   Box, Button, Card, CardContent, Chip, CircularProgress,
-  Divider, Stack, Typography,
+  Divider, IconButton, Stack, Typography,
 } from '@mui/material';
 import { Edit as EditIcon, Archive as ArchiveIcon, Add as AddIcon } from '@mui/icons-material';
 import { type GridColDef } from '@mui/x-data-grid';
@@ -17,9 +17,10 @@ import {
 } from '../hooks';
 import BeanFormDialog from '../components/BeanFormDialog';
 import BagFormDialog from '../components/BagFormDialog';
+import RatingFormDialog from '@/features/ratings/RatingFormDialog';
 
-// Columns for Bags sub-table
-const bagColumns: GridColDef<Bag>[] = [
+// Base columns for Bags sub-table (actions column added inside BagsSection)
+const baseBagColumns: GridColDef<Bag>[] = [
   {
     field: 'roast_date', headerName: 'Roast Date', width: 130,
     renderCell: (p) => p.value ?? '—',
@@ -163,6 +164,34 @@ function BagsSection({ beanId }: { beanId: string }) {
     }
   };
 
+  const bagColumns: GridColDef<Bag>[] = [
+    ...baseBagColumns,
+    {
+      field: 'actions',
+      headerName: '',
+      width: 88,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
+          <IconButton
+            size="small"
+            aria-label="Edit bag"
+            onClick={(e) => { e.stopPropagation(); setEditBag(params.row); setBagFormOpen(true); }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Retire bag"
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(params.row); }}
+          >
+            <ArchiveIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ];
+
   return (
     <Box sx={{ mb: 4 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -211,10 +240,18 @@ function RatingsSection({ beanId }: { beanId: string }) {
   } = usePaginationParams('rated_at');
   const { data, isLoading } = useBeanRatings(beanId, params);
 
+  const [ratingFormOpen, setRatingFormOpen] = useState(false);
+
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h6">Ratings</Typography>
+        <Button
+          variant="outlined" size="small" startIcon={<AddIcon />}
+          onClick={() => setRatingFormOpen(true)}
+        >
+          Add Rating
+        </Button>
       </Stack>
       <DataTable<BeanRating>
         columns={ratingColumns}
@@ -227,6 +264,13 @@ function RatingsSection({ beanId }: { beanId: string }) {
         onSortModelChange={onSortModelChange}
         detailPath={(row) => `/bean-ratings/${row.id}`}
         emptyTitle="No ratings yet"
+        emptyActionLabel="Add Rating"
+        onEmptyAction={() => setRatingFormOpen(true)}
+      />
+      <RatingFormDialog
+        open={ratingFormOpen}
+        onClose={() => setRatingFormOpen(false)}
+        beanId={beanId}
       />
     </Box>
   );

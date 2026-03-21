@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Button, IconButton, Stack } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -9,21 +9,6 @@ import { usePaginationParams } from '@/utils/pagination';
 import { grinderHooks, type Grinder } from '../hooks';
 import GrinderFormDialog from '../components/GrinderFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
-
-const columns: GridColDef[] = [
-  { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
-  { field: 'dial_type', headerName: 'Dial Type', width: 120 },
-  {
-    field: 'grind_range',
-    headerName: 'Grind Range',
-    width: 150,
-    renderCell: (params) => {
-      const range = params.value as Grinder['grind_range'];
-      if (!range) return '—';
-      return `${range.min} - ${range.max}`;
-    },
-  },
-];
 
 export default function GrindersPage() {
   const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
@@ -43,6 +28,52 @@ export default function GrindersPage() {
       setDeleteTarget(null);
     }
   };
+
+  const columns: GridColDef[] = [
+    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
+    { field: 'dial_type', headerName: 'Dial Type', width: 120 },
+    {
+      field: 'grind_range',
+      headerName: 'Grind Range',
+      width: 150,
+      renderCell: (params) => {
+        const range = params.value as Grinder['grind_range'];
+        if (!range) return '—';
+        return `${range.min} - ${range.max}`;
+      },
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 88,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
+          <IconButton
+            size="small"
+            aria-label="Edit grinder"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditGrinder(params.row as Grinder);
+              setFormOpen(true);
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Retire grinder"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(params.row as Grinder);
+            }}
+          >
+            <ArchiveIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ];
 
   return (
     <>

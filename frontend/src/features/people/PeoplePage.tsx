@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, Chip } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Button, Chip, IconButton, Stack } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -9,14 +9,6 @@ import { usePaginationParams } from '@/utils/pagination';
 import { usePeople, useDeletePerson, type Person } from './hooks';
 import PersonFormDialog from './PersonFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
-
-const columns: GridColDef[] = [
-  { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
-  {
-    field: 'is_default', headerName: 'Default', width: 100,
-    renderCell: (params) => params.value ? <Chip label="Default" size="small" color="primary" /> : null,
-  },
-];
 
 export default function PeoplePage() {
   const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
@@ -36,6 +28,45 @@ export default function PeoplePage() {
       setDeleteTarget(null);
     }
   };
+
+  const columns: GridColDef[] = [
+    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
+    {
+      field: 'is_default', headerName: 'Default', width: 100,
+      renderCell: (params) => params.value ? <Chip label="Default" size="small" color="primary" /> : null,
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 88,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
+          <IconButton
+            size="small"
+            aria-label="Edit person"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditPerson(params.row as Person);
+              setFormOpen(true);
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Retire person"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(params.row as Person);
+            }}
+          >
+            <ArchiveIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ];
 
   return (
     <>

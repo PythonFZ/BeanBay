@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Button, IconButton, Stack } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -9,17 +9,6 @@ import { usePaginationParams } from '@/utils/pagination';
 import { waterHooks, type Water } from '../hooks';
 import WaterFormDialog from '../components/WaterFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
-
-const columns: GridColDef[] = [
-  { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
-  {
-    field: 'minerals',
-    headerName: 'Minerals',
-    flex: 1,
-    minWidth: 100,
-    renderCell: (params) => params.row.minerals.length,
-  },
-];
 
 export default function WatersPage() {
   const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
@@ -39,6 +28,48 @@ export default function WatersPage() {
       setDeleteTarget(null);
     }
   };
+
+  const columns: GridColDef[] = [
+    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
+    {
+      field: 'minerals',
+      headerName: 'Minerals',
+      flex: 1,
+      minWidth: 100,
+      renderCell: (params) => params.row.minerals.length,
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 88,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
+          <IconButton
+            size="small"
+            aria-label="Edit water"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditWater(params.row as Water);
+              setFormOpen(true);
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Retire water"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(params.row as Water);
+            }}
+          >
+            <ArchiveIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ];
 
   return (
     <>
