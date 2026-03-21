@@ -28,12 +28,12 @@ class BeanTasteBase(SQLModel):
         Sweetness score (0-10).
     body : float | None
         Body score (0-10).
-    bitterness : float | None
-        Bitterness score (0-10).
+    complexity : float | None
+        Complexity score (0-10).
     aroma : float | None
         Aroma score (0-10).
-    intensity : float | None
-        Intensity score (0-10).
+    clean_cup : float | None
+        Clean-cup score (0-10).
     notes : str | None
         Free-text tasting notes.
     """
@@ -42,9 +42,9 @@ class BeanTasteBase(SQLModel):
     acidity: float | None = None
     sweetness: float | None = None
     body: float | None = None
-    bitterness: float | None = None
+    complexity: float | None = None
     aroma: float | None = None
-    intensity: float | None = None
+    clean_cup: float | None = None
     notes: str | None = None
 
 
@@ -75,12 +75,12 @@ class BeanTasteUpdate(SQLModel):
         Sweetness score (0-10).
     body : float | None
         Body score (0-10).
-    bitterness : float | None
-        Bitterness score (0-10).
+    complexity : float | None
+        Complexity score (0-10).
     aroma : float | None
         Aroma score (0-10).
-    intensity : float | None
-        Intensity score (0-10).
+    clean_cup : float | None
+        Clean-cup score (0-10).
     notes : str | None
         Free-text tasting notes.
     flavor_tag_ids : list[uuid.UUID] | None
@@ -91,9 +91,9 @@ class BeanTasteUpdate(SQLModel):
     acidity: float | None = None
     sweetness: float | None = None
     body: float | None = None
-    bitterness: float | None = None
+    complexity: float | None = None
     aroma: float | None = None
-    intensity: float | None = None
+    clean_cup: float | None = None
     notes: str | None = None
     flavor_tag_ids: list[uuid.UUID] | None = None
 
@@ -149,9 +149,9 @@ class BeanTasteRead(BeanTasteBase):
             "acidity",
             "sweetness",
             "body",
-            "bitterness",
+            "complexity",
             "aroma",
-            "intensity",
+            "clean_cup",
             "notes",
             "created_at",
             "updated_at",
@@ -199,6 +199,8 @@ class BeanRatingRead(SQLModel):
         When the rating was given.
     created_at : datetime
         Row creation timestamp.
+    updated_at : datetime
+        Last-modified timestamp.
     retired_at : datetime | None
         Soft-delete timestamp.
     is_retired : bool
@@ -214,6 +216,7 @@ class BeanRatingRead(SQLModel):
     person_id: uuid.UUID
     rated_at: datetime
     created_at: datetime
+    updated_at: datetime
     retired_at: datetime | None
     is_retired: bool
     person_name: str
@@ -247,6 +250,7 @@ class BeanRatingRead(SQLModel):
             "person_id",
             "rated_at",
             "created_at",
+            "updated_at",
             "retired_at",
         ):
             data_dict[field] = getattr(data, field, None)

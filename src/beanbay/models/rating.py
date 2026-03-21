@@ -49,8 +49,6 @@ class BeanTasteFlavorTagLink(SQLModel, table=True):
 class BeanRating(SQLModel, table=True):
     """An append-only rating of a bean by a person.
 
-    No ``updated_at`` column — to "update" a rating, create a new one.
-
     Attributes
     ----------
     id : uuid.UUID
@@ -63,6 +61,8 @@ class BeanRating(SQLModel, table=True):
         When the rating was given.
     created_at : datetime
         Row creation timestamp (server default).
+    updated_at : datetime
+        Last-modified timestamp (server default, auto-updated).
     retired_at : datetime | None
         Soft-delete timestamp; ``None`` while active.
     """
@@ -79,6 +79,10 @@ class BeanRating(SQLModel, table=True):
     created_at: datetime = Field(
         default=None,
         sa_column_kwargs={"server_default": func.now()},
+    )
+    updated_at: datetime = Field(
+        default=None,
+        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
     retired_at: datetime | None = None
 
@@ -113,12 +117,12 @@ class BeanTaste(SQLModel, table=True):
         Sweetness score (0-10).
     body : float | None
         Body score (0-10).
-    bitterness : float | None
-        Bitterness score (0-10).
+    complexity : float | None
+        Complexity score (0-10).
     aroma : float | None
         Aroma score (0-10).
-    intensity : float | None
-        Intensity score (0-10).
+    clean_cup : float | None
+        Clean-cup score (0-10).
     notes : str | None
         Free-text tasting notes.
     created_at : datetime
@@ -137,9 +141,9 @@ class BeanTaste(SQLModel, table=True):
     acidity: float | None = None
     sweetness: float | None = None
     body: float | None = None
-    bitterness: float | None = None
+    complexity: float | None = None
     aroma: float | None = None
-    intensity: float | None = None
+    clean_cup: float | None = None
     notes: str | None = None
     created_at: datetime = Field(
         default=None,

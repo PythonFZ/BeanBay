@@ -110,9 +110,9 @@ def _create_taste(
         acidity=taste_data.acidity,
         sweetness=taste_data.sweetness,
         body=taste_data.body,
-        bitterness=taste_data.bitterness,
+        complexity=taste_data.complexity,
         aroma=taste_data.aroma,
-        intensity=taste_data.intensity,
+        clean_cup=taste_data.clean_cup,
         notes=taste_data.notes,
     )
     session.add(db_taste)
