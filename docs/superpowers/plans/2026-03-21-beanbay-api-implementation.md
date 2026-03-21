@@ -475,9 +475,29 @@ def create_lookup_router(
     return router
 ```
 
-Create 7 routers using this factory. The factory handles soft-delete (sets
-`retired_at` on DELETE, filters by `retired_at IS NULL` on list), `?q=` search,
-pagination, and validated sorting.
+The factory also accepts an optional `dependent_models` parameter — a list of
+`(model_class, fk_field)` tuples. On DELETE, the factory checks if any active
+(non-retired) rows in the dependent models reference the item. If so, it returns
+409 Conflict instead of soft-deleting. This builds referential integrity in from
+the start rather than retrofitting it in Task 14.
+
+```python
+    # In the DELETE endpoint of the factory:
+    if dependent_models:
+        for dep_model, fk_field in dependent_models:
+            ref_query = select(func.count()).where(
+                getattr(dep_model, fk_field) == item_id,
+                dep_model.retired_at == None,  # noqa: E711
+            )
+            if session.exec(ref_query).one() > 0:
+                raise HTTPException(
+                    409, f"Cannot retire: referenced by active {dep_model.__tablename__}"
+                )
+```
+
+Create 7 routers using this factory. Initially pass `dependent_models=None` for
+all. In Task 14, fill in the actual dependencies (e.g., Origin depends on Bean
+via bean_origins).
 
 - [ ] **Step 5: Wire routers into `main.py`**
 
@@ -849,6 +869,17 @@ git commit -m "feat: bean rating model with append-only pattern and taste manage
 
 - [ ] **Step 1: Create pint unit conversion helpers**
 
+**IMPORTANT:** Instantiate `UnitRegistry` once at module level. Pint's docs
+explicitly recommend this — the registry parses definition files on init and is
+expensive to recreate. Use `cache_folder=":auto:"` for faster subsequent startups.
+
+```python
+from pint import UnitRegistry
+
+ureg = UnitRegistry(cache_folder=":auto:")
+Q_ = ureg.Quantity
+```
+
 Functions for:
 - `convert_weight(value, from_unit, to_unit)` — grams ↔ oz
 - `convert_temperature(value, from_unit, to_unit)` — celsius ↔ fahrenheit
@@ -909,7 +940,12 @@ async def lifespan(app: FastAPI):
     from beanbay.database import engine, get_session
     from beanbay.seed import seed_brew_methods, seed_stop_modes, seed_default_person
 
-    SQLModel.metadata.create_all(engine)  # or Alembic upgrade head
+    # Run Alembic migrations programmatically (Task 12 must be done first)
+    from alembic.config import Config as AlembicConfig
+    from alembic import command
+    alembic_cfg = AlembicConfig("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
     with Session(engine) as session:
         seed_brew_methods(session)
         seed_stop_modes(session)
@@ -1003,10 +1039,13 @@ git commit -m "test: pagination, sorting, and filtering integration tests"
 **Files:**
 - Modify: relevant routers (lookup, beans)
 
-- [ ] **Step 1: Add referential integrity checks to lookup DELETE endpoints**
+- [ ] **Step 1: Wire `dependent_models` into lookup router factory calls**
 
-When soft-deleting a lookup entity (Origin, FlavorTag, etc.), check if any active
-entities reference it. If so, return 409 Conflict.
+The factory already supports `dependent_models` from Task 2. Now fill in the
+actual dependencies for each lookup router. For example:
+- Origin → `dependent_models=[(bean_origins_table, "origin_id")]` or check via Bean M2M
+- FlavorTag → check via BrewTaste and BeanTaste M2M junctions
+- Roaster → check via Bean.roaster_id
 
 - [ ] **Step 2: Write tests**
 
@@ -1075,8 +1114,8 @@ Task 7 (brew setup) — depends on 5, 6
 Task 8 (brew) — depends on 4, 7, 3
 Task 9 (rating) — depends on 2, 3, 6
 │
-Task 11 (seed + lifespan) — depends on 2, 3
 Task 12 (alembic) — depends on all models (5, 6, 8, 9)
+Task 11 (seed + lifespan) — depends on 2, 3, 12 (lifespan uses alembic upgrade)
 │
 Task 13 (pagination tests) — depends on any router
 Task 14 (referential integrity) — depends on 6, 2
