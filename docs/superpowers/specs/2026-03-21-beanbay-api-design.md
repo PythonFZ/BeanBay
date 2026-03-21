@@ -207,8 +207,41 @@ Many-to-many relationships via junction tables:
 
 Grinder display conversion (canonical float <-> display notation like "2.5.1") is
 handled by standalone functions in `utils/grinder_display.py`, cherry-picked and
-adapted from the main branch. Conversion happens transparently at the API
-serialization boundary, alongside unit conversion.
+adapted from the main branch.
+
+**GrinderRead schema** exposes the ring config as structured data (not raw JSON)
+so the frontend can build a fully dynamic grind input widget:
+
+```json
+{
+  "id": "...",
+  "name": "1Zpresso JX-Pro",
+  "dial_type": "stepped",
+  "grind_range": {
+    "min": 0,
+    "max": 200,
+    "step": 1.0
+  },
+  "rings": [
+    {"label": "rotations", "min": 0, "max": 4, "step": 1},
+    {"label": "number",    "min": 0, "max": 9, "step": 1},
+    {"label": "tick",      "min": 0, "max": 3, "step": 1}
+  ]
+}
+```
+
+- `grind_range` is computed from the ring config: total canonical min/max/step.
+- `rings` is the structured form of `ring_sizes_json`. One entry per ring.
+- Single-ring grinders (Niche Zero, Comandante) have one entry in `rings`.
+- The frontend renders one input per ring (constrained by min/max/step) plus a
+  slider from `grind_range.min` to `grind_range.max`. Changing the slider updates
+  the per-ring values and vice versa. The decomposition algorithm (canonical ↔
+  per-ring) is the same as `to_display`/`from_display` and is simple enough to
+  implement client-side given the ring definitions.
+
+**GrinderCreate/GrinderUpdate** accepts the same `rings` structure (list of
+`{label, min, max, step}` dicts). The API serializes to `ring_sizes_json` for
+DB storage and computes `display_format` from the ring count.
 
 **Brewer** (full capability model):
 
@@ -236,8 +269,23 @@ Many-to-many relationships:
 - `brewer_methods` -> BrewMethod
 - `brewer_stop_modes` -> StopMode
 
+Capability fields are flat on the Brewer table (not normalized into separate config
+tables). Nullable range fields (e.g. `temp_min`/`temp_max`) are only meaningful when
+the corresponding control type supports them (e.g. `temp_control_type` is "pid" or
+"profiling"). This is a deliberate trade-off: the flat design gives BayBE direct
+single-query access to all capability bounds for search space construction, and the
+1:1 nature of these configs makes separate tables unnecessary overhead.
+
 Computed `tier` (1-5) via `utils/brewer_capabilities.derive_tier()`, cherry-picked
-from main branch.
+from main branch. Returned in `BrewerRead` as a computed field. Tier levels:
+- **Tier 1 — Basic:** grind + dose + yield only (Gaggia Classic stock, Bambino preset)
+- **Tier 2 — Temperature:** + PID/profiling temp control (Rancilio Silvia Pro X)
+- **Tier 3 — Pre-infusion:** + timed/adjustable pre-infusion (Sage Dual Boiler)
+- **Tier 4 — Pressure & Flow:** + manual profiling or paddle/valve (lever machines)
+- **Tier 5 — Full Programmable:** + programmable flow control (Decent DE1, Meticulous)
+
+Used by the frontend to scale UI complexity, and later by BayBE to select which
+parameters to include in the optimization search space.
 
 **Paper:**
 
@@ -311,11 +359,28 @@ are a sub-collection of Water, managed via delete-all-and-reinsert on Water upda
 | updated_at | datetime | |
 | retired_at | datetime? | |
 
-Note: `grind_setting` is stored as `float` in the DB but exposed as `str | None` in
-API schemas (`BrewCreate`, `BrewRead`). The API accepts/returns the grinder's display
-notation (e.g. `"2.5.1"`); conversion to/from the canonical float happens at the
-serialization boundary using the brew-setup's grinder config. This is the only field
-where the API type differs from the DB type.
+**Grind setting in API schemas:**
+
+The DB stores `grind_setting` as a canonical `float`. The API exposes **both**
+representations so the frontend has full flexibility:
+
+```json
+// BrewRead response — both values provided
+{
+  "grind_setting": 101.0,
+  "grind_setting_display": "2.5.1"
+}
+
+// BrewCreate/BrewUpdate request — accept EITHER
+{"grind_setting": 101.0}              // canonical float (from slider)
+{"grind_setting_display": "2.5.1"}    // display notation (from ring inputs)
+// If both provided, grind_setting_display takes precedence.
+// If neither, null (preground bag).
+```
+
+Conversion uses the brew-setup's grinder ring config via `to_display`/`from_display`.
+The frontend can use the grinder's `rings` and `grind_range` (from `GrinderRead`)
+to build a synced slider + per-ring input widget entirely from API data.
 
 **BrewTaste** (subjective assessment, 1:1 with Brew):
 
@@ -544,9 +609,10 @@ Water create/update example:
 | PUT | `/brews/{id}/taste` | create or replace taste assessment |
 | PATCH | `/brews/{id}/taste` | partial update taste |
 
-The `grind_setting` is accepted/returned as the **display value** (e.g. `"2.5.1"`)
-in the API. Conversion to/from canonical float happens internally using the
-brew-setup's grinder config, at the same serialization layer as unit conversion.
+Brew responses include both `grind_setting` (canonical float) and
+`grind_setting_display` (human-readable notation). Brew create/update accepts
+either — see Section 2.6 for details. Conversion uses the brew-setup's grinder
+ring config.
 
 ### 3.7 Bean Ratings
 
@@ -788,6 +854,10 @@ Package manager: uv (per project conventions).
 | Person table with default | Consistent identity without auth; single-user convenience |
 | BeanRating append-only | Track taste perception over time; latest by rated_at is current |
 | Grinder canonical float | Internal numeric value; display conversion at API boundary |
+| Grinder rings exposed as structured data | Frontend builds dynamic input widget (per-ring inputs + slider) entirely from API data |
+| Brew exposes both grind_setting + grind_setting_display | Float for slider/BayBE, display string for human-readable notation |
+| Brewer capabilities flat (not normalized) | Single-query access for BayBE; 1:1 configs don't warrant separate tables |
+| Brewer tier computed (not stored) | Derived from capability flags; used for UI complexity and BayBE parameter selection |
 | Brewer full capability model | Ready for BayBE integration later |
 | Brewer stop_modes as M2M | Brewers support multiple stop modes |
 | Canonical units in DB | grams/celsius/seconds/ml; pint converts at API boundary |
