@@ -453,3 +453,99 @@ def get_taste_stats(
     )
 
     return TasteStatsRead(brew_taste=brew_taste, bean_taste=bean_taste)
+
+
+@router.get("/stats/equipment", response_model=EquipmentStatsRead)
+def get_equipment_stats(session: SessionDep) -> EquipmentStatsRead:
+    """Aggregated equipment statistics and usage rankings.
+
+    Parameters
+    ----------
+    session : Session
+        Database session.
+
+    Returns
+    -------
+    EquipmentStatsRead
+        Aggregated equipment statistics including totals and top usage rankings.
+    """
+    brew_active = Brew.retired_at.is_(None)  # type: ignore[union-attr]
+
+    # Totals (non-retired)
+    total_grinders = session.exec(
+        select(sa_func.count()).where(Grinder.retired_at.is_(None)).select_from(Grinder)  # type: ignore[union-attr]
+    ).one()
+    total_brewers = session.exec(
+        select(sa_func.count()).where(Brewer.retired_at.is_(None)).select_from(Brewer)  # type: ignore[union-attr]
+    ).one()
+    total_papers = session.exec(
+        select(sa_func.count()).where(Paper.retired_at.is_(None)).select_from(Paper)  # type: ignore[union-attr]
+    ).one()
+    total_waters = session.exec(
+        select(sa_func.count()).where(Water.retired_at.is_(None)).select_from(Water)  # type: ignore[union-attr]
+    ).one()
+
+    # Top grinders by brew count
+    grinder_rows = session.exec(
+        select(Grinder.id, Grinder.name, sa_func.count().label("cnt"))
+        .join(BrewSetup, BrewSetup.grinder_id == Grinder.id)
+        .join(Brew, Brew.brew_setup_id == BrewSetup.id)
+        .where(brew_active)
+        .group_by(Grinder.id, Grinder.name)
+        .order_by(sa_func.count().desc())
+        .limit(5)
+    ).all()
+
+    # Top brewers by brew count
+    brewer_rows = session.exec(
+        select(Brewer.id, Brewer.name, sa_func.count().label("cnt"))
+        .join(BrewSetup, BrewSetup.brewer_id == Brewer.id)
+        .join(Brew, Brew.brew_setup_id == BrewSetup.id)
+        .where(brew_active)
+        .group_by(Brewer.id, Brewer.name)
+        .order_by(sa_func.count().desc())
+        .limit(5)
+    ).all()
+
+    # Top setups by brew count
+    setup_rows = session.exec(
+        select(BrewSetup.id, BrewSetup.name, sa_func.count().label("cnt"))
+        .join(Brew, Brew.brew_setup_id == BrewSetup.id)
+        .where(brew_active)
+        .group_by(BrewSetup.id, BrewSetup.name)
+        .order_by(sa_func.count().desc())
+        .limit(5)
+    ).all()
+
+    # Most-used brew method
+    method_row = session.exec(
+        select(BrewMethod.id, BrewMethod.name, sa_func.count().label("cnt"))
+        .join(BrewSetup, BrewSetup.brew_method_id == BrewMethod.id)
+        .join(Brew, Brew.brew_setup_id == BrewSetup.id)
+        .where(brew_active)
+        .group_by(BrewMethod.id, BrewMethod.name)
+        .order_by(sa_func.count().desc())
+        .limit(1)
+    ).first()
+
+    return EquipmentStatsRead(
+        total_grinders=total_grinders,
+        total_brewers=total_brewers,
+        total_papers=total_papers,
+        total_waters=total_waters,
+        top_grinders=[
+            NamedUsageCount(id=r[0], name=r[1], brew_count=r[2])
+            for r in grinder_rows
+        ],
+        top_brewers=[
+            NamedUsageCount(id=r[0], name=r[1], brew_count=r[2])
+            for r in brewer_rows
+        ],
+        top_setups=[
+            SetupUsage(id=r[0], name=r[1], brew_count=r[2])
+            for r in setup_rows
+        ],
+        most_used_method=NamedUsageCount(
+            id=method_row[0], name=method_row[1], brew_count=method_row[2]
+        ) if method_row else None,
+    )

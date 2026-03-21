@@ -403,3 +403,57 @@ class TestTasteStats:
         assert bnt["avg_axes"]["complexity"] == 7.0
         assert bnt["best_score"] == 9.0
         assert bnt["best_bean_id"] == bean_id
+
+
+# ======================================================================
+# GET /stats/equipment
+# ======================================================================
+
+
+class TestEquipmentStats:
+    """Tests for GET /api/v1/stats/equipment."""
+
+    def test_empty_state(self, client):
+        """No equipment → zero totals, empty rankings."""
+        resp = client.get(STATS_EQUIPMENT)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_grinders"] == 0
+        assert data["total_brewers"] == 0
+        assert data["total_papers"] == 0
+        assert data["total_waters"] == 0
+        assert data["top_grinders"] == []
+        assert data["top_brewers"] == []
+        assert data["top_setups"] == []
+        assert data["most_used_method"] is None
+
+    def test_equipment_counts_and_rankings(self, client):
+        """Seed equipment + brews and verify totals and rankings."""
+        person_id = _create_person(client)
+        bean_id = _create_bean(client)
+        bag_id = _create_bag(client, bean_id)
+        method_id = _create_brew_method(client)
+        grinder_id = _create_grinder(client)
+        brewer_id = _create_brewer(client)
+
+        setup_id = _create_brew_setup(
+            client, method_id, grinder_id=grinder_id, brewer_id=brewer_id
+        )
+
+        # Create 3 brews using this setup
+        for _ in range(3):
+            _create_brew(client, bag_id, setup_id, person_id)
+
+        resp = client.get(STATS_EQUIPMENT)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_grinders"] == 1
+        assert data["total_brewers"] == 1
+        assert len(data["top_grinders"]) == 1
+        assert data["top_grinders"][0]["brew_count"] == 3
+        assert len(data["top_brewers"]) == 1
+        assert data["top_brewers"][0]["brew_count"] == 3
+        assert len(data["top_setups"]) == 1
+        assert data["top_setups"][0]["brew_count"] == 3
+        assert data["most_used_method"] is not None
+        assert data["most_used_method"]["brew_count"] == 3
