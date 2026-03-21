@@ -1,13 +1,52 @@
 """Shared FastAPI dependency types and helpers for BeanBay."""
 
+import uuid
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
-from sqlmodel import Session
+from fastapi import Depends, HTTPException, Query
+from sqlmodel import Session, select
 
 from beanbay.database import get_session
+from beanbay.models.person import Person
 
 SessionDep = Annotated[Session, Depends(get_session)]
+
+
+def _resolve_person_id(
+    session: SessionDep,
+    person_id: uuid.UUID | None = Query(default=None),
+) -> uuid.UUID | None:
+    """Resolve an optional person_id, falling back to the default person.
+
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    person_id : uuid.UUID | None
+        Explicit person ID. If ``None``, resolves to the default person.
+
+    Returns
+    -------
+    uuid.UUID | None
+        Resolved person ID, or ``None`` if no default person exists.
+
+    Raises
+    ------
+    HTTPException
+        404 if an explicit ``person_id`` is not found or is retired.
+    """
+    if person_id:
+        person = session.get(Person, person_id)
+        if not person or person.retired_at:
+            raise HTTPException(status_code=404, detail="Person not found")
+        return person_id
+    default = session.exec(
+        select(Person).where(Person.is_default == True)  # noqa: E712
+    ).first()
+    return default.id if default else None
+
+
+OptionalPersonIdDep = Annotated[uuid.UUID | None, Depends(_resolve_person_id)]
 
 
 def validate_sort(sort_by: str, sort_dir: str, allowed: list[str]) -> None:
