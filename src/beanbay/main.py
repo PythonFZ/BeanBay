@@ -11,6 +11,7 @@ from beanbay.routers.lookup import (
     roaster_router,
     stop_mode_router,
 )
+from beanbay.routers.people import router as people_router
 
 
 @asynccontextmanager
@@ -39,6 +40,9 @@ for _router in (
     stop_mode_router,
 ):
     app.include_router(_router, prefix="/api/v1")
+
+# People router
+app.include_router(people_router, prefix="/api/v1")
 
 
 @app.get("/health")
