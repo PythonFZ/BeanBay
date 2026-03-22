@@ -60,10 +60,17 @@ The "Display Format" field in the grinder creation form shows "decimal" which is
 **Files:**
 - Modify: `frontend/src/features/equipment/components/GrinderFormDialog.tsx`
 
+**Frontend:**
 - Remove the `display_format` TextField from the form UI
 - Remove `displayFormat` state variable
-- Always send `display_format: "decimal"` as a hardcoded default in the submit body
-- Backend column removal is out of scope (separate backend task)
+- Stop sending `display_format` in the submit body entirely (backend will use column default)
+
+**Backend:**
+- Remove `display_format` field from `Grinder` model (`src/beanbay/models/equipment.py`)
+- Remove `display_format` from `GrinderCreate`, `GrinderUpdate`, `GrinderRead` schemas (`src/beanbay/schemas/equipment.py`)
+- Remove `display_format` from the grinder creation router (`src/beanbay/routers/equipment.py`)
+- Generate Alembic migration to drop the `display_format` column from the `grinders` table
+- Regenerate frontend TypeScript types after API change (`bun run generate-types`)
 
 ## Fix 3: Consistent Row Interaction
 
@@ -119,18 +126,19 @@ DataTable search only fires on Enter key or input blur. Users expect live filter
 **Files:**
 - Modify: `frontend/src/components/DataTable.tsx`
 
-- Replace Enter/blur event handlers with a debounced `useEffect`
-- When `searchInput` changes, wait 300ms then call `onSearchChange(searchInput)`
-- Use a simple `setTimeout`/`clearTimeout` pattern (no external debounce library needed)
-- Remove the `onKeyDown` Enter handler and `onBlur` handler for search
-- Keep the `searchInput` local state for controlled input
+- Add `lodash.debounce` (or `lodash-es`) as a dependency: `bun add lodash-es && bun add -D @types/lodash-es`
+- Create a debounced version of `onSearchChange` using `useMemo(() => debounce(onSearchChange, 300), [onSearchChange])`
+- Wire the debounced function to the TextField `onChange` directly — no local state, Enter handler, or blur handler needed
+- Clean up the debounced function on unmount via `useEffect` cleanup
 - The URL params update after the 300ms debounce, triggering the API refetch via TanStack Query
 
 ```typescript
-useEffect(() => {
-  const timer = setTimeout(() => {
-    onSearchChange?.(searchInput);
-  }, 300);
-  return () => clearTimeout(timer);
-}, [searchInput, onSearchChange]);
+import { debounce } from 'lodash-es';
+
+const debouncedSearch = useMemo(
+  () => onSearchChange ? debounce(onSearchChange, 300) : undefined,
+  [onSearchChange],
+);
+
+useEffect(() => () => debouncedSearch?.cancel(), [debouncedSearch]);
 ```
