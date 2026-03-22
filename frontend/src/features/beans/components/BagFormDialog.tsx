@@ -16,6 +16,7 @@ interface BagFormDialogProps {
   beanId: string;
   bag?: Bag | null;
   onRetire?: () => void;
+  onActivate?: () => void;
 }
 
 function CreateInlineForm({
@@ -51,7 +52,7 @@ function CreateInlineForm({
   );
 }
 
-export default function BagFormDialog({ open, onClose, beanId, bag, onRetire }: BagFormDialogProps) {
+export default function BagFormDialog({ open, onClose, beanId, bag, onRetire, onActivate }: BagFormDialogProps) {
   const isEdit = !!bag;
   const createBag = useCreateBag(beanId);
   const updateBag = useUpdateBag(beanId);
@@ -224,7 +225,10 @@ export default function BagFormDialog({ open, onClose, beanId, bag, onRetire }: 
         </Stack>
       </DialogContent>
       <DialogActions>
-        {isEdit && onRetire && (
+        {isEdit && bag?.retired_at && onActivate && (
+          <Button color="success" onClick={onActivate} disabled={isPending} sx={{ mr: 'auto' }}>Activate</Button>
+        )}
+        {isEdit && !bag?.retired_at && onRetire && (
           <Button color="warning" onClick={onRetire} disabled={isPending} sx={{ mr: 'auto' }}>Retire</Button>
         )}
         <Button onClick={onClose} disabled={isPending}>Cancel</Button>

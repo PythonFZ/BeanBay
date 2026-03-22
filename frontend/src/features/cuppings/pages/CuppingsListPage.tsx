@@ -28,7 +28,7 @@ export default function CuppingsListPage() {
   const {
     params, paginationModel, sortModel,
     onPaginationModelChange, onSortModelChange,
-    setSearch, setIncludeRetired,
+    setIncludeRetired,
   } = usePaginationParams('cupped_at');
 
   const { data, isLoading } = useCuppings(params);
@@ -57,8 +57,6 @@ export default function CuppingsListPage() {
         onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel}
         onSortModelChange={onSortModelChange}
-        search={params.q}
-        onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
         detailPath={(row) => `/cuppings/${row.id}`}

@@ -43,7 +43,7 @@ export function useCreatePerson() {
 export function useUpdatePerson() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...body }: { id: string; name?: string; is_default?: boolean }) => {
+    mutationFn: async ({ id, ...body }: { id: string; name?: string; is_default?: boolean; retired_at?: string | null }) => {
       const { data } = await apiClient.patch(`/people/${id}`, body);
       return data;
     },

@@ -6,12 +6,12 @@ import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { usePaginationParams } from '@/utils/pagination';
-import { usePeople, useDeletePerson, type Person } from './hooks';
+import { usePeople, useDeletePerson, useUpdatePerson, type Person } from './hooks';
 import PersonFormDialog from './PersonFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
 
 export default function PeoplePage() {
-  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
+  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setIncludeRetired } =
     usePaginationParams('name');
   const { data, isLoading } = usePeople(params);
   const deletePerson = useDeletePerson();
@@ -21,12 +21,23 @@ export default function PeoplePage() {
   const [editPerson, setEditPerson] = useState<Person | null>(null);
   const [retireTarget, setRetireTarget] = useState<Person | null>(null);
 
+  const updatePerson = useUpdatePerson();
+
   const handleRetire = async () => {
     if (retireTarget) {
       await deletePerson.mutateAsync(retireTarget.id);
       notify('Person retired');
       setRetireTarget(null);
       setFormOpen(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (editPerson) {
+      await updatePerson.mutateAsync({ id: editPerson.id, retired_at: null });
+      notify('Person activated');
+      setFormOpen(false);
+      setEditPerson(null);
     }
   };
 
@@ -47,7 +58,6 @@ export default function PeoplePage() {
         columns={columns} rows={data?.items ?? []} total={data?.total ?? 0} loading={isLoading}
         paginationModel={paginationModel} onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel} onSortModelChange={onSortModelChange}
-        search={params.q} onSearchChange={setSearch}
         includeRetired={params.include_retired} onIncludeRetiredChange={setIncludeRetired}
         onRowClick={(row) => { setEditPerson(row); setFormOpen(true); }}
         emptyTitle="No people yet" emptyActionLabel="Add Person"
@@ -58,6 +68,7 @@ export default function PeoplePage() {
         onClose={() => setFormOpen(false)}
         person={editPerson}
         onRetire={editPerson ? () => setRetireTarget(editPerson) : undefined}
+        onActivate={editPerson?.retired_at ? handleActivate : undefined}
       />
       <ConfirmDialog open={!!retireTarget} title="Retire Person"
         message={`Retire "${retireTarget?.name}"? This won't delete their brews or ratings.`}

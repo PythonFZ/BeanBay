@@ -185,10 +185,15 @@ export default function CuppingFormDialog({ open, onClose, cupping }: CuppingFor
               }
               return {
                 ...data,
-                items: data.items.map((bag: any) => ({
-                  ...bag,
-                  name: `${beanMap.get(bag.bean_id) ?? 'Unknown'} — ${bag.weight}g${bag.roast_date ? ` (${bag.roast_date})` : ''}`,
-                })),
+                items: data.items.map((bag: any) => {
+                  const beanName = beanMap.get(bag.bean_id) ?? `Bag ${bag.id.slice(0, 8)}`;
+                  const weightStr = bag.weight != null ? `${bag.weight}g` : '';
+                  const dateStr = bag.roast_date ? ` (${bag.roast_date})` : '';
+                  return {
+                    ...bag,
+                    name: [beanName, weightStr].filter(Boolean).join(' — ') + dateStr,
+                  };
+                }),
               };
             }}
             value={bag}

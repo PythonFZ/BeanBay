@@ -1,5 +1,5 @@
 // frontend/src/features/brews/components/BrewStepSetup.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Stack, TextField, Typography } from '@mui/material';
 import AutocompleteCreate from '@/components/AutocompleteCreate';
@@ -68,6 +68,26 @@ export default function BrewStepSetup({ data, onChange }: BrewStepSetupProps) {
     },
     staleTime: 60_000,
   });
+
+  // Fetch people to auto-select default
+  const { data: peopleData } = useQuery<{ items: { id: string; name: string; is_default?: boolean }[] }>({
+    queryKey: ['people', { limit: 100 }],
+    queryFn: async () => {
+      const { data: d } = await apiClient.get('/people', { params: { limit: 100 } });
+      return d;
+    },
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (!data.person && peopleData) {
+      const defaultPerson = peopleData.items.find((p) => p.is_default);
+      if (defaultPerson) {
+        onChange({ person: { id: defaultPerson.id, name: defaultPerson.name } });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peopleData]);
 
   const beanMap: Record<string, string> = {};
   (beansData?.items ?? []).forEach((b) => { beanMap[b.id] = b.name; });

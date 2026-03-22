@@ -18,7 +18,7 @@ interface LookupTabProps {
 }
 
 export default function LookupTab({ hooks, columns, fields, entityName }: LookupTabProps) {
-  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
+  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setIncludeRetired } =
     usePaginationParams('name');
   const { data, isLoading } = hooks.useList(params);
   const create = hooks.useCreate();
@@ -66,6 +66,15 @@ export default function LookupTab({ hooks, columns, fields, entityName }: Lookup
     }
   };
 
+  const handleActivate = async () => {
+    if (editItem) {
+      await update.mutateAsync({ id: editItem.id, retired_at: null });
+      notify(`${entityName} activated`);
+      setFormOpen(false);
+      setEditItem(null);
+    }
+  };
+
   return (
     <>
       <Button variant="outlined" startIcon={<AddIcon />}
@@ -76,7 +85,6 @@ export default function LookupTab({ hooks, columns, fields, entityName }: Lookup
         columns={columns} rows={data?.items ?? []} total={data?.total ?? 0} loading={isLoading}
         paginationModel={paginationModel} onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel} onSortModelChange={onSortModelChange}
-        search={params.q} onSearchChange={setSearch}
         includeRetired={params.include_retired} onIncludeRetiredChange={setIncludeRetired}
         onRowClick={(row) => { setEditItem(row); setFormOpen(true); }}
         emptyTitle={`No ${entityName.toLowerCase()}s yet`}
@@ -95,7 +103,10 @@ export default function LookupTab({ hooks, columns, fields, entityName }: Lookup
           </Stack>
         </DialogContent>
         <DialogActions>
-          {editItem && (
+          {editItem && editItem.retired_at && (
+            <Button color="success" onClick={handleActivate} sx={{ mr: 'auto' }}>Activate</Button>
+          )}
+          {editItem && !editItem.retired_at && (
             <Button color="warning" onClick={() => setDeleteTarget(editItem)} sx={{ mr: 'auto' }}>Retire</Button>
           )}
           <Button onClick={() => { setFormOpen(false); setEditItem(null); }}>Cancel</Button>

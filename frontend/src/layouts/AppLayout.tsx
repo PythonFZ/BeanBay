@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon, ChevronLeft as ChevronLeftIcon, Dashboard as DashboardIcon,
-  LocalCafe as BeansIcon, Inventory2 as BagsIcon, Coffee as BrewsIcon,
+  LocalCafe as BeansIcon, Coffee as BrewsIcon,
   BlenderOutlined as GrindersIcon, CoffeeMaker as BrewersIcon, FilterAlt as PapersIcon,
   WaterDrop as WatersIcon, Tune as SetupsIcon, Star as CuppingsIcon,
   People as PeopleIcon, Settings as SettingsIcon, Add as AddIcon,
@@ -25,7 +25,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
       { label: 'Beans', path: '/beans', icon: <BeansIcon /> },
-      { label: 'Bags', path: '/bags', icon: <BagsIcon /> },
       { label: 'Brews', path: '/brews', icon: <BrewsIcon /> },
     ],
   },

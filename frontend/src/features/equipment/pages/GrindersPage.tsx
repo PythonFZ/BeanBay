@@ -11,7 +11,7 @@ import GrinderFormDialog from '../components/GrinderFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
 
 export default function GrindersPage() {
-  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
+  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setIncludeRetired } =
     usePaginationParams('name');
   const { data, isLoading } = grinderHooks.useList(params);
   const deleteGrinder = grinderHooks.useDelete();
@@ -21,12 +21,23 @@ export default function GrindersPage() {
   const [editGrinder, setEditGrinder] = useState<Grinder | null>(null);
   const [retireTarget, setRetireTarget] = useState<Grinder | null>(null);
 
+  const updateGrinder = grinderHooks.useUpdate();
+
   const handleRetire = async () => {
     if (retireTarget) {
       await deleteGrinder.mutateAsync(retireTarget.id);
       notify('Grinder retired');
       setRetireTarget(null);
       setFormOpen(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (editGrinder) {
+      await updateGrinder.mutateAsync({ id: editGrinder.id, retired_at: null });
+      notify('Grinder activated');
+      setFormOpen(false);
+      setEditGrinder(null);
     }
   };
 
@@ -68,8 +79,6 @@ export default function GrindersPage() {
         onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel}
         onSortModelChange={onSortModelChange}
-        search={params.q}
-        onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
         onRowClick={(row) => { setEditGrinder(row); setFormOpen(true); }}
@@ -82,6 +91,7 @@ export default function GrindersPage() {
         onClose={() => setFormOpen(false)}
         grinder={editGrinder}
         onRetire={editGrinder ? () => setRetireTarget(editGrinder) : undefined}
+        onActivate={editGrinder?.retired_at ? handleActivate : undefined}
       />
       <ConfirmDialog
         open={!!retireTarget}

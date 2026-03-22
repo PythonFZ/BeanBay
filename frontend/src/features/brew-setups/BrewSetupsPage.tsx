@@ -11,7 +11,7 @@ import BrewSetupFormDialog from './BrewSetupFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
 
 export default function BrewSetupsPage() {
-  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
+  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setIncludeRetired } =
     usePaginationParams('name');
   const { data, isLoading } = useBrewSetups(params);
   const deleteBrewSetup = useDeleteBrewSetup();
@@ -21,12 +21,23 @@ export default function BrewSetupsPage() {
   const [editSetup, setEditSetup] = useState<BrewSetup | null>(null);
   const [retireTarget, setRetireTarget] = useState<BrewSetup | null>(null);
 
+  const updateBrewSetup = useUpdateBrewSetup();
+
   const handleRetire = async () => {
     if (retireTarget) {
       await deleteBrewSetup.mutateAsync(retireTarget.id);
       notify('Brew setup retired');
       setRetireTarget(null);
       setFormOpen(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (editSetup) {
+      await updateBrewSetup.mutateAsync({ id: editSetup.id, retired_at: null });
+      notify('Brew setup activated');
+      setFormOpen(false);
+      setEditSetup(null);
     }
   };
 
@@ -87,8 +98,6 @@ export default function BrewSetupsPage() {
         onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel}
         onSortModelChange={onSortModelChange}
-        search={params.q}
-        onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
         onRowClick={(row) => { setEditSetup(row); setFormOpen(true); }}
@@ -101,6 +110,7 @@ export default function BrewSetupsPage() {
         onClose={() => { setFormOpen(false); setEditSetup(null); }}
         brewSetup={editSetup}
         onRetire={editSetup ? () => setRetireTarget(editSetup) : undefined}
+        onActivate={editSetup?.retired_at ? handleActivate : undefined}
       />
       <ConfirmDialog
         open={!!retireTarget}

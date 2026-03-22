@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button } from '@mui/material';
+import {
+  Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  FormControlLabel, Switch, Typography,
+} from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import { usePaginationParams } from '@/utils/pagination';
 import { useBeans, type Bean } from '../hooks';
 import BeanFormDialog from '../components/BeanFormDialog';
+import BagFormDialog from '../components/BagFormDialog';
+import RatingFormDialog from '@/features/ratings/RatingFormDialog';
 
 const columns: GridColDef<Bean>[] = [
   { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
@@ -40,6 +45,44 @@ export default function BeansListPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editBean, setEditBean] = useState<Bean | null>(null);
 
+  // Active bags filter
+  const [hasActiveBags, setHasActiveBags] = useState(false);
+
+  // New bean creation flow
+  const [newBeanId, setNewBeanId] = useState<string | null>(null);
+  const [bagFormOpen, setBagFormOpen] = useState(false);
+  const [ratingPromptOpen, setRatingPromptOpen] = useState(false);
+  const [ratingFormOpen, setRatingFormOpen] = useState(false);
+
+  const handleBeanCreated = (bean: Bean) => {
+    setNewBeanId(bean.id);
+    setBagFormOpen(true);
+  };
+
+  const handleBagClose = () => {
+    setBagFormOpen(false);
+    setRatingPromptOpen(true);
+  };
+
+  const handleRatingPromptYes = () => {
+    setRatingPromptOpen(false);
+    setRatingFormOpen(true);
+  };
+
+  const handleRatingPromptNo = () => {
+    setRatingPromptOpen(false);
+    setNewBeanId(null);
+  };
+
+  const handleRatingFormClose = () => {
+    setRatingFormOpen(false);
+    setNewBeanId(null);
+  };
+
+  const displayedRows = hasActiveBags
+    ? (data?.items ?? []).filter((bean) => (bean.bags?.length ?? 0) > 0)
+    : (data?.items ?? []);
+
   return (
     <>
       <PageHeader
@@ -56,8 +99,8 @@ export default function BeansListPage() {
       />
       <DataTable<Bean>
         columns={columns}
-        rows={data?.items ?? []}
-        total={data?.total ?? 0}
+        rows={displayedRows}
+        total={hasActiveBags ? displayedRows.length : (data?.total ?? 0)}
         loading={isLoading}
         paginationModel={paginationModel}
         onPaginationModelChange={onPaginationModelChange}
@@ -67,6 +110,19 @@ export default function BeansListPage() {
         onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
+        extraToolbarContent={
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={hasActiveBags}
+                onChange={(_, c) => setHasActiveBags(c)}
+              />
+            }
+            label="Has active bags"
+            sx={{ ml: 1 }}
+          />
+        }
         detailPath={(row) => `/beans/${row.id}`}
         emptyTitle="No beans yet"
         emptyActionLabel="Add Bean"
@@ -76,7 +132,32 @@ export default function BeansListPage() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         bean={editBean}
+        onCreated={handleBeanCreated}
       />
+      {newBeanId && (
+        <BagFormDialog
+          open={bagFormOpen}
+          onClose={handleBagClose}
+          beanId={newBeanId}
+        />
+      )}
+      <Dialog open={ratingPromptOpen} onClose={handleRatingPromptNo}>
+        <DialogTitle>Add a taste rating?</DialogTitle>
+        <DialogContent>
+          <Typography>Would you like to add a taste rating for this bean?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleRatingPromptNo}>No</Button>
+          <Button variant="contained" onClick={handleRatingPromptYes}>Yes</Button>
+        </DialogActions>
+      </Dialog>
+      {newBeanId && (
+        <RatingFormDialog
+          open={ratingFormOpen}
+          onClose={handleRatingFormClose}
+          beanId={newBeanId}
+        />
+      )}
     </>
   );
 }

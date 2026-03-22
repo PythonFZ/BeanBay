@@ -11,7 +11,7 @@ import PaperFormDialog from '../components/PaperFormDialog';
 import { useNotification } from '@/components/NotificationProvider';
 
 export default function PapersPage() {
-  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setSearch, setIncludeRetired } =
+  const { params, paginationModel, sortModel, onPaginationModelChange, onSortModelChange, setIncludeRetired } =
     usePaginationParams('name');
   const { data, isLoading } = paperHooks.useList(params);
   const deletePaper = paperHooks.useDelete();
@@ -21,12 +21,23 @@ export default function PapersPage() {
   const [editPaper, setEditPaper] = useState<Paper | null>(null);
   const [retireTarget, setRetireTarget] = useState<Paper | null>(null);
 
+  const updatePaper = paperHooks.useUpdate();
+
   const handleRetire = async () => {
     if (retireTarget) {
       await deletePaper.mutateAsync(retireTarget.id);
       notify('Paper retired');
       setRetireTarget(null);
       setFormOpen(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (editPaper) {
+      await updatePaper.mutateAsync({ id: editPaper.id, retired_at: null });
+      notify('Paper activated');
+      setFormOpen(false);
+      setEditPaper(null);
     }
   };
 
@@ -58,8 +69,6 @@ export default function PapersPage() {
         onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel}
         onSortModelChange={onSortModelChange}
-        search={params.q}
-        onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
         onRowClick={(row) => { setEditPaper(row); setFormOpen(true); }}
@@ -72,6 +81,7 @@ export default function PapersPage() {
         onClose={() => setFormOpen(false)}
         paper={editPaper}
         onRetire={editPaper ? () => setRetireTarget(editPaper) : undefined}
+        onActivate={editPaper?.retired_at ? handleActivate : undefined}
       />
       <ConfirmDialog
         open={!!retireTarget}

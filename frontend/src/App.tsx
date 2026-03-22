@@ -6,7 +6,6 @@ import AppLayout from '@/layouts/AppLayout';
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 const BeansListPage = lazy(() => import('@/features/beans/pages/BeansListPage'));
 const BeanDetailPage = lazy(() => import('@/features/beans/pages/BeanDetailPage'));
-const BagsListPage = lazy(() => import('@/features/bags/BagsListPage'));
 const BrewsListPage = lazy(() => import('@/features/brews/pages/BrewsListPage'));
 const BrewWizard = lazy(() => import('@/features/brews/components/BrewWizard'));
 const BrewDetailPage = lazy(() => import('@/features/brews/pages/BrewDetailPage'));
@@ -45,7 +44,6 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="beans" element={<BeansListPage />} />
           <Route path="beans/:beanId" element={<BeanDetailPage />} />
-          <Route path="bags" element={<BagsListPage />} />
           <Route path="brews" element={<BrewsListPage />} />
           <Route path="brews/new" element={<BrewWizard />} />
           <Route path="brews/:brewId" element={<BrewDetailPage />} />

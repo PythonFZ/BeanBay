@@ -12,7 +12,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { usePaginationParams } from '@/utils/pagination';
 import { useNotification } from '@/components/NotificationProvider';
 import {
-  useBean, useDeleteBean, useBags, useDeleteBag, useBeanRatings,
+  useBean, useDeleteBean, useBags, useDeleteBag, useUpdateBag, useBeanRatings,
   type Bean, type Bag, type BeanRating,
 } from '../hooks';
 import BeanFormDialog from '../components/BeanFormDialog';
@@ -150,6 +150,7 @@ function BagsSection({ beanId }: { beanId: string }) {
   } = usePaginationParams('roast_date');
   const { data, isLoading } = useBags(beanId, params);
   const deleteBag = useDeleteBag(beanId);
+  const updateBag = useUpdateBag(beanId);
   const { notify } = useNotification();
 
   const [bagFormOpen, setBagFormOpen] = useState(false);
@@ -162,6 +163,15 @@ function BagsSection({ beanId }: { beanId: string }) {
       notify('Bag retired');
       setRetireBagTarget(null);
       setBagFormOpen(false);
+    }
+  };
+
+  const handleActivateBag = async () => {
+    if (editBag) {
+      await updateBag.mutateAsync({ id: editBag.id, retired_at: null });
+      notify('Bag activated');
+      setBagFormOpen(false);
+      setEditBag(null);
     }
   };
 
@@ -195,7 +205,8 @@ function BagsSection({ beanId }: { beanId: string }) {
         onClose={() => setBagFormOpen(false)}
         beanId={beanId}
         bag={editBag}
-        onRetire={editBag ? () => setRetireBagTarget(editBag) : undefined}
+        onRetire={editBag && !editBag.retired_at ? () => setRetireBagTarget(editBag) : undefined}
+        onActivate={editBag?.retired_at ? handleActivateBag : undefined}
       />
       <ConfirmDialog
         open={!!retireBagTarget}

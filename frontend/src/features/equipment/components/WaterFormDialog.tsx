@@ -17,9 +17,10 @@ interface WaterFormDialogProps {
   onClose: () => void;
   water?: Water | null;
   onRetire?: () => void;
+  onActivate?: () => void;
 }
 
-export default function WaterFormDialog({ open, onClose, water, onRetire }: WaterFormDialogProps) {
+export default function WaterFormDialog({ open, onClose, water, onRetire, onActivate }: WaterFormDialogProps) {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [minerals, setMinerals] = useState<MineralRow[]>([]);
@@ -150,7 +151,10 @@ export default function WaterFormDialog({ open, onClose, water, onRetire }: Wate
         </Stack>
       </DialogContent>
       <DialogActions>
-        {isEdit && onRetire && (
+        {isEdit && water?.retired_at && onActivate && (
+          <Button color="success" onClick={onActivate} sx={{ mr: 'auto' }}>Activate</Button>
+        )}
+        {isEdit && !water?.retired_at && onRetire && (
           <Button color="warning" onClick={onRetire} sx={{ mr: 'auto' }}>Retire</Button>
         )}
         <Button onClick={onClose}>Cancel</Button>

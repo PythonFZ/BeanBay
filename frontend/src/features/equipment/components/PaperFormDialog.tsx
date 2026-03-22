@@ -8,9 +8,10 @@ interface PaperFormDialogProps {
   onClose: () => void;
   paper?: Paper | null;
   onRetire?: () => void;
+  onActivate?: () => void;
 }
 
-export default function PaperFormDialog({ open, onClose, paper, onRetire }: PaperFormDialogProps) {
+export default function PaperFormDialog({ open, onClose, paper, onRetire, onActivate }: PaperFormDialogProps) {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const isEdit = !!paper;
@@ -61,7 +62,10 @@ export default function PaperFormDialog({ open, onClose, paper, onRetire }: Pape
         </Stack>
       </DialogContent>
       <DialogActions>
-        {isEdit && onRetire && (
+        {isEdit && paper?.retired_at && onActivate && (
+          <Button color="success" onClick={onActivate} sx={{ mr: 'auto' }}>Activate</Button>
+        )}
+        {isEdit && !paper?.retired_at && onRetire && (
           <Button color="warning" onClick={onRetire} sx={{ mr: 'auto' }}>Retire</Button>
         )}
         <Button onClick={onClose}>Cancel</Button>

@@ -22,6 +22,7 @@ interface BeanFormDialogProps {
   open: boolean;
   onClose: () => void;
   bean?: Bean | null;
+  onCreated?: (bean: Bean) => void;
 }
 
 function CreateInlineForm({
@@ -64,7 +65,7 @@ function CreateInlineForm({
   );
 }
 
-export default function BeanFormDialog({ open, onClose, bean }: BeanFormDialogProps) {
+export default function BeanFormDialog({ open, onClose, bean, onCreated }: BeanFormDialogProps) {
   const isEdit = !!bean;
   const create = useCreateBean();
   const update = useUpdateBean();
@@ -186,11 +187,13 @@ export default function BeanFormDialog({ open, onClose, bean }: BeanFormDialogPr
     if (isEdit) {
       await update.mutateAsync({ id: bean!.id, ...buildPatchBody() });
       notify('Bean updated');
+      onClose();
     } else {
-      await create.mutateAsync(buildBody());
+      const newBean = await create.mutateAsync(buildBody());
       notify('Bean created');
+      onClose();
+      onCreated?.(newBean as Bean);
     }
-    onClose();
   };
 
   const isPending = create.isPending || update.isPending;

@@ -1,5 +1,5 @@
 // frontend/src/components/DataTable.tsx
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   DataGrid, type GridColDef, type GridPaginationModel,
   type GridRowParams, type GridSortModel,
@@ -23,6 +23,7 @@ interface DataTableProps<T extends { id: string }> {
   onSearchChange?: (q: string) => void;
   includeRetired?: boolean;
   onIncludeRetiredChange?: (include: boolean) => void;
+  extraToolbarContent?: ReactNode;
   detailPath?: (row: T) => string;
   onRowClick?: (row: T) => void;
   emptyTitle?: string;
@@ -34,8 +35,8 @@ interface DataTableProps<T extends { id: string }> {
 export default function DataTable<T extends { id: string }>({
   columns, rows, total, loading, paginationModel, onPaginationModelChange,
   sortModel, onSortModelChange, search, onSearchChange, includeRetired,
-  onIncludeRetiredChange, detailPath, onRowClick, emptyTitle = 'No items yet',
-  emptyDescription, emptyActionLabel, onEmptyAction,
+  onIncludeRetiredChange, extraToolbarContent, detailPath, onRowClick,
+  emptyTitle = 'No items yet', emptyDescription, emptyActionLabel, onEmptyAction,
 }: DataTableProps<T>) {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState(search ?? '');
@@ -90,6 +91,7 @@ export default function DataTable<T extends { id: string }>({
             label="Show retired"
           />
         )}
+        {extraToolbarContent}
       </Box>
       <DataGrid
         rows={rows} columns={columns} rowCount={total} loading={loading}
