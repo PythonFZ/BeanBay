@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router';
 import {
   Box, Button, Card, CardContent, Chip, CircularProgress,
-  Divider, IconButton, Stack, Typography,
+  Divider, Stack, Typography,
 } from '@mui/material';
 import { Edit as EditIcon, Archive as ArchiveIcon, Add as AddIcon } from '@mui/icons-material';
 import { type GridColDef } from '@mui/x-data-grid';
@@ -154,43 +154,16 @@ function BagsSection({ beanId }: { beanId: string }) {
 
   const [bagFormOpen, setBagFormOpen] = useState(false);
   const [editBag, setEditBag] = useState<Bag | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Bag | null>(null);
+  const [retireBagTarget, setRetireBagTarget] = useState<Bag | null>(null);
 
-  const handleDeleteBag = async () => {
-    if (deleteTarget) {
-      await deleteBag.mutateAsync(deleteTarget.id);
+  const handleRetireBag = async () => {
+    if (retireBagTarget) {
+      await deleteBag.mutateAsync(retireBagTarget.id);
       notify('Bag retired');
-      setDeleteTarget(null);
+      setRetireBagTarget(null);
+      setBagFormOpen(false);
     }
   };
-
-  const bagColumns: GridColDef<Bag>[] = [
-    ...baseBagColumns,
-    {
-      field: 'actions',
-      headerName: '',
-      width: 88,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
-          <IconButton
-            size="small"
-            aria-label="Edit bag"
-            onClick={(e) => { e.stopPropagation(); setEditBag(params.row); setBagFormOpen(true); }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Retire bag"
-            onClick={(e) => { e.stopPropagation(); setDeleteTarget(params.row); }}
-          >
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
-    },
-  ];
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -204,7 +177,7 @@ function BagsSection({ beanId }: { beanId: string }) {
         </Button>
       </Stack>
       <DataTable<Bag>
-        columns={bagColumns}
+        columns={baseBagColumns}
         rows={data?.items ?? []}
         total={data?.total ?? 0}
         loading={isLoading}
@@ -212,6 +185,7 @@ function BagsSection({ beanId }: { beanId: string }) {
         onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel}
         onSortModelChange={onSortModelChange}
+        onRowClick={(row) => { setEditBag(row); setBagFormOpen(true); }}
         emptyTitle="No bags yet"
         emptyActionLabel="Add Bag"
         onEmptyAction={() => { setEditBag(null); setBagFormOpen(true); }}
@@ -221,13 +195,14 @@ function BagsSection({ beanId }: { beanId: string }) {
         onClose={() => setBagFormOpen(false)}
         beanId={beanId}
         bag={editBag}
+        onRetire={editBag ? () => setRetireBagTarget(editBag) : undefined}
       />
       <ConfirmDialog
-        open={!!deleteTarget}
+        open={!!retireBagTarget}
         title="Retire Bag"
         message="Retire this bag? It will be hidden but not deleted."
-        onConfirm={handleDeleteBag}
-        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleRetireBag}
+        onCancel={() => setRetireBagTarget(null)}
       />
     </Box>
   );

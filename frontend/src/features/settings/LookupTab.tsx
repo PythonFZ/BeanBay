@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { usePaginationParams } from '@/utils/pagination';
@@ -62,28 +62,9 @@ export default function LookupTab({ hooks, columns, fields, entityName }: Lookup
       await del.mutateAsync(deleteTarget.id);
       notify(`${entityName} retired`);
       setDeleteTarget(null);
+      setFormOpen(false);
     }
   };
-
-  const columnsWithActions: GridColDef[] = [
-    ...columns,
-    {
-      field: 'actions',
-      headerName: '',
-      width: 100,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5}>
-          <IconButton size="small" aria-label="Edit" onClick={(e) => { e.stopPropagation(); setEditItem(params.row as LookupItem); setFormOpen(true); }}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" aria-label="Retire" onClick={(e) => { e.stopPropagation(); setDeleteTarget(params.row as LookupItem); }}>
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
-    },
-  ];
 
   return (
     <>
@@ -92,11 +73,12 @@ export default function LookupTab({ hooks, columns, fields, entityName }: Lookup
         Add {entityName}
       </Button>
       <DataTable<LookupItem>
-        columns={columnsWithActions} rows={data?.items ?? []} total={data?.total ?? 0} loading={isLoading}
+        columns={columns} rows={data?.items ?? []} total={data?.total ?? 0} loading={isLoading}
         paginationModel={paginationModel} onPaginationModelChange={onPaginationModelChange}
         sortModel={sortModel} onSortModelChange={onSortModelChange}
         search={params.q} onSearchChange={setSearch}
         includeRetired={params.include_retired} onIncludeRetiredChange={setIncludeRetired}
+        onRowClick={(row) => { setEditItem(row); setFormOpen(true); }}
         emptyTitle={`No ${entityName.toLowerCase()}s yet`}
         emptyActionLabel={`Add ${entityName}`}
         onEmptyAction={() => { setEditItem(null); setFormOpen(true); }}
@@ -113,6 +95,9 @@ export default function LookupTab({ hooks, columns, fields, entityName }: Lookup
           </Stack>
         </DialogContent>
         <DialogActions>
+          {editItem && (
+            <Button color="warning" onClick={() => setDeleteTarget(editItem)} sx={{ mr: 'auto' }}>Retire</Button>
+          )}
           <Button onClick={() => { setFormOpen(false); setEditItem(null); }}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit}
             disabled={fields.some((f) => f.required && !formValues[f.name]?.trim())}>

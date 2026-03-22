@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, IconButton, Stack } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { Button } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -19,13 +19,14 @@ export default function GrindersPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editGrinder, setEditGrinder] = useState<Grinder | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Grinder | null>(null);
+  const [retireTarget, setRetireTarget] = useState<Grinder | null>(null);
 
-  const handleDelete = async () => {
-    if (deleteTarget) {
-      await deleteGrinder.mutateAsync(deleteTarget.id);
+  const handleRetire = async () => {
+    if (retireTarget) {
+      await deleteGrinder.mutateAsync(retireTarget.id);
       notify('Grinder retired');
-      setDeleteTarget(null);
+      setRetireTarget(null);
+      setFormOpen(false);
     }
   };
 
@@ -41,37 +42,6 @@ export default function GrindersPage() {
         if (!range) return '—';
         return `${range.min} - ${range.max}`;
       },
-    },
-    {
-      field: 'actions',
-      headerName: '',
-      width: 88,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
-          <IconButton
-            size="small"
-            aria-label="Edit grinder"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditGrinder(params.row as Grinder);
-              setFormOpen(true);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Retire grinder"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteTarget(params.row as Grinder);
-            }}
-          >
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
     },
   ];
 
@@ -102,6 +72,7 @@ export default function GrindersPage() {
         onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
+        onRowClick={(row) => { setEditGrinder(row); setFormOpen(true); }}
         emptyTitle="No grinders yet"
         emptyActionLabel="Add Grinder"
         onEmptyAction={() => { setEditGrinder(null); setFormOpen(true); }}
@@ -110,13 +81,14 @@ export default function GrindersPage() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         grinder={editGrinder}
+        onRetire={editGrinder ? () => setRetireTarget(editGrinder) : undefined}
       />
       <ConfirmDialog
-        open={!!deleteTarget}
+        open={!!retireTarget}
         title="Retire Grinder"
-        message={`Retire "${deleteTarget?.name}"? This won't delete associated brews.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
+        message={`Retire "${retireTarget?.name}"? This won't delete associated brews.`}
+        onConfirm={handleRetire}
+        onCancel={() => setRetireTarget(null)}
       />
     </>
   );

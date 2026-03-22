@@ -42,9 +42,10 @@ interface BrewSetupFormDialogProps {
   open: boolean;
   onClose: () => void;
   brewSetup?: BrewSetup | null;
+  onRetire?: () => void;
 }
 
-export default function BrewSetupFormDialog({ open, onClose, brewSetup }: BrewSetupFormDialogProps) {
+export default function BrewSetupFormDialog({ open, onClose, brewSetup, onRetire }: BrewSetupFormDialogProps) {
   const isEdit = !!brewSetup;
   const create = useCreateBrewSetup();
   const update = useUpdateBrewSetup();
@@ -188,6 +189,9 @@ export default function BrewSetupFormDialog({ open, onClose, brewSetup }: BrewSe
         </Stack>
       </DialogContent>
       <DialogActions>
+        {isEdit && onRetire && (
+          <Button color="warning" onClick={onRetire} sx={{ mr: 'auto' }}>Retire</Button>
+        )}
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={!isValid}>
           {isEdit ? 'Save' : 'Create'}

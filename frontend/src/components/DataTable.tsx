@@ -1,5 +1,5 @@
 // frontend/src/components/DataTable.tsx
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DataGrid, type GridColDef, type GridPaginationModel,
   type GridRowParams, type GridSortModel,
@@ -7,6 +7,7 @@ import {
 import { Box, FormControlLabel, Switch, TextField, InputAdornment } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router';
+import { debounce } from 'lodash-es';
 import EmptyState from '@/components/EmptyState';
 
 interface DataTableProps<T extends { id: string }> {
@@ -23,6 +24,7 @@ interface DataTableProps<T extends { id: string }> {
   includeRetired?: boolean;
   onIncludeRetiredChange?: (include: boolean) => void;
   detailPath?: (row: T) => string;
+  onRowClick?: (row: T) => void;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyActionLabel?: string;
@@ -32,21 +34,27 @@ interface DataTableProps<T extends { id: string }> {
 export default function DataTable<T extends { id: string }>({
   columns, rows, total, loading, paginationModel, onPaginationModelChange,
   sortModel, onSortModelChange, search, onSearchChange, includeRetired,
-  onIncludeRetiredChange, detailPath, emptyTitle = 'No items yet',
+  onIncludeRetiredChange, detailPath, onRowClick, emptyTitle = 'No items yet',
   emptyDescription, emptyActionLabel, onEmptyAction,
 }: DataTableProps<T>) {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState(search ?? '');
 
-  const handleSearchSubmit = useCallback(() => {
-    onSearchChange?.(searchInput);
-  }, [onSearchChange, searchInput]);
+  const debouncedSearch = useMemo(
+    () => onSearchChange ? debounce(onSearchChange, 300) : undefined,
+    [onSearchChange],
+  );
+  useEffect(() => () => debouncedSearch?.cancel(), [debouncedSearch]);
 
   const handleRowClick = useCallback(
     (params: GridRowParams<T>) => {
-      if (detailPath) navigate(detailPath(params.row));
+      if (onRowClick) {
+        onRowClick(params.row);
+      } else if (detailPath) {
+        navigate(detailPath(params.row));
+      }
     },
-    [navigate, detailPath],
+    [navigate, detailPath, onRowClick],
   );
 
   if (!loading && rows.length === 0 && !search && !includeRetired) {
@@ -61,9 +69,10 @@ export default function DataTable<T extends { id: string }>({
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         {onSearchChange && (
           <TextField size="small" placeholder="Search..." value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
-            onBlur={handleSearchSubmit}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              debouncedSearch?.(e.target.value);
+            }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -89,8 +98,8 @@ export default function DataTable<T extends { id: string }>({
         sortingMode="server" sortModel={sortModel} onSortModelChange={onSortModelChange}
         onRowClick={handleRowClick} disableRowSelectionOnClick autoHeight
         sx={{
-          border: 0, cursor: detailPath ? 'pointer' : 'default',
-          '& .MuiDataGrid-row:hover': detailPath ? { bgcolor: 'action.hover' } : {},
+          border: 0, cursor: (detailPath || onRowClick) ? 'pointer' : 'default',
+          '& .MuiDataGrid-row:hover': (detailPath || onRowClick) ? { bgcolor: 'action.hover' } : {},
         }}
       />
     </Box>

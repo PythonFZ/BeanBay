@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, Chip, IconButton, Stack } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { Button, Chip } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -19,13 +19,14 @@ export default function PeoplePage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editPerson, setEditPerson] = useState<Person | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Person | null>(null);
+  const [retireTarget, setRetireTarget] = useState<Person | null>(null);
 
-  const handleDelete = async () => {
-    if (deleteTarget) {
-      await deletePerson.mutateAsync(deleteTarget.id);
+  const handleRetire = async () => {
+    if (retireTarget) {
+      await deletePerson.mutateAsync(retireTarget.id);
       notify('Person retired');
-      setDeleteTarget(null);
+      setRetireTarget(null);
+      setFormOpen(false);
     }
   };
 
@@ -34,37 +35,6 @@ export default function PeoplePage() {
     {
       field: 'is_default', headerName: 'Default', width: 100,
       renderCell: (params) => params.value ? <Chip label="Default" size="small" color="primary" /> : null,
-    },
-    {
-      field: 'actions',
-      headerName: '',
-      width: 88,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
-          <IconButton
-            size="small"
-            aria-label="Edit person"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditPerson(params.row as Person);
-              setFormOpen(true);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Retire person"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteTarget(params.row as Person);
-            }}
-          >
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
     },
   ];
 
@@ -79,13 +49,19 @@ export default function PeoplePage() {
         sortModel={sortModel} onSortModelChange={onSortModelChange}
         search={params.q} onSearchChange={setSearch}
         includeRetired={params.include_retired} onIncludeRetiredChange={setIncludeRetired}
+        onRowClick={(row) => { setEditPerson(row); setFormOpen(true); }}
         emptyTitle="No people yet" emptyActionLabel="Add Person"
         onEmptyAction={() => { setEditPerson(null); setFormOpen(true); }}
       />
-      <PersonFormDialog open={formOpen} onClose={() => setFormOpen(false)} person={editPerson} />
-      <ConfirmDialog open={!!deleteTarget} title="Retire Person"
-        message={`Retire "${deleteTarget?.name}"? This won't delete their brews or ratings.`}
-        onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
+      <PersonFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        person={editPerson}
+        onRetire={editPerson ? () => setRetireTarget(editPerson) : undefined}
+      />
+      <ConfirmDialog open={!!retireTarget} title="Retire Person"
+        message={`Retire "${retireTarget?.name}"? This won't delete their brews or ratings.`}
+        onConfirm={handleRetire} onCancel={() => setRetireTarget(null)} />
     </>
   );
 }

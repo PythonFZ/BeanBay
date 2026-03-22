@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, Chip, IconButton, Stack } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { Button, Chip, Stack } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -26,6 +26,7 @@ export default function BrewersPage() {
       await deleteBrewer.mutateAsync(retireTarget.id);
       notify('Brewer retired');
       setRetireTarget(null);
+      setFormOpen(false);
     }
   };
 
@@ -59,37 +60,6 @@ export default function BrewersPage() {
         return <Chip label={`T${tier}`} size="small" color="primary" />;
       },
     },
-    {
-      field: 'actions',
-      headerName: '',
-      width: 88,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
-          <IconButton
-            size="small"
-            aria-label="Edit brewer"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditBrewer(params.row as Brewer);
-              setFormOpen(true);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Retire brewer"
-            onClick={(e) => {
-              e.stopPropagation();
-              setRetireTarget(params.row as Brewer);
-            }}
-          >
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
-    },
   ];
 
   return (
@@ -119,6 +89,7 @@ export default function BrewersPage() {
         onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
+        onRowClick={(row) => { setEditBrewer(row); setFormOpen(true); }}
         emptyTitle="No brewers yet"
         emptyActionLabel="Add Brewer"
         onEmptyAction={() => { setEditBrewer(null); setFormOpen(true); }}
@@ -127,6 +98,7 @@ export default function BrewersPage() {
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditBrewer(null); }}
         brewer={editBrewer}
+        onRetire={editBrewer ? () => setRetireTarget(editBrewer) : undefined}
       />
       <ConfirmDialog
         open={!!retireTarget}

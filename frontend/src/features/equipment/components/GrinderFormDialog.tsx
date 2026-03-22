@@ -22,11 +22,12 @@ interface GrinderFormDialogProps {
   open: boolean;
   onClose: () => void;
   grinder?: Grinder | null;
+  onRetire?: () => void;
 }
 
 const emptyRing = (): RingConfig => ({ label: '', min: 0, max: 100, step: 1 });
 
-export default function GrinderFormDialog({ open, onClose, grinder }: GrinderFormDialogProps) {
+export default function GrinderFormDialog({ open, onClose, grinder, onRetire }: GrinderFormDialogProps) {
   const [name, setName] = useState('');
   const [dialType, setDialType] = useState('stepless');
   const [rings, setRings] = useState<RingConfig[]>([emptyRing()]);
@@ -150,6 +151,9 @@ export default function GrinderFormDialog({ open, onClose, grinder }: GrinderFor
         </Stack>
       </DialogContent>
       <DialogActions>
+        {isEdit && onRetire && (
+          <Button color="warning" onClick={onRetire} sx={{ mr: 'auto' }}>Retire</Button>
+        )}
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={!name.trim()}>
           {isEdit ? 'Save' : 'Create'}

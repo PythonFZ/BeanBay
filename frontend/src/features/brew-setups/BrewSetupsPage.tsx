@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, IconButton, Stack } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { Button } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -26,6 +26,7 @@ export default function BrewSetupsPage() {
       await deleteBrewSetup.mutateAsync(retireTarget.id);
       notify('Brew setup retired');
       setRetireTarget(null);
+      setFormOpen(false);
     }
   };
 
@@ -61,37 +62,6 @@ export default function BrewSetupsPage() {
       width: 120,
       renderCell: (params) => params.row.water_name || '—',
     },
-    {
-      field: 'actions',
-      headerName: '',
-      width: 88,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
-          <IconButton
-            size="small"
-            aria-label="Edit brew setup"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditSetup(params.row as BrewSetup);
-              setFormOpen(true);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Retire brew setup"
-            onClick={(e) => {
-              e.stopPropagation();
-              setRetireTarget(params.row as BrewSetup);
-            }}
-          >
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
-    },
   ];
 
   return (
@@ -121,6 +91,7 @@ export default function BrewSetupsPage() {
         onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
+        onRowClick={(row) => { setEditSetup(row); setFormOpen(true); }}
         emptyTitle="No brew setups yet"
         emptyActionLabel="Add Brew Setup"
         onEmptyAction={() => { setEditSetup(null); setFormOpen(true); }}
@@ -129,6 +100,7 @@ export default function BrewSetupsPage() {
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditSetup(null); }}
         brewSetup={editSetup}
+        onRetire={editSetup ? () => setRetireTarget(editSetup) : undefined}
       />
       <ConfirmDialog
         open={!!retireTarget}

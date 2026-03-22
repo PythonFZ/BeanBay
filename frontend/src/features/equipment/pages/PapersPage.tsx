@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
-import { Button, IconButton, Stack } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { Button } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -19,50 +19,20 @@ export default function PapersPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editPaper, setEditPaper] = useState<Paper | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Paper | null>(null);
+  const [retireTarget, setRetireTarget] = useState<Paper | null>(null);
 
-  const handleDelete = async () => {
-    if (deleteTarget) {
-      await deletePaper.mutateAsync(deleteTarget.id);
+  const handleRetire = async () => {
+    if (retireTarget) {
+      await deletePaper.mutateAsync(retireTarget.id);
       notify('Paper retired');
-      setDeleteTarget(null);
+      setRetireTarget(null);
+      setFormOpen(false);
     }
   };
 
   const columns: GridColDef[] = [
     { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
     { field: 'notes', headerName: 'Notes', flex: 1, minWidth: 150 },
-    {
-      field: 'actions',
-      headerName: '',
-      width: 88,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center" height="100%">
-          <IconButton
-            size="small"
-            aria-label="Edit paper"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditPaper(params.row as Paper);
-              setFormOpen(true);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            aria-label="Retire paper"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteTarget(params.row as Paper);
-            }}
-          >
-            <ArchiveIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ),
-    },
   ];
 
   return (
@@ -92,17 +62,23 @@ export default function PapersPage() {
         onSearchChange={setSearch}
         includeRetired={params.include_retired}
         onIncludeRetiredChange={setIncludeRetired}
+        onRowClick={(row) => { setEditPaper(row); setFormOpen(true); }}
         emptyTitle="No papers yet"
         emptyActionLabel="Add Paper"
         onEmptyAction={() => { setEditPaper(null); setFormOpen(true); }}
       />
-      <PaperFormDialog open={formOpen} onClose={() => setFormOpen(false)} paper={editPaper} />
+      <PaperFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        paper={editPaper}
+        onRetire={editPaper ? () => setRetireTarget(editPaper) : undefined}
+      />
       <ConfirmDialog
-        open={!!deleteTarget}
+        open={!!retireTarget}
         title="Retire Paper"
-        message={`Retire "${deleteTarget?.name}"?`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
+        message={`Retire "${retireTarget?.name}"?`}
+        onConfirm={handleRetire}
+        onCancel={() => setRetireTarget(null)}
       />
     </>
   );

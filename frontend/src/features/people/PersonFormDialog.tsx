@@ -7,9 +7,10 @@ interface PersonFormDialogProps {
   open: boolean;
   onClose: () => void;
   person?: Person | null;
+  onRetire?: () => void;
 }
 
-export default function PersonFormDialog({ open, onClose, person }: PersonFormDialogProps) {
+export default function PersonFormDialog({ open, onClose, person, onRetire }: PersonFormDialogProps) {
   const [name, setName] = useState('');
   const [isDefault, setIsDefault] = useState(false);
   const isEdit = !!person;
@@ -45,6 +46,9 @@ export default function PersonFormDialog({ open, onClose, person }: PersonFormDi
         </Stack>
       </DialogContent>
       <DialogActions>
+        {isEdit && onRetire && (
+          <Button color="warning" onClick={onRetire} sx={{ mr: 'auto' }}>Retire</Button>
+        )}
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={!name.trim()}>{isEdit ? 'Save' : 'Create'}</Button>
       </DialogActions>

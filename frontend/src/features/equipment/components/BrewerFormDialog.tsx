@@ -28,6 +28,7 @@ interface BrewerFormDialogProps {
   open: boolean;
   onClose: () => void;
   brewer?: Brewer | null;
+  onRetire?: () => void;
 }
 
 interface NamedItem {
@@ -71,7 +72,7 @@ async function fetchStopModes(q: string): Promise<{ items: NamedItem[] }> {
   return data;
 }
 
-export default function BrewerFormDialog({ open, onClose, brewer }: BrewerFormDialogProps) {
+export default function BrewerFormDialog({ open, onClose, brewer, onRetire }: BrewerFormDialogProps) {
   const [form, setForm] = useState<FormState>(defaultForm());
   const isEdit = !!brewer;
   const create = brewerHooks.useCreate();
@@ -364,6 +365,9 @@ export default function BrewerFormDialog({ open, onClose, brewer }: BrewerFormDi
         </Accordion>
       </DialogContent>
       <DialogActions>
+        {isEdit && onRetire && (
+          <Button color="warning" onClick={onRetire} sx={{ mr: 'auto' }}>Retire</Button>
+        )}
         <Button onClick={onClose}>Cancel</Button>
         <Button
           variant="contained"
