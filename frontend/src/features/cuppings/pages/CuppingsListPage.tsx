@@ -2,28 +2,14 @@ import { useState } from 'react';
 import { type GridColDef } from '@mui/x-data-grid';
 import { Button } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import { usePaginationParams } from '@/utils/pagination';
 import { fmtDateTime } from '@/utils/date';
 import { useCuppings, type Cupping } from '../hooks';
 import CuppingFormDialog from '../components/CuppingFormDialog';
-
-const columns: GridColDef<Cupping>[] = [
-  { field: 'person_name', headerName: 'Person', flex: 1, minWidth: 140 },
-  {
-    field: 'total_score',
-    headerName: 'Total Score',
-    width: 130,
-    renderCell: (p) => p.value != null ? p.value.toFixed(2) : '—',
-  },
-  {
-    field: 'cupped_at',
-    headerName: 'Cupped At',
-    width: 180,
-    renderCell: (p) => fmtDateTime(p.value as string),
-  },
-];
+import apiClient from '@/api/client';
 
 export default function CuppingsListPage() {
   const {
@@ -34,6 +20,51 @@ export default function CuppingsListPage() {
 
   const { data, isLoading } = useCuppings(params);
   const [formOpen, setFormOpen] = useState(false);
+
+  const { data: bagsData } = useQuery({
+    queryKey: ['bags', 'all'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/bags', { params: { limit: 200 } });
+      return data;
+    },
+  });
+  const { data: beansData } = useQuery({
+    queryKey: ['beans', 'all'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/beans', { params: { limit: 200 } });
+      return data;
+    },
+  });
+
+  const beanMap = new Map<string, string>();
+  beansData?.items?.forEach((b: any) => beanMap.set(b.id, b.name));
+  const bagToBeanName = new Map<string, string>();
+  bagsData?.items?.forEach((bag: any) => {
+    bagToBeanName.set(bag.id, beanMap.get(bag.bean_id) ?? 'Unknown');
+  });
+
+  const columns: GridColDef<Cupping>[] = [
+    {
+      field: 'bag_id',
+      headerName: 'Bean',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (p) => bagToBeanName.get(p.value as string) ?? '—',
+    },
+    { field: 'person_name', headerName: 'Person', flex: 1, minWidth: 140 },
+    {
+      field: 'total_score',
+      headerName: 'Total Score',
+      width: 130,
+      renderCell: (p) => p.value != null ? p.value.toFixed(2) : '—',
+    },
+    {
+      field: 'cupped_at',
+      headerName: 'Cupped At',
+      width: 180,
+      renderCell: (p) => fmtDateTime(p.value as string),
+    },
+  ];
 
   return (
     <>

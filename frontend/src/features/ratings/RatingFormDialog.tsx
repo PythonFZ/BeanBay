@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Stack, Slider, TextField, Typography, Box, Divider,
@@ -7,7 +7,7 @@ import AutocompleteCreate from '@/components/AutocompleteCreate';
 import FlavorTagSelect from '@/components/FlavorTagSelect';
 import apiClient from '@/api/client';
 import { useNotification } from '@/components/NotificationProvider';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface Person { id: string; name: string; }
 interface FlavorTag { id: string; name: string; }
@@ -76,6 +76,23 @@ export default function RatingFormDialog({ open, onClose, beanId }: RatingFormDi
   const [personError, setPersonError] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
+  const { data: peopleData } = useQuery({
+    queryKey: ['people', 'default'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/people', { params: { limit: 50 } });
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!person && peopleData?.items) {
+      const defaultPerson = peopleData.items.find((p: any) => p.is_default);
+      if (defaultPerson) {
+        setPerson({ id: defaultPerson.id, name: defaultPerson.name });
+      }
+    }
+  }, [peopleData, person]);
+
   // Taste fields
   const [score, setScore] = useState(5);
   const [acidity, setAcidity] = useState(5);
@@ -88,7 +105,8 @@ export default function RatingFormDialog({ open, onClose, beanId }: RatingFormDi
   const [flavorTags, setFlavorTags] = useState<FlavorTag[]>([]);
 
   const resetForm = () => {
-    setPerson(null);
+    const defaultPerson = peopleData?.items?.find((p: any) => p.is_default);
+    setPerson(defaultPerson ? { id: defaultPerson.id, name: defaultPerson.name } : null);
     setPersonError(false);
     setScore(5);
     setAcidity(5);

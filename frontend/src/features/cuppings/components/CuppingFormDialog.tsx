@@ -3,6 +3,7 @@ import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack,
   TextField, Typography, Box, Slider, FormControlLabel, Switch,
 } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import AutocompleteCreate from '@/components/AutocompleteCreate';
 import FlavorTagSelect from '@/components/FlavorTagSelect';
 import apiClient from '@/api/client';
@@ -96,6 +97,30 @@ export default function CuppingFormDialog({ open, onClose, cupping }: CuppingFor
 
   const autoTotal = calcAutoTotal(scores, cuppersCorrection);
 
+  const { data: bagData } = useQuery({
+    queryKey: ['bags', cupping?.bag_id, 'resolve'],
+    queryFn: async () => {
+      const [bagRes, beansRes] = await Promise.all([
+        apiClient.get(`/bags/${cupping!.bag_id}`),
+        apiClient.get('/beans', { params: { limit: 200 } }),
+      ]);
+      const beanMap = new Map();
+      beansRes.data.items.forEach((b: any) => beanMap.set(b.id, b.name));
+      const bagResult = bagRes.data;
+      return {
+        id: bagResult.id,
+        name: `${beanMap.get(bagResult.bean_id) ?? 'Unknown'} — ${bagResult.weight}g`,
+      };
+    },
+    enabled: !!cupping?.bag_id && open,
+  });
+
+  useEffect(() => {
+    if (bagData && cupping) {
+      setBag(bagData);
+    }
+  }, [bagData, cupping]);
+
   useEffect(() => {
     if (!manualTotal) {
       setTotalScore(autoTotal);
@@ -104,7 +129,11 @@ export default function CuppingFormDialog({ open, onClose, cupping }: CuppingFor
 
   useEffect(() => {
     if (cupping) {
-      setBag({ id: cupping.bag_id, name: cupping.bag_id });
+      if (bagData) {
+        setBag(bagData);
+      } else {
+        setBag({ id: cupping.bag_id, name: cupping.bag_id });
+      }
       setPerson({ id: cupping.person_id, name: cupping.person_name });
       setCuppedAt(cupping.cupped_at ? cupping.cupped_at.slice(0, 16) : '');
       setScores({

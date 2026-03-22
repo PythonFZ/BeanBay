@@ -5,6 +5,7 @@ import {
   Divider, Grid, Stack, Typography,
 } from '@mui/material';
 import { Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/PageHeader';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import TasteRadar, { cuppingToRadar } from '@/components/TasteRadar';
@@ -12,6 +13,7 @@ import { useNotification } from '@/components/NotificationProvider';
 import { fmtDate, fmtDateTime } from '@/utils/date';
 import { useCupping, useDeleteCupping } from '../hooks';
 import CuppingFormDialog from '../components/CuppingFormDialog';
+import apiClient from '@/api/client';
 
 const SCAA_AXES = [
   { key: 'dry_fragrance', label: 'Dry Fragrance' },
@@ -46,6 +48,24 @@ export default function CuppingDetailPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
 
+  const { data: bag } = useQuery({
+    queryKey: ['bags', cupping?.bag_id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/bags/${cupping!.bag_id}`);
+      return data;
+    },
+    enabled: !!cupping,
+  });
+
+  const { data: bean } = useQuery({
+    queryKey: ['beans', bag?.bean_id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/beans/${bag.bean_id}`);
+      return data;
+    },
+    enabled: !!bag?.bean_id,
+  });
+
   const handleRetire = async () => {
     if (cupping) {
       await deleteCupping.mutateAsync(cupping.id);
@@ -68,7 +88,7 @@ export default function CuppingDetailPage() {
 
   const radarData = cuppingToRadar(cupping);
   const cuppingLabel = cupping.cupped_at
-    ? `${cupping.person_name} — ${fmtDate(cupping.cupped_at)}`
+    ? `${bean?.name ?? ''} — ${cupping.person_name} — ${fmtDate(cupping.cupped_at)}`
     : `Cupping by ${cupping.person_name}`;
 
   return (
@@ -110,6 +130,12 @@ export default function CuppingDetailPage() {
                 {cupping.total_score != null ? cupping.total_score.toFixed(2) : '—'}
               </Typography>
             </Box>
+            {bean?.name && (
+              <Box>
+                <Typography variant="caption" color="text.secondary">Bean</Typography>
+                <Typography variant="h6">{bean.name}</Typography>
+              </Box>
+            )}
             <Box>
               <Typography variant="caption" color="text.secondary">Person</Typography>
               <Typography variant="h6">{cupping.person_name}</Typography>
