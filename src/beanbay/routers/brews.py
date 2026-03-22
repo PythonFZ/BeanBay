@@ -18,7 +18,7 @@ from beanbay.models.bean import Bag, Bean
 from beanbay.models.brew import Brew, BrewSetup, BrewTaste, BrewTasteFlavorTagLink
 from beanbay.models.equipment import Grinder
 from beanbay.models.person import Person
-from beanbay.models.tag import FlavorTag, StopMode
+from beanbay.models.tag import BrewMethod, FlavorTag, StopMode
 from beanbay.schemas.brew import (
     BrewCreate,
     BrewListRead,
@@ -37,6 +37,7 @@ BREW_SORT_FIELDS = [
     "brewed_at", "created_at", "dose", "grind_setting",
     "temperature", "yield_amount", "pressure", "flow_rate",
     "total_time", "pre_infusion_time",
+    "score", "bean_name", "brew_method_name", "person_name",
 ]
 
 
@@ -389,7 +390,24 @@ def list_brews(
 
     total: int = session.exec(count_stmt).one()  # type: ignore[arg-type]
 
-    sort_column = getattr(Brew, sort_by)
+    # Handle join-based sort fields
+    if sort_by == "score":
+        stmt = stmt.outerjoin(BrewTaste, Brew.id == BrewTaste.brew_id)  # type: ignore[arg-type]
+        sort_column = BrewTaste.score
+    elif sort_by == "bean_name":
+        stmt = stmt.join(Bag, Brew.bag_id == Bag.id).join(Bean, Bag.bean_id == Bean.id)  # type: ignore[arg-type]
+        sort_column = Bean.name
+    elif sort_by == "brew_method_name":
+        stmt = stmt.join(BrewSetup, Brew.brew_setup_id == BrewSetup.id).join(  # type: ignore[arg-type]
+            BrewMethod, BrewSetup.brew_method_id == BrewMethod.id
+        )
+        sort_column = BrewMethod.name
+    elif sort_by == "person_name":
+        stmt = stmt.join(Person, Brew.person_id == Person.id)  # type: ignore[arg-type]
+        sort_column = Person.name
+    else:
+        sort_column = getattr(Brew, sort_by)
+
     if sort_dir == "desc":
         sort_column = sort_column.desc()
     stmt = stmt.order_by(sort_column)
