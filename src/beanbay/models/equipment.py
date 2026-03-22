@@ -129,8 +129,6 @@ class Grinder(SQLModel, table=True):
         Unique grinder name.
     dial_type : DialType
         Whether the grinder is stepless or stepped.
-    display_format : str
-        Display format hint (e.g. ``"decimal"``).
     ring_sizes_json : str | None
         JSON-encoded list of ``[min, max, step]`` tuples describing
         each ring of the grinder dial.
@@ -147,7 +145,6 @@ class Grinder(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     name: str = Field(index=True, unique=True)
     dial_type: DialType = Field(default=DialType.STEPLESS)
-    display_format: str = Field(default="decimal")
     ring_sizes_json: str | None = None
     created_at: datetime = Field(
         default=None,

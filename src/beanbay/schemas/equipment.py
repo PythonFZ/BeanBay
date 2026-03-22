@@ -77,13 +77,10 @@ class GrinderBase(SQLModel):
         Grinder name.
     dial_type : DialType
         Stepless or stepped.
-    display_format : str
-        Display format hint.
     """
 
     name: str
     dial_type: DialType = DialType.STEPLESS
-    display_format: str = "decimal"
 
 
 class GrinderCreate(SQLModel):
@@ -95,15 +92,12 @@ class GrinderCreate(SQLModel):
         Grinder name.
     dial_type : DialType
         Stepless or stepped.
-    display_format : str
-        Display format hint.
     rings : list[RingConfig] | None
         Optional ring configuration.
     """
 
     name: str
     dial_type: DialType = DialType.STEPLESS
-    display_format: str = "decimal"
     rings: list[RingConfig] | None = None
 
 
@@ -116,15 +110,12 @@ class GrinderUpdate(SQLModel):
         Updated name.
     dial_type : DialType | None
         Updated dial type.
-    display_format : str | None
-        Updated display format.
     rings : list[RingConfig] | None
         Updated ring configuration.
     """
 
     name: str | None = None
     dial_type: DialType | None = None
-    display_format: str | None = None
     rings: list[RingConfig] | None = None
 
 
@@ -180,7 +171,6 @@ class GrinderRead(GrinderBase):
                 "id",
                 "name",
                 "dial_type",
-                "display_format",
                 "ring_sizes_json",
                 "created_at",
                 "updated_at",

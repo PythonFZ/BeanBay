@@ -124,7 +124,6 @@ def create_grinder(
     db_grinder = Grinder(
         name=payload.name,
         dial_type=payload.dial_type,
-        display_format=payload.display_format,
         ring_sizes_json=ring_json,
     )
     session.add(db_grinder)

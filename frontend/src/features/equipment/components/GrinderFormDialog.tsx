@@ -29,7 +29,6 @@ const emptyRing = (): RingConfig => ({ label: '', min: 0, max: 100, step: 1 });
 export default function GrinderFormDialog({ open, onClose, grinder }: GrinderFormDialogProps) {
   const [name, setName] = useState('');
   const [dialType, setDialType] = useState('stepless');
-  const [displayFormat, setDisplayFormat] = useState('');
   const [rings, setRings] = useState<RingConfig[]>([emptyRing()]);
   const isEdit = !!grinder;
   const create = grinderHooks.useCreate();
@@ -40,12 +39,10 @@ export default function GrinderFormDialog({ open, onClose, grinder }: GrinderFor
     if (grinder) {
       setName(grinder.name);
       setDialType(grinder.dial_type ?? 'stepless');
-      setDisplayFormat(grinder.display_format ?? '');
       setRings(grinder.rings?.length ? grinder.rings : [emptyRing()]);
     } else {
       setName('');
       setDialType('stepless');
-      setDisplayFormat('');
       setRings([emptyRing()]);
     }
   }, [grinder, open]);
@@ -64,7 +61,6 @@ export default function GrinderFormDialog({ open, onClose, grinder }: GrinderFor
     const body = {
       name,
       dial_type: dialType,
-      display_format: displayFormat || 'decimal',
       rings,
     };
     if (isEdit) {
@@ -100,12 +96,6 @@ export default function GrinderFormDialog({ open, onClose, grinder }: GrinderFor
               <MenuItem value="stepped">Stepped</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            label="Display Format"
-            value={displayFormat}
-            onChange={(e) => setDisplayFormat(e.target.value)}
-            placeholder="e.g. decimal"
-          />
           <Stack spacing={1}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Typography variant="subtitle2">Ring Configurations</Typography>

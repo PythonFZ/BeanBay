@@ -3860,8 +3860,6 @@ export interface components {
          *         Grinder name.
          *     dial_type : DialType
          *         Stepless or stepped.
-         *     display_format : str
-         *         Display format hint.
          *     rings : list[RingConfig] | None
          *         Optional ring configuration.
          */
@@ -3870,11 +3868,6 @@ export interface components {
             name: string;
             /** @default stepless */
             dial_type: components["schemas"]["DialType"];
-            /**
-             * Display Format
-             * @default decimal
-             */
-            display_format: string;
             /** Rings */
             rings?: components["schemas"]["RingConfig"][] | null;
         };
@@ -3904,11 +3897,6 @@ export interface components {
             name: string;
             /** @default stepless */
             dial_type: components["schemas"]["DialType"];
-            /**
-             * Display Format
-             * @default decimal
-             */
-            display_format: string;
             /**
              * Id
              * Format: uuid
@@ -3942,8 +3930,6 @@ export interface components {
          *         Updated name.
          *     dial_type : DialType | None
          *         Updated dial type.
-         *     display_format : str | None
-         *         Updated display format.
          *     rings : list[RingConfig] | None
          *         Updated ring configuration.
          */
@@ -3951,8 +3937,6 @@ export interface components {
             /** Name */
             name?: string | null;
             dial_type?: components["schemas"]["DialType"] | null;
-            /** Display Format */
-            display_format?: string | null;
             /** Rings */
             rings?: components["schemas"]["RingConfig"][] | null;
         };

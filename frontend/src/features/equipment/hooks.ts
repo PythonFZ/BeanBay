@@ -49,7 +49,6 @@ export interface Grinder {
   id: string;
   name: string;
   dial_type: string;
-  display_format: string;
   rings: RingConfig[];
   grind_range: GrindRange | null;
   created_at: string;

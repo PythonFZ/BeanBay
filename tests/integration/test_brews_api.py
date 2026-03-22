@@ -68,7 +68,6 @@ def _create_grinder_with_rings(client, name: str | None = None) -> str:
         json={
             "name": name,
             "dial_type": "stepped",
-            "display_format": "dot_separated",
             "rings": [
                 {"label": "coarse", "min": 0, "max": 9, "step": 1},
                 {"label": "fine", "min": 0, "max": 9, "step": 1},
