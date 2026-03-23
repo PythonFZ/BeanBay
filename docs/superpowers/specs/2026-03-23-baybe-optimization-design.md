@@ -29,9 +29,9 @@ bloom_weight: float | None = None          # bloom water in grams
 # Espresso (capability-gated)
 preinfusion_pressure: float | None = None   # bar, during pre-infusion phase
 pressure_profile: str | None = None         # ramp_up/flat/decline/custom
-brew_mode: str | None = None                # aeropress: standard/inverted
-saturation: float | None = None             # flow control saturation
-bloom_pause: float | None = None            # bloom wait duration in seconds
+brew_mode: str | None = None                # aeropress: standard/inverted; espresso: auto/manual (flow mode)
+saturation: float | None = None             # flow control saturation (0-1 ratio, distinct from brewer.saturation_flow_rate)
+bloom_pause: float | None = None            # bloom wait duration in seconds (espresso only — pour-over bloom timing is manual/feel-based, not optimized)
 temp_profile: str | None = None             # flat/declining/profiling
 ```
 
@@ -201,7 +201,7 @@ Wide sensible ranges per brew method. `grind_setting` excluded — always from g
 | dose | 15.0 | 25.0 | 0.1 | — |
 | yield_amount | 25.0 | 50.0 | 0.5 | — |
 | pre_infusion_time | 0.0 | 15.0 | 0.5 | `preinfusion_type != none` |
-| preinfusion_pressure | 1.0 | 6.0 | 0.5 | `preinfusion_type in (adjustable_pressure, programmable)` |
+| preinfusion_pressure | 1.0 | 6.0 | 0.5 | `preinfusion_type in (adjustable_pressure, programmable, manual)` |
 | pressure | 6.0 | 12.0 | 0.5 | `pressure_control_type in (opv_adjustable, electronic, programmable)` |
 | flow_rate | 0.5 | 4.0 | 0.1 | `flow_control_type != none` |
 | saturation | 0.0 | 1.0 | 0.1 | `flow_control_type != none` |
@@ -319,7 +319,9 @@ POST   /optimize/campaigns
              bean + brew_setup combination.
 
 DELETE /optimize/campaigns/{campaign_id}
-       Resets campaign (deletes BayBE state + recommendations, keeps brews).
+       Resets campaign: deletes BayBE state (campaign_json) + recommendations,
+       resets phase to "random", measurement_count to 0, best_score to null.
+       Keeps brew records — they are not owned by the campaign.
 ```
 
 ### Recommendations (async)
@@ -435,7 +437,7 @@ Frontend                    API                      Taskiq Worker
 ### Worker Task
 
 1. Load campaign from DB (`campaign_json` → BayBE `Campaign`)
-2. Query all brews for this bean + setup, join taste scores
+2. Query all brews for this bean + setup, join taste scores (exclude failed brews and brews without scores)
 3. Compute effective parameter ranges (3-layer system)
 4. Check fingerprints — rebuild campaign if ranges changed
 5. Add any new measurements to campaign
@@ -469,6 +471,11 @@ No separate measurement table. Existing `Brew` + `BrewTaste` records serve as op
 3. If the brew was made from a recommendation, `POST /optimize/recommendations/{id}/link` connects them
 
 This means manual brews (not from recommendations) also feed the optimizer — any brew for the same bean + setup contributes to learning.
+
+**Filtering rules for measurements:**
+- Brews with `is_failed = true` are **excluded** from BayBE measurements — failed shots (channeling, choking) don't reflect recipe quality and would pollute the GP model.
+- Brews without a `BrewTaste` record or with `BrewTaste.score = NULL` are **excluded** — BayBE requires a target value.
+- `measurement_count` on the Campaign reflects only brews that qualify as valid measurements (not failed, has score).
 
 ## What's NOT Included (Deferred)
 
