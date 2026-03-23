@@ -146,6 +146,20 @@ class Brew(SQLModel, table=True):
         Pre-infusion time in seconds.
     total_time : float | None
         Total brew time in seconds.
+    bloom_weight : float | None
+        Pour-over bloom water in grams.
+    preinfusion_pressure : float | None
+        Espresso pre-infusion pressure in bar.
+    pressure_profile : str | None
+        Espresso pressure profile (ramp_up/flat/decline/custom).
+    brew_mode : str | None
+        Aeropress: standard/inverted; espresso: auto/manual.
+    saturation : float | None
+        Espresso flow control saturation (0-1 ratio).
+    bloom_pause : float | None
+        Espresso bloom wait duration in seconds.
+    temp_profile : str | None
+        Espresso temperature profile (flat/declining/profiling).
     stop_mode_id : uuid.UUID | None
         Foreign key to the stop mode (optional).
     is_failed : bool
@@ -178,6 +192,15 @@ class Brew(SQLModel, table=True):
     yield_amount: float | None = None
     pre_infusion_time: float | None = None
     total_time: float | None = None
+
+    # Optimization parameters — method/capability-specific, all nullable
+    bloom_weight: float | None = None
+    preinfusion_pressure: float | None = None
+    pressure_profile: str | None = None
+    brew_mode: str | None = None
+    saturation: float | None = None
+    bloom_pause: float | None = None
+    temp_profile: str | None = None
 
     stop_mode_id: uuid.UUID | None = Field(
         default=None, foreign_key="stop_modes.id"

@@ -378,6 +378,20 @@ class BrewCreate(SQLModel):
         Pre-infusion time in seconds.
     total_time : float | None
         Total brew time in seconds.
+    bloom_weight : float | None
+        Pour-over bloom water in grams.
+    preinfusion_pressure : float | None
+        Espresso pre-infusion pressure in bar.
+    pressure_profile : str | None
+        Espresso pressure profile (ramp_up/flat/decline/custom).
+    brew_mode : str | None
+        Aeropress: standard/inverted; espresso: auto/manual.
+    saturation : float | None
+        Espresso flow control saturation (0-1 ratio).
+    bloom_pause : float | None
+        Espresso bloom wait duration in seconds.
+    temp_profile : str | None
+        Espresso temperature profile (flat/declining/profiling).
     stop_mode_id : uuid.UUID | None
         Optional stop mode FK.
     is_failed : bool
@@ -402,6 +416,13 @@ class BrewCreate(SQLModel):
     yield_amount: float | None = None
     pre_infusion_time: float | None = None
     total_time: float | None = None
+    bloom_weight: float | None = None
+    preinfusion_pressure: float | None = None
+    pressure_profile: str | None = None
+    brew_mode: str | None = None
+    saturation: float | None = None
+    bloom_pause: float | None = None
+    temp_profile: str | None = None
     stop_mode_id: uuid.UUID | None = None
     is_failed: bool = False
     notes: str | None = None
@@ -441,6 +462,20 @@ class BrewUpdate(SQLModel):
         Updated pre-infusion time.
     total_time : float | None
         Updated total time.
+    bloom_weight : float | None
+        Updated bloom weight.
+    preinfusion_pressure : float | None
+        Updated pre-infusion pressure.
+    pressure_profile : str | None
+        Updated pressure profile.
+    brew_mode : str | None
+        Updated brew mode.
+    saturation : float | None
+        Updated saturation.
+    bloom_pause : float | None
+        Updated bloom pause.
+    temp_profile : str | None
+        Updated temperature profile.
     stop_mode_id : uuid.UUID | None
         Updated stop mode FK.
     is_failed : bool | None
@@ -463,6 +498,13 @@ class BrewUpdate(SQLModel):
     yield_amount: float | None = None
     pre_infusion_time: float | None = None
     total_time: float | None = None
+    bloom_weight: float | None = None
+    preinfusion_pressure: float | None = None
+    pressure_profile: str | None = None
+    brew_mode: str | None = None
+    saturation: float | None = None
+    bloom_pause: float | None = None
+    temp_profile: str | None = None
     stop_mode_id: uuid.UUID | None = None
     is_failed: bool | None = None
     notes: str | None = None
@@ -546,6 +588,20 @@ class BrewRead(SQLModel):
         Pre-infusion time in seconds.
     total_time : float | None
         Total brew time in seconds.
+    bloom_weight : float | None
+        Pour-over bloom water in grams.
+    preinfusion_pressure : float | None
+        Espresso pre-infusion pressure in bar.
+    pressure_profile : str | None
+        Espresso pressure profile (ramp_up/flat/decline/custom).
+    brew_mode : str | None
+        Aeropress: standard/inverted; espresso: auto/manual.
+    saturation : float | None
+        Espresso flow control saturation (0-1 ratio).
+    bloom_pause : float | None
+        Espresso bloom wait duration in seconds.
+    temp_profile : str | None
+        Espresso temperature profile (flat/declining/profiling).
     stop_mode_id : uuid.UUID | None
         Stop mode FK.
     is_failed : bool
@@ -587,6 +643,13 @@ class BrewRead(SQLModel):
     yield_amount: float | None = None
     pre_infusion_time: float | None = None
     total_time: float | None = None
+    bloom_weight: float | None = None
+    preinfusion_pressure: float | None = None
+    pressure_profile: str | None = None
+    brew_mode: str | None = None
+    saturation: float | None = None
+    bloom_pause: float | None = None
+    temp_profile: str | None = None
     stop_mode_id: uuid.UUID | None = None
     is_failed: bool
     notes: str | None = None
@@ -636,6 +699,13 @@ class BrewRead(SQLModel):
             "yield_amount",
             "pre_infusion_time",
             "total_time",
+            "bloom_weight",
+            "preinfusion_pressure",
+            "pressure_profile",
+            "brew_mode",
+            "saturation",
+            "bloom_pause",
+            "temp_profile",
             "stop_mode_id",
             "is_failed",
             "notes",

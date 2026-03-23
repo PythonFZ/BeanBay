@@ -38,6 +38,7 @@ BREW_SORT_FIELDS = [
     "temperature", "yield_amount", "pressure", "flow_rate",
     "total_time", "pre_infusion_time",
     "score", "bean_name", "brew_method_name", "person_name",
+    "grind_setting_display",
 ]
 
 
@@ -315,6 +316,13 @@ def _brew_to_read(brew: Brew) -> dict[str, Any]:
         "yield_amount": brew.yield_amount,
         "pre_infusion_time": brew.pre_infusion_time,
         "total_time": brew.total_time,
+        "bloom_weight": brew.bloom_weight,
+        "preinfusion_pressure": brew.preinfusion_pressure,
+        "pressure_profile": brew.pressure_profile,
+        "brew_mode": brew.brew_mode,
+        "saturation": brew.saturation,
+        "bloom_pause": brew.bloom_pause,
+        "temp_profile": brew.temp_profile,
         "stop_mode_id": brew.stop_mode_id,
         "is_failed": brew.is_failed,
         "notes": brew.notes,
@@ -390,8 +398,10 @@ def list_brews(
 
     total: int = session.exec(count_stmt).one()  # type: ignore[arg-type]
 
-    # Handle join-based sort fields
-    if sort_by == "score":
+    # Handle join-based and aliased sort fields
+    if sort_by == "grind_setting_display":
+        sort_column = Brew.grind_setting
+    elif sort_by == "score":
         stmt = stmt.outerjoin(BrewTaste, Brew.id == BrewTaste.brew_id)  # type: ignore[arg-type]
         sort_column = BrewTaste.score
     elif sort_by == "bean_name":
@@ -459,6 +469,13 @@ def create_brew(
         yield_amount=payload.yield_amount,
         pre_infusion_time=payload.pre_infusion_time,
         total_time=payload.total_time,
+        bloom_weight=payload.bloom_weight,
+        preinfusion_pressure=payload.preinfusion_pressure,
+        pressure_profile=payload.pressure_profile,
+        brew_mode=payload.brew_mode,
+        saturation=payload.saturation,
+        bloom_pause=payload.bloom_pause,
+        temp_profile=payload.temp_profile,
         stop_mode_id=payload.stop_mode_id,
         is_failed=payload.is_failed,
         notes=payload.notes,

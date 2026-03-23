@@ -561,3 +561,113 @@ class TestBrewTasteAxisRework:
         assert taste["aftertaste"] == 8.0
         assert "aroma" not in taste
         assert "intensity" not in taste
+
+
+class TestBrewOptimizationColumns:
+    """Verify the new optimization parameter columns on Brew."""
+
+    def test_create_brew_with_optimization_params(self, client):
+        """POST creates a brew with all optimization columns and returns them."""
+        ids = _setup_brew_prereqs(client)
+
+        resp = client.post(
+            BREWS,
+            json={
+                "bag_id": ids["bag_id"],
+                "brew_setup_id": ids["brew_setup_id"],
+                "person_id": ids["person_id"],
+                "dose": 18.0,
+                "brewed_at": _now_iso(),
+                "bloom_weight": 40.0,
+                "preinfusion_pressure": 2.5,
+                "pressure_profile": "ramp_up",
+                "brew_mode": "auto",
+                "saturation": 0.75,
+                "bloom_pause": 5.0,
+                "temp_profile": "declining",
+            },
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["bloom_weight"] == 40.0
+        assert body["preinfusion_pressure"] == 2.5
+        assert body["pressure_profile"] == "ramp_up"
+        assert body["brew_mode"] == "auto"
+        assert body["saturation"] == 0.75
+        assert body["bloom_pause"] == 5.0
+        assert body["temp_profile"] == "declining"
+
+    def test_create_brew_optimization_params_default_null(self, client):
+        """POST without optimization columns returns them as null."""
+        ids = _setup_brew_prereqs(client)
+
+        resp = client.post(
+            BREWS,
+            json={
+                "bag_id": ids["bag_id"],
+                "brew_setup_id": ids["brew_setup_id"],
+                "person_id": ids["person_id"],
+                "dose": 18.0,
+                "brewed_at": _now_iso(),
+            },
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["bloom_weight"] is None
+        assert body["preinfusion_pressure"] is None
+        assert body["pressure_profile"] is None
+        assert body["brew_mode"] is None
+        assert body["saturation"] is None
+        assert body["bloom_pause"] is None
+        assert body["temp_profile"] is None
+
+    def test_get_brew_returns_optimization_params(self, client):
+        """GET /brews/{id} returns optimization columns."""
+        ids = _setup_brew_prereqs(client)
+
+        create_resp = client.post(
+            BREWS,
+            json={
+                "bag_id": ids["bag_id"],
+                "brew_setup_id": ids["brew_setup_id"],
+                "person_id": ids["person_id"],
+                "dose": 18.0,
+                "brewed_at": _now_iso(),
+                "bloom_weight": 50.0,
+                "brew_mode": "inverted",
+            },
+        )
+        brew_id = create_resp.json()["id"]
+
+        resp = client.get(f"{BREWS}/{brew_id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["bloom_weight"] == 50.0
+        assert body["brew_mode"] == "inverted"
+        assert body["preinfusion_pressure"] is None
+
+    def test_patch_brew_optimization_params(self, client):
+        """PATCH /brews/{id} can update optimization columns."""
+        ids = _setup_brew_prereqs(client)
+
+        create_resp = client.post(
+            BREWS,
+            json={
+                "bag_id": ids["bag_id"],
+                "brew_setup_id": ids["brew_setup_id"],
+                "person_id": ids["person_id"],
+                "dose": 18.0,
+                "brewed_at": _now_iso(),
+                "pressure_profile": "flat",
+            },
+        )
+        brew_id = create_resp.json()["id"]
+
+        resp = client.patch(
+            f"{BREWS}/{brew_id}",
+            json={"pressure_profile": "decline", "saturation": 0.5},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["pressure_profile"] == "decline"
+        assert body["saturation"] == 0.5
