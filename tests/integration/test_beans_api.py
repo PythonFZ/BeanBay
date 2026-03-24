@@ -225,6 +225,32 @@ class TestBagCreate:
         )
         assert resp.status_code == 404
 
+    def test_create_bag_returns_bean_name(self, client):
+        """Created bag response includes the parent bean's name."""
+        bean = _create_bean(client, "Macaba Test")
+        bag = _create_bag(client, bean["id"])
+        assert bag["bean_name"] == "Macaba Test"
+
+    def test_list_bags_returns_bean_name(self, client):
+        """GET /bags returns bean_name for each bag."""
+        bean = _create_bean(client, "List Bean Name")
+        _create_bag(client, bean["id"])
+        resp = client.get(BAGS, params={"bean_id": bean["id"]})
+        assert resp.status_code == 200
+        items = resp.json()["items"]
+        assert len(items) >= 1
+        assert items[0]["bean_name"] == "List Bean Name"
+
+    def test_list_bags_by_bean_returns_bean_name(self, client):
+        """GET /beans/{id}/bags returns bean_name for each bag."""
+        bean = _create_bean(client, "Nested Bean Name")
+        _create_bag(client, bean["id"])
+        resp = client.get(f"{BEANS}/{bean['id']}/bags")
+        assert resp.status_code == 200
+        items = resp.json()["items"]
+        assert len(items) >= 1
+        assert items[0]["bean_name"] == "Nested Bean Name"
+
 
 # ======================================================================
 # 6. GET /bags top-level list filterable by bean_id

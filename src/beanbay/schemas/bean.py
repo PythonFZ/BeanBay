@@ -195,6 +195,9 @@ class BagRead(BagBase):
             f: getattr(data, f, None) for f in fields
         }
         data_dict["is_retired"] = data_dict["retired_at"] is not None
+        bean = getattr(data, "bean", None)
+        if bean is not None:
+            data_dict["bean_name"] = getattr(bean, "name", None)
         return data_dict
 
 

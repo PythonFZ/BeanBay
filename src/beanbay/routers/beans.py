@@ -788,7 +788,8 @@ def get_bag(
     BagRead
         The bag.
     """
-    db_bag = session.get(Bag, bag_id)
+    stmt = select(Bag).where(Bag.id == bag_id).options(selectinload(Bag.bean))
+    db_bag = session.exec(stmt).first()
     if db_bag is None:
         raise HTTPException(status_code=404, detail="Bag not found.")
     return db_bag  # type: ignore[return-value]
