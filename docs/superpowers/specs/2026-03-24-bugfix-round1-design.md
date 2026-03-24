@@ -94,41 +94,15 @@ Three endpoints use `OptionalPersonIdDep`: `/stats/brews`, `/stats/taste`, `/sta
 
 **Root cause**: The SQLite database stores naive `datetime` objects (no timezone). FastAPI's default JSON serialization outputs them as ISO 8601 strings without a timezone suffix (e.g., `"2026-03-24T11:51:49"`). When JavaScript's `new Date()` parses this string, it interprets it as local time. But the server generated the timestamp in UTC. The difference between UTC and the user's local timezone (e.g., UTC+1) creates the offset.
 
-**Fix**: Ensure all datetime serialization includes the UTC timezone marker. Use a custom `JSONResponse` subclass with a `default` handler that appends `Z` to naive datetimes. This is applied once at the FastAPI app level and affects all responses globally.
+**Fix**: Make all `datetime` columns in all models timezone-aware by using `Column(DateTime(timezone=True))`. The app is pre-production — drop the database and regenerate the Alembic migration from scratch.
 
-Implementation approach: Override FastAPI's default `JSONResponse` with a custom class that uses `json.dumps` with a `default` handler for datetime serialization:
-
-```python
-import json
-from datetime import datetime
-from fastapi.responses import JSONResponse
-
-class UTCDateTimeResponse(JSONResponse):
-    def render(self, content):
-        return json.dumps(
-            content,
-            default=self._default_serializer,
-            ensure_ascii=False,
-        ).encode("utf-8")
-
-    @staticmethod
-    def _default_serializer(obj):
-        if isinstance(obj, datetime):
-            s = obj.isoformat()
-            if obj.tzinfo is None:
-                s += "Z"
-            return s
-        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-```
-
-Set as the default response class on the FastAPI app: `app = FastAPI(default_response_class=UTCDateTimeResponse)`.
-
-**Note**: This changes datetime serialization for ALL API responses globally. Confirmed that no existing frontend code compensates for missing timezone (the only relative-time formatter is `formatRelativeTime` in `DashboardPage.tsx` which will now work correctly).
+All 8 model files (`bean.py`, `brew.py`, `cupping.py`, `equipment.py`, `optimization.py`, `person.py`, `rating.py`, `tag.py`) currently use naive `datetime` with `sa_column_kwargs={"server_default": func.now()}`. Change every datetime column to use `sa_column=Column(DateTime(timezone=True), server_default=func.now())`. This makes SQLAlchemy return timezone-aware Python `datetime` objects, which Pydantic serializes with `+00:00` suffix — JavaScript correctly interprets these as UTC.
 
 **Files**:
-- Modify: `src/beanbay/main.py` — add `UTCDateTimeResponse` class and set as `default_response_class`
+- Modify: All 8 model files in `src/beanbay/models/` — change datetime columns to `DateTime(timezone=True)`
+- Modify: `migrations/versions/` — delete existing migrations, generate fresh one
 
-**Verification**: Dashboard "Recent Brews" should show "Xm ago" (minutes, not hours) for recently created brews. Check that all API responses now include `Z` suffix on datetime fields (e.g., `curl /api/v1/brews?limit=1`).
+**Verification**: Dashboard "Recent Brews" should show "Xm ago" (minutes, not hours) for recently created brews. API responses should include timezone offset on datetime fields (e.g., `"brewed_at":"2026-03-24T11:51:49+00:00"`).
 
 ---
 

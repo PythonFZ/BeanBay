@@ -22,7 +22,8 @@
 | `src/beanbay/schemas/bean.py` | Add `bean_name` field to `BagRead` |
 | `src/beanbay/routers/beans.py` | Populate `bean_name` in bag list endpoints |
 | `src/beanbay/dependencies.py` | Remove auto-resolve to default person |
-| `src/beanbay/main.py` | Add `UTCDateTimeResponse` for timezone-aware serialization |
+| `src/beanbay/models/*.py` (8 files) | Change all datetime columns to `DateTime(timezone=True)` |
+| `migrations/versions/` | Delete old migrations, generate fresh one |
 | `src/beanbay/services/campaign.py` | New: `ensure_campaign()` shared helper |
 | `src/beanbay/routers/brews.py` | Auto-open bag + auto-create campaign on brew creation |
 | `src/beanbay/routers/optimize.py` | Refactor to use `ensure_campaign()` |
@@ -211,22 +212,20 @@ Replace the return block (lines ~748-755):
 ```python
     items = session.exec(stmt).all()
 
-    # Populate bean_name from eagerly-loaded relationship
-    result_items = []
-    for bag in items:
-        bag_dict = BagRead.model_validate(bag).model_dump()
-        bag_dict["bean_name"] = bag.bean.name if bag.bean else None
-        result_items.append(bag_dict)
-
     return PaginatedResponse(
-        items=result_items,
+        items=[
+            BagRead.model_validate(
+                bag, update={"bean_name": bag.bean.name if bag.bean else None}
+            )
+            for bag in items
+        ],
         total=total,
         limit=limit,
         offset=offset,
     )
 ```
 
-Apply the same pattern to `list_bean_bags` (line ~546): add `.options(selectinload(Bag.bean))` to its query and populate `bean_name` the same way.
+Apply the same pattern to `list_bean_bags` (line ~546): add `.options(selectinload(Bag.bean))` to its query and use the same `model_validate(..., update={})` approach.
 
 - [ ] **Step 3: Verify with curl**
 
@@ -708,7 +707,13 @@ git commit -m "feat: auto-create optimization campaign when brew is logged"
 
 - [ ] **Step 1: Add bag auto-open logic to create_brew**
 
-In `src/beanbay/routers/brews.py`, in the `create_brew()` function, add after the bag validation (after line 440) and before the grind setting resolution:
+In `src/beanbay/routers/brews.py`, add import at module top (if not already present):
+
+```python
+from datetime import datetime, timezone
+```
+
+In the `create_brew()` function, add after the bag validation (after line 440) and before the grind setting resolution:
 
 ```python
     bag = session.get(Bag, payload.bag_id)
@@ -717,12 +722,11 @@ In `src/beanbay/routers/brews.py`, in the `create_brew()` function, add after th
 
     # Auto-mark bag as opened when first used in a brew
     if bag.opened_at is None:
-        from datetime import date
-        bag.opened_at = date.today()
+        bag.opened_at = datetime.now(timezone.utc)
         session.add(bag)
 ```
 
-Add the `date` import at the module top if not already present, or keep the local import.
+Note: `opened_at` is a `datetime` field on the Bag model, so we use `datetime.now(timezone.utc)` (not `date.today()`).
 
 - [ ] **Step 2: Verify with existing tests**
 
