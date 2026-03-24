@@ -80,6 +80,8 @@ export interface Recommendation {
   parameter_values: Record<string, unknown>;
   status: string;
   created_at: string;
+  optimization_mode: string | null;
+  personal_brew_count: number | null;
 }
 
 export interface PersonPreferences {
@@ -191,6 +193,8 @@ export function usePersonPreferences(personId: string) {
 interface SuggestParams {
   bean_id: string;
   brew_setup_id: string;
+  person_id?: string;
+  mode?: string;
 }
 
 interface JobStatus {
@@ -219,7 +223,10 @@ export function useSuggest() {
       const { data: campaign } = await apiClient.post('/optimize/campaigns', params);
 
       // Step 2: Request a recommendation
-      const { data: jobRef } = await apiClient.post(`/optimize/campaigns/${campaign.id}/recommend`);
+      const { data: jobRef } = await apiClient.post(
+        `/optimize/campaigns/${campaign.id}/recommend`,
+        { person_id: params.person_id, mode: params.mode ?? 'auto' },
+      );
 
       // Step 3: Poll job until done
       const job = await pollJobUntilDone(jobRef.job_id);

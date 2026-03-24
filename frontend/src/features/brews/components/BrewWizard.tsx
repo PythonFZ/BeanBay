@@ -244,6 +244,7 @@ export default function BrewWizard() {
                 <SuggestButton
                   beanId={state.setup.bag.bean_id}
                   brewSetupId={state.setup.brew_setup.id}
+                  personId={state.setup.person?.id}
                   onSuggestion={handleSuggestion}
                 />
               ) : undefined

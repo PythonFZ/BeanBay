@@ -6,11 +6,12 @@ import { useNotification } from '@/components/NotificationProvider';
 interface Props {
   beanId: string;
   brewSetupId: string;
+  personId?: string;
   onSuggestion: (rec: Recommendation, campaignId: string) => void;
   disabled?: boolean;
 }
 
-export default function SuggestButton({ beanId, brewSetupId, onSuggestion, disabled }: Props) {
+export default function SuggestButton({ beanId, brewSetupId, personId, onSuggestion, disabled }: Props) {
   const suggest = useSuggest();
   const { notify } = useNotification();
 
@@ -19,6 +20,7 @@ export default function SuggestButton({ beanId, brewSetupId, onSuggestion, disab
       const rec = await suggest.mutateAsync({
         bean_id: beanId,
         brew_setup_id: brewSetupId,
+        person_id: personId,
       });
       onSuggestion(rec, rec.campaign_id);
     } catch (err) {
