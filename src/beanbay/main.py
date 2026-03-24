@@ -31,23 +31,21 @@ from beanbay.services.taskiq_broker import broker
 async def lifespan(app: FastAPI):
     """Application lifespan handler.
 
-    Run Alembic migrations to head, then seed default lookup data
-    and the default person record.  Starts and stops the taskiq broker.
+    Creates database tables, seeds default lookup data and the default
+    person record.  Starts and stops the taskiq broker.
 
     Parameters
     ----------
     app : FastAPI
         The FastAPI application instance.
     """
-    from alembic import command
-    from alembic.config import Config as AlembicConfig
+    from sqlmodel import SQLModel
 
     from beanbay.database import engine
     from beanbay.seed import seed_brew_methods, seed_default_person, seed_stop_modes, seed_storage_types
     from beanbay.seed_optimization import seed_method_parameter_defaults
 
-    alembic_cfg = AlembicConfig("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+    SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
         seed_brew_methods(session)
