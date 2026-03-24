@@ -1,7 +1,9 @@
 import { Box, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
-import { Coffee as CoffeeIcon, LocalCafe as LocalCafeIcon } from '@mui/icons-material';
+import { Coffee as CoffeeIcon, LocalCafe as LocalCafeIcon, AutoFixHigh as OptimizeIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router';
 import StatsCard from '@/components/StatsCard';
 import PageHeader from '@/components/PageHeader';
+import { useCampaigns } from '@/features/optimize/hooks';
 import {
   useBrewStats,
   useBeanStats,
@@ -49,6 +51,13 @@ export default function DashboardPage() {
   const { data: equipmentStats, isLoading: equipmentLoading } = useEquipmentStats();
   const { data: cuppingStats, isLoading: cuppingLoading } = useCuppingStats();
   const { data: recentBrews, isLoading: recentLoading } = useRecentBrews();
+  const { data: campaigns } = useCampaigns();
+  const navigate = useNavigate();
+  const activeCampaigns = campaigns?.length ?? 0;
+  const bestOverall = campaigns?.reduce(
+    (best, c) => (c.best_score != null && (best == null || c.best_score > best) ? c.best_score : best),
+    null as number | null,
+  );
 
   const failRateDisplay =
     brewStats?.fail_rate != null
@@ -162,6 +171,15 @@ export default function DashboardPage() {
           value={cuppingStats?.best_total_score?.toFixed(1) ?? null}
           loading={cuppingLoading}
         />
+      </StatRow>
+
+      {/* Optimization */}
+      <SectionLabel>Optimization</SectionLabel>
+      <StatRow>
+        <Box onClick={() => navigate('/optimize')} sx={{ cursor: 'pointer' }}>
+          <StatsCard label="Active Campaigns" value={activeCampaigns} icon={<OptimizeIcon />} />
+        </Box>
+        <StatsCard label="Best Score" value={bestOverall?.toFixed(1) ?? '—'} />
       </StatRow>
 
       {/* Recent Brews */}
