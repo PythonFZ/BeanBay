@@ -439,6 +439,11 @@ def create_brew(
     if bag is None:
         raise HTTPException(status_code=404, detail="Bag not found.")
 
+    # Auto-mark bag as opened when first used in a brew
+    if bag.opened_at is None:
+        bag.opened_at = datetime.now(timezone.utc)
+        session.add(bag)
+
     brew_setup = session.get(BrewSetup, payload.brew_setup_id)
     if brew_setup is None:
         raise HTTPException(status_code=404, detail="BrewSetup not found.")
