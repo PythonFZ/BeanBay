@@ -529,3 +529,70 @@ class PersonPreferences(SQLModel):
     roast_preference: dict = {}
     origin_preferences: list[OriginPreference] = []
     method_breakdown: list[MethodBreakdown] = []
+
+
+# ---------------------------------------------------------------------------
+# Posterior Predictions
+# ---------------------------------------------------------------------------
+
+
+class MeasurementPoint(SQLModel):
+    """A single measurement for overlay on posterior plots.
+
+    Attributes
+    ----------
+    values : dict
+        Parameter values for this measurement.
+    score : float
+        Observed taste score.
+    """
+
+    values: dict
+    score: float
+
+
+class PosteriorResponse(SQLModel):
+    """Response from the posterior predictions endpoint.
+
+    Attributes
+    ----------
+    params : list[str]
+        Parameter names that were swept.
+    grid : list[list[float]]
+        Grid values per parameter (one array per param).
+    mean : list
+        Predicted mean scores (1D for single param, 2D nested for two).
+    std : list
+        Predicted std (same shape as mean).
+    measurements : list[MeasurementPoint]
+        Actual measurements for chart overlay.
+    """
+
+    params: list[str]
+    grid: list[list[float]]
+    mean: list
+    std: list
+    measurements: list[MeasurementPoint] = []
+
+
+# ---------------------------------------------------------------------------
+# Feature Importance
+# ---------------------------------------------------------------------------
+
+
+class FeatureImportanceResponse(SQLModel):
+    """Response from the feature importance endpoint.
+
+    Attributes
+    ----------
+    parameters : list[str]
+        Parameter names sorted by importance descending.
+    importance : list[float]
+        SHAP importance values (same order as parameters).
+    measurement_count : int
+        Number of measurements used for the analysis.
+    """
+
+    parameters: list[str]
+    importance: list[float]
+    measurement_count: int
