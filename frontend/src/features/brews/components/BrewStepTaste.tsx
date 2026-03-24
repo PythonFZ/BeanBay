@@ -1,5 +1,6 @@
 // frontend/src/features/brews/components/BrewStepTaste.tsx
-import { Box, Grid, Slider, Stack, TextField, Typography } from '@mui/material';
+import { Box, Grid, IconButton, Slider, Stack, TextField, Typography } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import FlavorTagSelect from '@/components/FlavorTagSelect';
 import TasteRadar, { brewTasteToRadar } from '@/components/TasteRadar';
 
@@ -31,34 +32,39 @@ const AXES: { key: keyof Omit<TasteData, 'score' | 'notes' | 'flavor_tags'>; lab
   { key: 'aftertaste', label: 'Aftertaste' },
 ];
 
-function TasteSlider({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number | null;
-  onChange: (v: number | null) => void;
+function TasteSlider({ label, value, onChange }: {
+  label: string; value: number | null; onChange: (v: number | null) => void;
 }) {
-  const displayValue = value ?? 0;
-
+  const isOff = value === null;
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="body2">{label}</Typography>
-        <Typography variant="body2" fontWeight="bold">
-          {value != null ? value.toFixed(1) : '—'}
+    <Box sx={{ px: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="body2" color={isOff ? 'text.disabled' : 'text.primary'}>
+          {label}
         </Typography>
-      </Stack>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="body2" color={isOff ? 'text.disabled' : 'text.primary'}>
+            {isOff ? '—' : value.toFixed(1)}
+          </Typography>
+          {!isOff && (
+            <IconButton size="small" onClick={() => onChange(null)} sx={{ p: 0.25 }}>
+              <CloseIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          )}
+        </Box>
+      </Box>
       <Slider
-        value={displayValue}
+        value={value ?? 5}
         onChange={(_, v) => onChange(v as number)}
-        min={0}
-        max={10}
-        step={0.5}
+        min={0} max={10} step={0.5}
         valueLabelDisplay="auto"
-        size="small"
+        sx={{ opacity: isOff ? 0.3 : 1 }}
       />
+      {isOff && (
+        <Typography variant="caption" color="text.disabled" sx={{ mt: -1, display: 'block' }}>
+          Tap to rate
+        </Typography>
+      )}
     </Box>
   );
 }
