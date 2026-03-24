@@ -43,9 +43,11 @@ from beanbay.schemas.optimization import (
     PosteriorResponse,
     RecommendationRead,
     ScoreHistoryEntry,
+    TasteProfile,
     TopBean,
 )
 from beanbay.services.campaign import ensure_campaign
+from beanbay.services.optimizer import OptimizerService
 from beanbay.services.parameter_ranges import compute_effective_ranges
 from beanbay.services.taskiq_broker import generate_recommendation
 
@@ -156,6 +158,103 @@ def put_bean_overrides(
 
 
 # ======================================================================
+# Live stats computation
+# ======================================================================
+
+
+def _compute_live_stats(
+    session,
+    campaign: Campaign,
+) -> dict:
+    """Compute live measurement stats from actual scored brews.
+
+    Queries all brews matching the campaign's bean+setup combination
+    and computes measurement count, best score, phase, convergence,
+    and score history from the database — never from stale stored fields.
+
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    campaign : Campaign
+        The campaign to compute stats for.
+
+    Returns
+    -------
+    dict
+        Keys: measurement_count, best_score, phase, convergence, score_history.
+    """
+    # Query brews for this bean+setup combination
+    stmt = (
+        select(Brew)
+        .join(Bag, Brew.bag_id == Bag.id)
+        .where(
+            Bag.bean_id == campaign.bean_id,
+            Brew.brew_setup_id == campaign.brew_setup_id,
+            Brew.retired_at.is_(None),  # type: ignore[union-attr]
+        )
+        .order_by(Brew.brewed_at.asc())  # type: ignore[union-attr]
+    )
+    brews = session.exec(stmt).all()
+
+    # Build score history
+    score_history = []
+    for i, brew in enumerate(brews, 1):
+        taste = brew.taste
+        score_history.append(
+            ScoreHistoryEntry(
+                shot_number=i,
+                score=taste.score if taste else None,
+                is_failed=brew.is_failed,
+                phase=None,
+            )
+        )
+
+    # Compute live stats
+    valid_scores = [
+        e.score
+        for e in score_history
+        if not e.is_failed and e.score is not None
+    ]
+    valid_count = len(valid_scores)
+    best_score = max(valid_scores) if valid_scores else None
+    phase = OptimizerService.determine_phase(valid_count)
+
+    # Convergence status
+    if valid_count < 3:
+        convergence_status = "getting_started"
+    elif phase == "random":
+        convergence_status = "exploring"
+    elif phase == "learning":
+        convergence_status = "learning"
+    elif phase == "optimizing":
+        convergence_status = "converged"
+    else:
+        convergence_status = "exploring"
+
+    # Improvement rate
+    improvement_rate = None
+    if valid_count >= 6:
+        recent_best = max(valid_scores[-3:])
+        previous_best = max(valid_scores[-6:-3])
+        if previous_best > 0:
+            improvement_rate = round(
+                (recent_best - previous_best) / previous_best, 4
+            )
+
+    return {
+        "measurement_count": valid_count,
+        "best_score": best_score,
+        "phase": phase,
+        "convergence": ConvergenceInfo(
+            status=convergence_status,
+            improvement_rate=improvement_rate,
+        ),
+        "score_history": score_history,
+    }
+
+
+# ======================================================================
 # Campaign CRUD
 # ======================================================================
 
@@ -251,18 +350,22 @@ def _campaign_to_detail(
     else:
         brew_setup_name = None
 
+    live = _compute_live_stats(session, campaign)
+
     return CampaignDetailRead(
         id=campaign.id,
         bean_id=campaign.bean_id,
         brew_setup_id=campaign.brew_setup_id,
-        phase=campaign.phase,
-        measurement_count=campaign.measurement_count,
-        best_score=campaign.best_score,
+        phase=live["phase"],
+        measurement_count=live["measurement_count"],
+        best_score=live["best_score"],
         created_at=campaign.created_at,
         updated_at=campaign.updated_at,
         bean_name=bean.name if bean else None,
         brew_setup_name=brew_setup_name,
         effective_ranges=ranges,
+        convergence=live["convergence"],
+        score_history=live["score_history"],
     )
 
 
@@ -369,14 +472,15 @@ def list_campaigns(
                 brew_setup_name = method.name if method else None
         else:
             brew_setup_name = None
+        live = _compute_live_stats(session, campaign)
         results.append(
             CampaignListRead(
                 id=campaign.id,
                 bean_name=bean.name if bean else None,
                 brew_setup_name=brew_setup_name,
-                phase=campaign.phase,
-                measurement_count=campaign.measurement_count,
-                best_score=campaign.best_score,
+                phase=live["phase"],
+                measurement_count=live["measurement_count"],
+                best_score=live["best_score"],
                 created_at=campaign.created_at,
             )
         )
@@ -512,70 +616,14 @@ def get_campaign_progress(
     if campaign is None:
         raise HTTPException(status_code=404, detail="Campaign not found.")
 
-    # Query brews for this bean+setup combination, ordered by brewed_at
-    stmt = (
-        select(Brew)
-        .join(Bag, Brew.bag_id == Bag.id)
-        .where(
-            Bag.bean_id == campaign.bean_id,
-            Brew.brew_setup_id == campaign.brew_setup_id,
-            Brew.retired_at.is_(None),
-        )
-        .order_by(Brew.brewed_at.asc())
-    )
-    brews = session.exec(stmt).all()
-
-    # Build score history
-    score_history = []
-    for i, brew in enumerate(brews, 1):
-        taste = brew.taste
-        score_history.append(
-            ScoreHistoryEntry(
-                shot_number=i,
-                score=taste.score if taste else None,
-                is_failed=brew.is_failed,
-                phase=None,
-            )
-        )
-
-    # Compute convergence status
-    valid_scores = [
-        e.score
-        for e in score_history
-        if not e.is_failed and e.score is not None
-    ]
-    valid_count = len(valid_scores)
-
-    if valid_count < 3:
-        convergence_status = "getting_started"
-    elif campaign.phase == "random":
-        convergence_status = "exploring"
-    elif campaign.phase == "learning":
-        convergence_status = "learning"
-    elif campaign.phase == "optimizing":
-        convergence_status = "converged"
-    else:
-        convergence_status = "exploring"
-
-    # Compute improvement rate: compare best of last 3 valid vs previous 3
-    improvement_rate = None
-    if valid_count >= 6:
-        recent_best = max(valid_scores[-3:])
-        previous_best = max(valid_scores[-6:-3])
-        if previous_best > 0:
-            improvement_rate = round(
-                (recent_best - previous_best) / previous_best, 4
-            )
+    live = _compute_live_stats(session, campaign)
 
     return CampaignProgress(
-        phase=campaign.phase,
-        measurement_count=campaign.measurement_count,
-        best_score=campaign.best_score,
-        convergence=ConvergenceInfo(
-            status=convergence_status,
-            improvement_rate=improvement_rate,
-        ),
-        score_history=score_history,
+        phase=live["phase"],
+        measurement_count=live["measurement_count"],
+        best_score=live["best_score"],
+        convergence=live["convergence"],
+        score_history=live["score_history"],
     )
 
 
@@ -678,22 +726,30 @@ def get_posterior_predictions(
     )
     brews = session.exec(stmt).all()
 
-    # 6. Build measurement points for overlay
-    all_param_names = [r.parameter_name for r in ranges]
+    # 6. Build measurement points for overlay — only require requested params
     measurement_points: list[MeasurementPoint] = []
     for brew in brews:
+        if not brew.taste or brew.taste.score is None:
+            continue
         values = {}
-        has_all = True
-        for pname in all_param_names:
+        has_requested = True
+        for pname in param_names:
             val = getattr(brew, pname, None)
             if val is None:
-                has_all = False
+                has_requested = False
                 break
             values[pname] = val
-        if has_all and brew.taste and brew.taste.score is not None:
-            measurement_points.append(
-                MeasurementPoint(values=values, score=brew.taste.score)
-            )
+        if not has_requested:
+            continue
+        # Include other available params for best-value computation
+        for r in ranges:
+            if r.parameter_name not in values:
+                val = getattr(brew, r.parameter_name, None)
+                if val is not None:
+                    values[r.parameter_name] = val
+        measurement_points.append(
+            MeasurementPoint(values=values, score=brew.taste.score)
+        )
 
     # 7. Validate >= 2 valid measurements
     if len(measurement_points) < 2:
@@ -834,11 +890,12 @@ def get_feature_importance(
             detail="Campaign has no trained model. Request a recommendation first.",
         )
 
-    # 2. Validate minimum measurement count
-    if campaign.measurement_count < 3:
+    # 2. Validate minimum measurement count (live, not stale stored value)
+    live = _compute_live_stats(session, campaign)
+    if live["measurement_count"] < 3:
         raise HTTPException(
             status_code=422,
-            detail=f"Need at least 3 measurements for SHAP analysis, found {campaign.measurement_count}.",
+            detail=f"Need at least 3 measurements for SHAP analysis, found {live['measurement_count']}.",
         )
 
     # 3. Restore BayBE campaign and compute SHAP insight
@@ -1369,6 +1426,51 @@ def get_person_preferences(
         for row in method_rows
     ]
 
+    # 7. Taste profile: average sub-scores from top-5 qualifying brews
+    SUB_SCORE_AXES = [
+        "acidity", "sweetness", "body", "bitterness", "balance", "aftertaste",
+    ]
+
+    taste_brews = session.exec(
+        select(Brew)
+        .join(Bag, Brew.bag_id == Bag.id)
+        .join(BrewTaste, Brew.id == BrewTaste.brew_id)
+        .where(
+            Brew.person_id == person_id,
+            Brew.is_failed == False,  # noqa: E712
+            Brew.retired_at.is_(None),  # type: ignore[union-attr]
+            BrewTaste.score.is_not(None),  # type: ignore[union-attr]
+        )
+        .order_by(BrewTaste.score.desc(), Brew.brewed_at.desc())  # type: ignore[union-attr]
+    ).all()
+
+    qualifying = []
+    for brew in taste_brews:
+        taste = brew.taste
+        if taste is None:
+            continue
+        non_null_count = sum(
+            1 for ax in SUB_SCORE_AXES if getattr(taste, ax) is not None
+        )
+        if non_null_count >= 3:
+            qualifying.append(taste)
+        if len(qualifying) == 5:
+            break
+
+    taste_profile = None
+    taste_profile_brew_count = len(qualifying)
+
+    if len(qualifying) >= 3:
+        profile_values = {}
+        for ax in SUB_SCORE_AXES:
+            values = [
+                getattr(t, ax) for t in qualifying if getattr(t, ax) is not None
+            ]
+            profile_values[ax] = (
+                round(sum(values) / len(values), 1) if len(values) >= 2 else None
+            )
+        taste_profile = TasteProfile(**profile_values)
+
     return PersonPreferences(
         person={"id": str(person.id), "name": person.name},
         brew_stats={
@@ -1380,4 +1482,6 @@ def get_person_preferences(
         roast_preference=roast_preference,
         origin_preferences=origin_preferences,
         method_breakdown=method_breakdown,
+        taste_profile=taste_profile,
+        taste_profile_brew_count=taste_profile_brew_count,
     )

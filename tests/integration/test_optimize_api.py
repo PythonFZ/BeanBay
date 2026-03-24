@@ -1786,3 +1786,53 @@ class TestRecommendationReadSchema:
         # Fields should exist (null is fine for legacy recommendations)
         assert "optimization_mode" in rec
         assert "personal_brew_count" in rec
+
+
+class TestTasteProfile:
+    """GET /optimize/people/{id}/preferences returns taste_profile."""
+
+    def test_taste_profile_from_top_brews(self, client, session):
+        """Taste profile averages sub-scores from top-5 brews by score."""
+        ids = _setup_campaign_with_scored_brews(client, session, n_brews=5)
+        person_id = ids["person_id"]
+
+        # Add sub-scores to each brew's taste
+        for i, brew_id in enumerate(ids["brew_ids"]):
+            client.patch(
+                f"/api/v1/brews/{brew_id}/taste",
+                json={
+                    "acidity": 5.0 + i,
+                    "sweetness": 6.0 + i,
+                    "body": 7.0,
+                },
+            )
+
+        resp = client.get(f"/api/v1/optimize/people/{person_id}/preferences")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["taste_profile"] is not None
+        assert data["taste_profile_brew_count"] >= 3
+        # acidity should be averaged from top brews
+        assert data["taste_profile"]["acidity"] is not None
+        assert data["taste_profile"]["sweetness"] is not None
+        assert data["taste_profile"]["body"] is not None
+
+    def test_taste_profile_null_when_insufficient_data(self, client, session):
+        """Taste profile is null when fewer than 3 qualifying brews."""
+        from beanbay.seed import seed_brew_methods
+        from beanbay.seed_optimization import seed_method_parameter_defaults
+
+        seed_brew_methods(session)
+        session.commit()
+        seed_method_parameter_defaults(session)
+        session.commit()
+
+        # Create a person with no brews
+        resp = client.post("/api/v1/people", json={"name": "No Brews Person"})
+        person_id = resp.json()["id"]
+
+        resp = client.get(f"/api/v1/optimize/people/{person_id}/preferences")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["taste_profile"] is None
+        assert data["taste_profile_brew_count"] == 0
