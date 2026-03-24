@@ -4,7 +4,7 @@ import type { PaginationParams } from '@/utils/pagination';
 
 export interface BrewListItem {
   id: string; grind_setting: number | null; grind_setting_display: string | null;
-  dose: number; temperature: number | null; is_failed: boolean;
+  dose: number; yield_amount: number | null; temperature: number | null; is_failed: boolean;
   brewed_at: string; created_at: string;
   bean_name: string; brew_method_name: string; person_name: string;
   score: number | null;

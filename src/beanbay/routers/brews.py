@@ -236,6 +236,7 @@ def _brew_to_list_read(brew: Brew, brew_setup: BrewSetup | None) -> BrewListRead
         grind_setting=brew.grind_setting,
         grind_setting_display=grind_display,
         dose=brew.dose,
+        yield_amount=brew.yield_amount,
         temperature=brew.temperature,
         is_failed=brew.is_failed,
         brewed_at=brew.brewed_at,

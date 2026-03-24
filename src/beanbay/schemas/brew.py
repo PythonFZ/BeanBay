@@ -547,6 +547,7 @@ class BrewListRead(SQLModel):
     grind_setting: float | None = None
     grind_setting_display: str | None = None
     dose: float
+    yield_amount: float | None = None
     temperature: float | None = None
     is_failed: bool
     brewed_at: datetime

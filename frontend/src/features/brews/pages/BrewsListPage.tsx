@@ -27,6 +27,12 @@ export default function BrewsListPage() {
       { field: 'person_name', headerName: 'Person', width: 120 },
       { field: 'dose', headerName: 'Dose (g)', width: 90 },
       {
+        field: 'yield_amount',
+        headerName: 'Yield (g)',
+        width: 90,
+        renderCell: (p) => p.row.yield_amount ?? '—',
+      },
+      {
         field: 'grind_setting_display',
         headerName: 'Grind',
         width: 90,
