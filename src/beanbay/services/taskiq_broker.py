@@ -174,6 +174,16 @@ async def generate_recommendation(job_id: str) -> None:
             else:
                 measurements_df = None
 
+            # 9b. Subsample measurements for GP efficiency
+            MAX_MEASUREMENTS_FOR_GP = 100
+
+            if measurements_df is not None and len(measurements_df) > MAX_MEASUREMENTS_FOR_GP:
+                from beanbay.utils.subsample import maximin_subsample
+
+                measurements_df = maximin_subsample(
+                    measurements_df, param_names, n=MAX_MEASUREMENTS_FOR_GP,
+                )
+
             # 10. Get recommendation
             raw_values = OptimizerService.recommend(baybe_campaign, measurements_df)
 

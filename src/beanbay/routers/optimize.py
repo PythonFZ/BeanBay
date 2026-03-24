@@ -900,8 +900,26 @@ def get_feature_importance(
         )
 
     # 3. Restore BayBE campaign and compute SHAP insight
+    MAX_MEASUREMENTS_FOR_SHAP = 50
+
     baybe_campaign = BaybeCampaign.from_json(campaign.campaign_json)
-    insight = SHAPInsight.from_campaign(baybe_campaign)
+    measurements = baybe_campaign.measurements
+
+    if len(measurements) > MAX_MEASUREMENTS_FOR_SHAP:
+        from beanbay.utils.subsample import maximin_subsample
+
+        # Rebuild campaign with subsampled measurements for SHAP analysis
+        param_cols = [c for c in measurements.columns if c != "score"]
+        subsampled = maximin_subsample(
+            measurements, param_cols, n=MAX_MEASUREMENTS_FOR_SHAP
+        )
+        shap_campaign = OptimizerService.build_campaign(
+            _compute_campaign_ranges(session, campaign)
+        )
+        shap_campaign.add_measurements(subsampled)
+        insight = SHAPInsight.from_campaign(shap_campaign)
+    else:
+        insight = SHAPInsight.from_campaign(baybe_campaign)
 
     # 4. Extract per-feature importance from the SHAP explanation
     #    explain() returns a tuple of shap.Explanation (one per target);
