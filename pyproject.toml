@@ -22,6 +22,9 @@ dev = [
     "httpx>=0.27",
 ]
 
+[project.scripts]
+beanbay = "beanbay.cli:main"
+
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
