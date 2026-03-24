@@ -233,6 +233,8 @@ class Recommendation(SQLModel, table=True):
     predicted_std: float | None = None
     parameter_values: str
     status: str = Field(default="pending")
+    optimization_mode: str | None = Field(default=None, description="community or personal")
+    personal_brew_count: int | None = Field(default=None, description="Person's brew count when generated")
 
     created_at: datetime = Field(
         default=None,
@@ -283,3 +285,5 @@ class OptimizationJob(SQLModel, table=True):
         sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     completed_at: datetime | None = None
+    person_id: uuid.UUID | None = Field(default=None, description="Person for personalized mode")
+    optimization_mode: str | None = Field(default=None, description="community or personal")

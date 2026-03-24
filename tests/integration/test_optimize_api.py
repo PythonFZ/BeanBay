@@ -1441,3 +1441,328 @@ class TestPredictedScorePopulation:
         rec_resp = recommend_client.get(f"{RECOMMENDATIONS}/{result_id}")
         rec = rec_resp.json()
         assert rec["predicted_score"] is None
+
+
+class TestRecommendationGrindDisplay:
+    """Recommendation must include grind_setting_display for grinder setups."""
+
+    def test_recommendation_includes_grind_setting_display(
+        self, recommend_client, recommend_session,
+    ):
+        """When brew setup has a grinder, recommendation includes display string."""
+        seed_brew_methods(recommend_session)
+        recommend_session.commit()
+        seed_method_parameter_defaults(recommend_session)
+        recommend_session.commit()
+
+        # Use seeded pour-over method
+        pour_over = recommend_session.exec(
+            select(BrewMethod).where(BrewMethod.name == "pour-over")
+        ).one()
+        method_id = str(pour_over.id)
+
+        # Create a 3-ring grinder (like 1Zpresso)
+        resp = recommend_client.post(
+            "/api/v1/grinders",
+            json={
+                "name": "1Zpresso Test",
+                "dial_type": "stepped",
+                "rings": [
+                    {"label": "coarse", "min": 0, "max": 9, "step": 1},
+                    {"label": "fine", "min": 0, "max": 9, "step": 1},
+                    {"label": "micro", "min": 0, "max": 3, "step": 1},
+                ],
+            },
+        )
+        assert resp.status_code == 201
+        grinder_id = resp.json()["id"]
+
+        # Create brew setup WITH grinder
+        resp = recommend_client.post(
+            BREW_SETUPS,
+            json={"brew_method_id": method_id, "grinder_id": grinder_id},
+        )
+        assert resp.status_code == 201
+        setup_id = resp.json()["id"]
+
+        bean_id = _create_bean(recommend_client, "Grind Display Bean")
+        resp = recommend_client.post(
+            CAMPAIGNS,
+            json={"bean_id": bean_id, "brew_setup_id": setup_id},
+        )
+        assert resp.status_code == 201
+        campaign_id = resp.json()["id"]
+
+        # Request recommendation
+        resp = recommend_client.post(
+            RECOMMEND.format(campaign_id=campaign_id)
+        )
+        assert resp.status_code == 202
+        job_id = resp.json()["job_id"]
+        job_resp = recommend_client.get(f"{JOBS}/{job_id}")
+        assert job_resp.json()["status"] == "completed"
+        result_id = job_resp.json()["result_id"]
+
+        rec_resp = recommend_client.get(f"{RECOMMENDATIONS}/{result_id}")
+        rec = rec_resp.json()
+
+        # grind_setting should be in parameter_values (canonical number)
+        assert "grind_setting" in rec["parameter_values"]
+        # grind_setting_display should also be present (e.g. "2.5.1")
+        assert "grind_setting_display" in rec["parameter_values"]
+        display = rec["parameter_values"]["grind_setting_display"]
+        # Display should be a dot-separated 3-segment string for a 3-ring grinder
+        assert isinstance(display, str)
+        segments = display.split(".")
+        assert len(segments) == 3
+
+
+# ======================================================================
+# Helpers for live-stats tests
+# ======================================================================
+
+
+def _create_scored_brew(
+    client,
+    bag_id: str,
+    brew_setup_id: str,
+    person_id: str,
+    *,
+    dose: float = 18.0,
+    temperature: float | None = 93.0,
+    yield_amount: float | None = 36.0,
+    grind_setting: float | None = None,
+    score: float = 7.0,
+) -> str:
+    """Create a brew with an inline taste score and return its id."""
+    resp = client.post(
+        BREWS,
+        json={
+            "bag_id": bag_id,
+            "brew_setup_id": brew_setup_id,
+            "person_id": person_id,
+            "dose": dose,
+            "temperature": temperature,
+            "yield_amount": yield_amount,
+            "grind_setting": grind_setting,
+            "brewed_at": datetime.now(timezone.utc).isoformat(),
+            "taste": {"score": score},
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()["id"]
+
+
+def _setup_campaign_with_scored_brews(client, session, n_brews=3):
+    """Create a pour-over campaign with scored brews and return ids dict.
+
+    Uses the seeded pour-over method (temperature, dose, yield_amount,
+    bloom_weight). Brews are created WITHOUT bloom_weight to reproduce
+    the NULL-parameter measurement bug.
+
+    Returns dict with keys: campaign_id, bean_id, setup_id, person_id, bag_id, brew_ids.
+    """
+    from beanbay.seed import seed_brew_methods
+    from beanbay.seed_optimization import seed_method_parameter_defaults
+
+    seed_brew_methods(session)
+    session.commit()
+    seed_method_parameter_defaults(session)
+    session.commit()
+
+    # Use the seeded pour-over method so BayBE has real parameters
+    pour_over = session.exec(
+        select(BrewMethod).where(BrewMethod.name == "pour-over")
+    ).one()
+    method_id = str(pour_over.id)
+
+    bean_id = _create_bean(client, f"Live Bean {uuid.uuid4().hex[:6]}")
+    setup_id = _create_brew_setup(client, method_id)
+    person_id = _create_person(client)
+    bag_id = _create_bag(client, bean_id)
+
+    # Create campaign
+    resp = client.post(
+        CAMPAIGNS,
+        json={"bean_id": bean_id, "brew_setup_id": setup_id},
+    )
+    assert resp.status_code in (200, 201)
+    campaign_id = resp.json()["id"]
+
+    # Create scored brews — bloom_weight intentionally omitted (NULL).
+    # Values must be within pour-over ranges:
+    #   temperature: 85-100, dose: 12-30, yield_amount: 200-500
+    brew_ids = []
+    for i in range(n_brews):
+        bid = _create_scored_brew(
+            client,
+            bag_id,
+            setup_id,
+            person_id,
+            dose=18.0 + i,
+            temperature=90.0 + i,
+            yield_amount=300.0 + i * 10,
+            score=5.0 + i,
+        )
+        brew_ids.append(bid)
+
+    return {
+        "campaign_id": campaign_id,
+        "bean_id": bean_id,
+        "setup_id": setup_id,
+        "person_id": person_id,
+        "bag_id": bag_id,
+        "brew_ids": brew_ids,
+    }
+
+
+# ======================================================================
+# Live Stats Tests — campaign endpoints must return live-computed stats
+# ======================================================================
+
+
+class TestCampaignLiveStats:
+    """Campaign detail and list must return live measurement_count/phase/best_score."""
+
+    def test_detail_returns_live_measurement_count(self, client, session):
+        """GET /campaigns/{id} returns count from actual scored brews, not stale 0."""
+        ids = _setup_campaign_with_scored_brews(client, session, n_brews=3)
+        resp = client.get(f"{CAMPAIGNS}/{ids['campaign_id']}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["measurement_count"] == 3
+
+    def test_detail_returns_live_best_score(self, client, session):
+        """GET /campaigns/{id} returns best score from actual brews."""
+        ids = _setup_campaign_with_scored_brews(client, session, n_brews=3)
+        resp = client.get(f"{CAMPAIGNS}/{ids['campaign_id']}")
+        data = resp.json()
+        # scores are 5.0, 6.0, 7.0
+        assert data["best_score"] == 7.0
+
+    def test_detail_returns_live_phase(self, client, session):
+        """GET /campaigns/{id} returns phase based on live count, not stale 'random'."""
+        # 5 brews → should be 'learning' (>= initial_points=5)
+        ids = _setup_campaign_with_scored_brews(client, session, n_brews=5)
+        resp = client.get(f"{CAMPAIGNS}/{ids['campaign_id']}")
+        data = resp.json()
+        assert data["phase"] == "learning"
+
+    def test_detail_includes_convergence_and_score_history(self, client, session):
+        """GET /campaigns/{id} includes convergence and score_history (KISS consolidation)."""
+        ids = _setup_campaign_with_scored_brews(client, session, n_brews=3)
+        resp = client.get(f"{CAMPAIGNS}/{ids['campaign_id']}")
+        data = resp.json()
+        assert "convergence" in data
+        assert "score_history" in data
+        assert len(data["score_history"]) == 3
+        assert data["convergence"]["status"] in (
+            "getting_started", "exploring", "learning", "converged",
+        )
+
+    def test_list_returns_live_measurement_count(self, client, session):
+        """GET /campaigns returns live stats per campaign."""
+        ids = _setup_campaign_with_scored_brews(client, session, n_brews=3)
+        resp = client.get(CAMPAIGNS)
+        data = resp.json()
+        campaign = next(c for c in data if c["id"] == ids["campaign_id"])
+        assert campaign["measurement_count"] == 3
+        assert campaign["best_score"] == 7.0
+
+
+class TestPosteriorWithNullParams:
+    """Posterior endpoint must tolerate NULL brew parameters."""
+
+    def test_posterior_with_null_bloom_weight(
+        self, recommend_client, recommend_session
+    ):
+        """Posterior works when bloom_weight is NULL on brews.
+
+        The endpoint should not discard measurements just because an
+        unrequested parameter is NULL on the brew record. Pour-over has
+        bloom_weight in effective ranges, but brews omit it.
+        """
+        ids = _setup_campaign_with_scored_brews(
+            recommend_client, recommend_session, n_brews=5,
+        )
+
+        # Generate a recommendation to create the BayBE campaign model
+        resp = recommend_client.post(
+            RECOMMEND.format(campaign_id=ids["campaign_id"])
+        )
+        assert resp.status_code == 202
+        job_id = resp.json()["job_id"]
+        job_resp = recommend_client.get(f"{JOBS}/{job_id}")
+        assert job_resp.json()["status"] == "completed"
+
+        # Request posterior for temperature (bloom_weight is NULL, but irrelevant)
+        resp = recommend_client.get(
+            f"{CAMPAIGNS}/{ids['campaign_id']}/posterior",
+            params={"params": "temperature", "points": 5},
+        )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert len(data["measurements"]) >= 2
+
+
+class TestFeatureImportanceLiveCount:
+    """Feature importance must use live measurement count."""
+
+    def test_feature_importance_uses_live_count(
+        self, recommend_client, recommend_session
+    ):
+        """Feature importance uses live count, not stale campaign.measurement_count."""
+        ids = _setup_campaign_with_scored_brews(
+            recommend_client, recommend_session, n_brews=5,
+        )
+
+        # Generate recommendation to build the BayBE model
+        resp = recommend_client.post(
+            RECOMMEND.format(campaign_id=ids["campaign_id"])
+        )
+        assert resp.status_code == 202
+        job_id = resp.json()["job_id"]
+        job_resp = recommend_client.get(f"{JOBS}/{job_id}")
+        assert job_resp.json()["status"] == "completed"
+
+        # Feature importance should NOT reject with "found 0"
+        resp = recommend_client.get(
+            f"{CAMPAIGNS}/{ids['campaign_id']}/feature-importance"
+        )
+        # Should be 200 (not 422 with "found 0")
+        assert resp.status_code == 200, resp.text
+
+
+class TestPersonAwareOptimization:
+    """OptimizationJob and Recommendation support person-aware fields."""
+
+    def test_optimization_job_has_person_fields(self, session):
+        """OptimizationJob model has person_id and optimization_mode columns."""
+        from beanbay.models.optimization import OptimizationJob
+        job = OptimizationJob(
+            campaign_id=uuid.uuid4(),
+            job_type="recommend",
+            person_id=uuid.uuid4(),
+            optimization_mode="personal",
+        )
+        session.add(job)
+        session.flush()
+        session.refresh(job)
+        assert job.person_id is not None
+        assert job.optimization_mode == "personal"
+
+    def test_recommendation_has_mode_fields(self, session):
+        """Recommendation model has optimization_mode and personal_brew_count."""
+        from beanbay.models.optimization import Recommendation
+        rec = Recommendation(
+            campaign_id=uuid.uuid4(),
+            phase="random",
+            parameter_values="{}",
+            optimization_mode="community",
+            personal_brew_count=3,
+        )
+        session.add(rec)
+        session.flush()
+        session.refresh(rec)
+        assert rec.optimization_mode == "community"
+        assert rec.personal_brew_count == 3
