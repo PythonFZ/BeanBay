@@ -1,8 +1,8 @@
-"""initial schema with evolution
+"""initial_schema_tz_aware
 
-Revision ID: 06ff5ca210c4
+Revision ID: 64a82453ad53
 Revises: 
-Create Date: 2026-03-21 20:02:28.894500
+Create Date: 2026-03-24 15:02:12.639102
 """
 from typing import Sequence, Union
 
@@ -12,7 +12,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '06ff5ca210c4'
+revision: str = '64a82453ad53'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,7 +24,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('species', sa.Enum('ARABICA', 'ROBUSTA', 'LIBERICA', name='coffeespecies'), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -32,7 +32,7 @@ def upgrade() -> None:
     op.create_table('brew_methods',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -52,8 +52,8 @@ def upgrade() -> None:
     sa.Column('flow_control_type', sa.Enum('NONE', 'MANUAL_PADDLE', 'MANUAL_VALVE', 'PROGRAMMABLE', name='flowcontroltype'), nullable=False),
     sa.Column('saturation_flow_rate', sa.Float(), nullable=True),
     sa.Column('has_bloom', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -61,7 +61,7 @@ def upgrade() -> None:
     op.create_table('flavor_tags',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -70,10 +70,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('dial_type', sa.Enum('STEPLESS', 'STEPPED', name='dialtype'), nullable=False),
-    sa.Column('display_format', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('ring_sizes_json', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -83,7 +82,7 @@ def upgrade() -> None:
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('country', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('region', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -92,8 +91,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -102,8 +101,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_default', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -112,7 +111,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('category', sa.Enum('WASHED', 'NATURAL', 'HONEY', 'ANAEROBIC', 'EXPERIMENTAL', 'OTHER', name='processcategory'), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -120,7 +119,7 @@ def upgrade() -> None:
     op.create_table('roasters',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -128,7 +127,7 @@ def upgrade() -> None:
     op.create_table('stop_modes',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -136,8 +135,8 @@ def upgrade() -> None:
     op.create_table('storage_types',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -148,8 +147,8 @@ def upgrade() -> None:
     sa.Column('url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('location', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -158,8 +157,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -175,8 +174,8 @@ def upgrade() -> None:
     sa.Column('decaf', sa.Boolean(), nullable=False),
     sa.Column('url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('ean', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['roaster_id'], ['roasters.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -190,8 +189,8 @@ def upgrade() -> None:
     sa.Column('brewer_id', sa.Uuid(), nullable=True),
     sa.Column('paper_id', sa.Uuid(), nullable=True),
     sa.Column('water_id', sa.Uuid(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['brew_method_id'], ['brew_methods.id'], ),
     sa.ForeignKeyConstraint(['brewer_id'], ['brewers.id'], ),
@@ -215,6 +214,22 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['stop_mode_id'], ['stop_modes.id'], ),
     sa.PrimaryKeyConstraint('brewer_id', 'stop_mode_id')
     )
+    op.create_table('method_parameter_defaults',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('brew_method_id', sa.Uuid(), nullable=False),
+    sa.Column('parameter_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('min_value', sa.Float(), nullable=True),
+    sa.Column('max_value', sa.Float(), nullable=True),
+    sa.Column('step', sa.Float(), nullable=True),
+    sa.Column('allowed_values', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('requires', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['brew_method_id'], ['brew_methods.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('brew_method_id', 'parameter_name', name='uq_method_param_default')
+    )
+    op.create_index(op.f('ix_method_parameter_defaults_brew_method_id'), 'method_parameter_defaults', ['brew_method_id'], unique=False)
     op.create_table('water_minerals',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('water_id', sa.Uuid(), nullable=False),
@@ -240,8 +255,8 @@ def upgrade() -> None:
     sa.Column('thawed_at', sa.DateTime(), nullable=True),
     sa.Column('storage_type_id', sa.Uuid(), nullable=True),
     sa.Column('best_date', sa.Date(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['bean_id'], ['beans.id'], ),
     sa.ForeignKeyConstraint(['storage_type_id'], ['storage_types.id'], ),
@@ -263,6 +278,19 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['origin_id'], ['origins.id'], ),
     sa.PrimaryKeyConstraint('bean_id', 'origin_id')
     )
+    op.create_table('bean_parameter_overrides',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('bean_id', sa.Uuid(), nullable=False),
+    sa.Column('parameter_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('min_value', sa.Float(), nullable=True),
+    sa.Column('max_value', sa.Float(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['bean_id'], ['beans.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('bean_id', 'parameter_name', name='uq_bean_param_override')
+    )
+    op.create_index(op.f('ix_bean_parameter_overrides_bean_id'), 'bean_parameter_overrides', ['bean_id'], unique=False)
     op.create_table('bean_processes',
     sa.Column('bean_id', sa.Uuid(), nullable=False),
     sa.Column('process_id', sa.Uuid(), nullable=False),
@@ -274,9 +302,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('bean_id', sa.Uuid(), nullable=False),
     sa.Column('person_id', sa.Uuid(), nullable=False),
-    sa.Column('rated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('rated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['bean_id'], ['beans.id'], ),
     sa.ForeignKeyConstraint(['person_id'], ['people.id'], ),
@@ -291,6 +319,25 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['variety_id'], ['bean_varieties.id'], ),
     sa.PrimaryKeyConstraint('bean_id', 'variety_id')
     )
+    op.create_table('campaigns',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('bean_id', sa.Uuid(), nullable=False),
+    sa.Column('brew_setup_id', sa.Uuid(), nullable=False),
+    sa.Column('campaign_json', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('phase', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('measurement_count', sa.Integer(), nullable=False),
+    sa.Column('best_score', sa.Float(), nullable=True),
+    sa.Column('bounds_fingerprint', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('param_fingerprint', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['bean_id'], ['beans.id'], ),
+    sa.ForeignKeyConstraint(['brew_setup_id'], ['brew_setups.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('bean_id', 'brew_setup_id', name='uq_campaign_bean_setup')
+    )
+    op.create_index(op.f('ix_campaigns_bean_id'), 'campaigns', ['bean_id'], unique=False)
+    op.create_index(op.f('ix_campaigns_brew_setup_id'), 'campaigns', ['brew_setup_id'], unique=False)
     op.create_table('bean_tastes',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('bean_rating_id', sa.Uuid(), nullable=False),
@@ -302,8 +349,8 @@ def upgrade() -> None:
     sa.Column('aroma', sa.Float(), nullable=True),
     sa.Column('clean_cup', sa.Float(), nullable=True),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.ForeignKeyConstraint(['bean_rating_id'], ['bean_ratings.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -321,12 +368,19 @@ def upgrade() -> None:
     sa.Column('yield_amount', sa.Float(), nullable=True),
     sa.Column('pre_infusion_time', sa.Float(), nullable=True),
     sa.Column('total_time', sa.Float(), nullable=True),
+    sa.Column('bloom_weight', sa.Float(), nullable=True),
+    sa.Column('preinfusion_pressure', sa.Float(), nullable=True),
+    sa.Column('pressure_profile', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('brew_mode', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('saturation', sa.Float(), nullable=True),
+    sa.Column('bloom_pause', sa.Float(), nullable=True),
+    sa.Column('temp_profile', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('stop_mode_id', sa.Uuid(), nullable=True),
     sa.Column('is_failed', sa.Boolean(), nullable=False),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('brewed_at', sa.DateTime(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['bag_id'], ['bags.id'], ),
     sa.ForeignKeyConstraint(['brew_setup_id'], ['brew_setups.id'], ),
@@ -352,13 +406,27 @@ def upgrade() -> None:
     sa.Column('cuppers_correction', sa.Float(), nullable=True),
     sa.Column('total_score', sa.Float(), nullable=True),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('retired_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['bag_id'], ['bags.id'], ),
     sa.ForeignKeyConstraint(['person_id'], ['people.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('optimization_jobs',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('campaign_id', sa.Uuid(), nullable=False),
+    sa.Column('job_type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('result_id', sa.Uuid(), nullable=True),
+    sa.Column('error_message', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('completed_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['campaign_id'], ['campaigns.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_optimization_jobs_campaign_id'), 'optimization_jobs', ['campaign_id'], unique=False)
+    op.create_index(op.f('ix_optimization_jobs_status'), 'optimization_jobs', ['status'], unique=False)
     op.create_table('bean_taste_flavor_tags',
     sa.Column('bean_taste_id', sa.Uuid(), nullable=False),
     sa.Column('flavor_tag_id', sa.Uuid(), nullable=False),
@@ -377,8 +445,8 @@ def upgrade() -> None:
     sa.Column('balance', sa.Float(), nullable=True),
     sa.Column('aftertaste', sa.Float(), nullable=True),
     sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.ForeignKeyConstraint(['brew_id'], ['brews.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('brew_id', name='uq_brew_taste_brew_id')
@@ -391,6 +459,22 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['flavor_tag_id'], ['flavor_tags.id'], ),
     sa.PrimaryKeyConstraint('cupping_id', 'flavor_tag_id')
     )
+    op.create_table('recommendations',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('campaign_id', sa.Uuid(), nullable=False),
+    sa.Column('brew_id', sa.Uuid(), nullable=True),
+    sa.Column('phase', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('predicted_score', sa.Float(), nullable=True),
+    sa.Column('predicted_std', sa.Float(), nullable=True),
+    sa.Column('parameter_values', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['brew_id'], ['brews.id'], ),
+    sa.ForeignKeyConstraint(['campaign_id'], ['campaigns.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_recommendations_brew_id'), 'recommendations', ['brew_id'], unique=False)
+    op.create_index(op.f('ix_recommendations_campaign_id'), 'recommendations', ['campaign_id'], unique=False)
     op.create_table('brew_taste_flavor_tags',
     sa.Column('brew_taste_id', sa.Uuid(), nullable=False),
     sa.Column('flavor_tag_id', sa.Uuid(), nullable=False),
@@ -404,24 +488,37 @@ def upgrade() -> None:
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('brew_taste_flavor_tags')
+    op.drop_index(op.f('ix_recommendations_campaign_id'), table_name='recommendations')
+    op.drop_index(op.f('ix_recommendations_brew_id'), table_name='recommendations')
+    op.drop_table('recommendations')
     op.drop_table('cupping_flavor_tags')
     op.drop_index(op.f('ix_brew_tastes_brew_id'), table_name='brew_tastes')
     op.drop_table('brew_tastes')
     op.drop_table('bean_taste_flavor_tags')
+    op.drop_index(op.f('ix_optimization_jobs_status'), table_name='optimization_jobs')
+    op.drop_index(op.f('ix_optimization_jobs_campaign_id'), table_name='optimization_jobs')
+    op.drop_table('optimization_jobs')
     op.drop_table('cuppings')
     op.drop_table('brews')
     op.drop_index(op.f('ix_bean_tastes_bean_rating_id'), table_name='bean_tastes')
     op.drop_table('bean_tastes')
+    op.drop_index(op.f('ix_campaigns_brew_setup_id'), table_name='campaigns')
+    op.drop_index(op.f('ix_campaigns_bean_id'), table_name='campaigns')
+    op.drop_table('campaigns')
     op.drop_table('bean_variety_links')
     op.drop_index(op.f('ix_bean_ratings_person_id'), table_name='bean_ratings')
     op.drop_index(op.f('ix_bean_ratings_bean_id'), table_name='bean_ratings')
     op.drop_table('bean_ratings')
     op.drop_table('bean_processes')
+    op.drop_index(op.f('ix_bean_parameter_overrides_bean_id'), table_name='bean_parameter_overrides')
+    op.drop_table('bean_parameter_overrides')
     op.drop_table('bean_origins')
     op.drop_table('bean_flavor_tags')
     op.drop_table('bags')
     op.drop_index(op.f('ix_water_minerals_water_id'), table_name='water_minerals')
     op.drop_table('water_minerals')
+    op.drop_index(op.f('ix_method_parameter_defaults_brew_method_id'), table_name='method_parameter_defaults')
+    op.drop_table('method_parameter_defaults')
     op.drop_table('brewer_stop_modes')
     op.drop_table('brewer_methods')
     op.drop_index(op.f('ix_brew_setups_name'), table_name='brew_setups')

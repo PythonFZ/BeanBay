@@ -9,7 +9,7 @@ OptimizationJob tracks background optimization tasks.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import UniqueConstraint, func
+from sqlalchemy import Column, DateTime as SADateTime, UniqueConstraint, func
 from sqlmodel import Field, SQLModel
 
 from beanbay.models.base import uuid4_default
@@ -69,11 +69,11 @@ class Campaign(SQLModel, table=True):
 
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 
@@ -132,11 +132,11 @@ class MethodParameterDefault(SQLModel, table=True):
 
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 
@@ -182,11 +182,11 @@ class BeanParameterOverride(SQLModel, table=True):
 
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 
@@ -236,7 +236,7 @@ class Recommendation(SQLModel, table=True):
 
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
 
 
@@ -280,6 +280,6 @@ class OptimizationJob(SQLModel, table=True):
 
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     completed_at: datetime | None = None

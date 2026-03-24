@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import UniqueConstraint, func
+from sqlalchemy import Column, DateTime as SADateTime, UniqueConstraint, func
 from sqlmodel import Field, Relationship, SQLModel
 
 from beanbay.models.base import uuid4_default
@@ -148,11 +148,11 @@ class Grinder(SQLModel, table=True):
     ring_sizes_json: str | None = None
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 
@@ -247,11 +247,11 @@ class Brewer(SQLModel, table=True):
     # Timestamps
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 
@@ -287,11 +287,11 @@ class Paper(SQLModel, table=True):
     notes: str | None = None
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 
@@ -335,11 +335,11 @@ class Water(SQLModel, table=True):
 
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 

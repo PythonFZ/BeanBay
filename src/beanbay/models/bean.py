@@ -12,7 +12,7 @@ import uuid
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import Column, DateTime as SADateTime, func
 from sqlmodel import Field, Relationship, SQLModel
 
 from beanbay.models.base import uuid4_default
@@ -165,11 +165,11 @@ class Bean(SQLModel, table=True):
     ean: str | None = None
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 
@@ -255,11 +255,11 @@ class Bag(SQLModel, table=True):
     best_date: date | None = None
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 

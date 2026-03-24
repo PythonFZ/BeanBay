@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import Column, DateTime as SADateTime, func
 from sqlmodel import Field, Relationship, SQLModel
 
 from beanbay.models.base import uuid4_default
@@ -74,15 +74,15 @@ class BeanRating(SQLModel, table=True):
     person_id: uuid.UUID = Field(foreign_key="people.id", index=True)
     rated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     retired_at: datetime | None = None
 
@@ -147,11 +147,11 @@ class BeanTaste(SQLModel, table=True):
     notes: str | None = None
     created_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now()),
     )
     updated_at: datetime = Field(
         default=None,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(SADateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
     # Relationships
