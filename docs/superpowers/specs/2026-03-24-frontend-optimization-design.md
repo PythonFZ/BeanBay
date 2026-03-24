@@ -61,7 +61,7 @@ GET /api/v1/optimize/campaigns/{campaign_id}/feature-importance
 
 **Implementation:** Load BayBE campaign from `campaign_json`. Call `SHAPInsight.from_campaign(campaign)`. Extract SHAP values per parameter. Sort by importance descending.
 
-**Minimum data:** Requires at least 5 valid measurements. Returns 422 if insufficient data.
+**Minimum data:** Requires at least 3 valid measurements (enough to fit a basic GP). Returns 422 if insufficient data. Results improve with more data.
 
 ### Backend Fix: Populate Predicted Score/Std
 
@@ -219,7 +219,7 @@ Data source: `GET /api/v1/optimize/campaigns/{id}/progress`
 - Light blue band: ±1 std uncertainty
 - Amber dots: actual measurements overlaid
 
-**Auto-generated** for the top 4 parameters by SHAP importance. If SHAP unavailable (<5 measurements), show sweeps for all active non-categorical parameters. Each sweep holds other parameters at their best-known values.
+**Auto-generated** for the top 4 parameters by SHAP importance. If SHAP unavailable (<3 measurements), show sweeps for all active non-categorical parameters. Each sweep holds other parameters at their best-known values.
 
 ### Chart 5: 2D Prediction Surface
 
@@ -244,7 +244,7 @@ Data source: `GET /api/v1/optimize/campaigns/{id}/progress`
 - X axis: SHAP importance value
 - Single color (blue)
 
-**Minimum data:** Only shown when ≥5 measurements. Shows "Need more data" placeholder otherwise.
+**Minimum data:** Only shown when ≥3 measurements. Shows "Need more data" placeholder otherwise.
 
 ### Chart 7: Uncertainty Surface
 
@@ -278,7 +278,7 @@ Columns:
 Charts that need parameter selection (heatmap, 2D surface, uncertainty surface) each have their own X/Y axis dropdown selectors above the chart. Selectors are independent — changing one chart's axes doesn't affect others.
 
 **Sensible defaults:**
-- If SHAP data is available (≥5 measurements): pre-select the two most important parameters
+- If SHAP data is available (≥3 measurements): pre-select the two most important parameters
 - If not enough data for SHAP: default to `grind_setting` + `temperature` for espresso-type methods, `grind_setting` + `dose` for filter methods
 - Available parameters populated from the campaign's `effective_ranges` (from campaign detail endpoint)
 
