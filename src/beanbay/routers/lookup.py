@@ -75,9 +75,7 @@ DependencyCheck = Callable[[Session, uuid.UUID], int]
 # ---------------------------------------------------------------------------
 
 
-def _fk_active_count(
-    model: type, fk_col: str
-) -> DependencyCheck:
+def _fk_active_count(model: type, fk_col: str) -> DependencyCheck:
     """Return a checker for a direct FK on a model that has ``retired_at``.
 
     Parameters
@@ -448,15 +446,11 @@ flavor_tag_router = create_lookup_router(
         ),
         (
             "bean_flavor_tags",
-            _m2m_active_count(
-                BeanFlavorTagLink, "flavor_tag_id", Bean, "bean_id"
-            ),
+            _m2m_active_count(BeanFlavorTagLink, "flavor_tag_id", Bean, "bean_id"),
         ),
         (
             "cupping_flavor_tags",
-            _m2m_active_count(
-                CuppingFlavorTagLink, "flavor_tag_id", Cupping, "cupping_id"
-            ),
+            _m2m_active_count(CuppingFlavorTagLink, "flavor_tag_id", Cupping, "cupping_id"),
         ),
     ],
 )
@@ -472,9 +466,7 @@ origin_router = create_lookup_router(
     dependency_checks=[
         (
             "beans",
-            _m2m_active_count(
-                BeanOriginLink, "origin_id", Bean, "bean_id"
-            ),
+            _m2m_active_count(BeanOriginLink, "origin_id", Bean, "bean_id"),
         ),
     ],
 )
@@ -501,9 +493,7 @@ process_method_router = create_lookup_router(
     dependency_checks=[
         (
             "beans",
-            _m2m_active_count(
-                BeanProcessLink, "process_id", Bean, "bean_id"
-            ),
+            _m2m_active_count(BeanProcessLink, "process_id", Bean, "bean_id"),
         ),
     ],
 )
@@ -518,9 +508,7 @@ bean_variety_router = create_lookup_router(
     dependency_checks=[
         (
             "beans",
-            _m2m_active_count(
-                BeanVarietyLink, "variety_id", Bean, "bean_id"
-            ),
+            _m2m_active_count(BeanVarietyLink, "variety_id", Bean, "bean_id"),
         ),
     ],
 )
@@ -547,9 +535,7 @@ stop_mode_router = create_lookup_router(
     dependency_checks=[
         (
             "brewers",
-            _m2m_active_count(
-                BrewerStopModeLink, "stop_mode_id", Brewer, "brewer_id"
-            ),
+            _m2m_active_count(BrewerStopModeLink, "stop_mode_id", Brewer, "brewer_id"),
         ),
         ("brews", _fk_active_count(Brew, "stop_mode_id")),
     ],

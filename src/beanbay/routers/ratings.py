@@ -55,9 +55,7 @@ def _set_taste_flavor_tags(
     """
     # Delete existing links
     existing = session.exec(
-        select(BeanTasteFlavorTagLink).where(
-            BeanTasteFlavorTagLink.bean_taste_id == taste.id
-        )
+        select(BeanTasteFlavorTagLink).where(BeanTasteFlavorTagLink.bean_taste_id == taste.id)
     ).all()
     for link in existing:
         session.delete(link)
@@ -71,11 +69,7 @@ def _set_taste_flavor_tags(
                 status_code=404,
                 detail=f"FlavorTag with id '{tag_id}' not found.",
             )
-        session.add(
-            BeanTasteFlavorTagLink(
-                bean_taste_id=taste.id, flavor_tag_id=tag_id
-            )
-        )
+        session.add(BeanTasteFlavorTagLink(bean_taste_id=taste.id, flavor_tag_id=tag_id))
 
 
 # ======================================================================
@@ -170,11 +164,7 @@ def list_bean_ratings(
         raise HTTPException(status_code=404, detail="Bean not found.")
 
     stmt = select(BeanRating).where(BeanRating.bean_id == bean_id)
-    count_stmt = (
-        select(func.count())
-        .select_from(BeanRating)
-        .where(BeanRating.bean_id == bean_id)
-    )
+    count_stmt = select(func.count()).select_from(BeanRating).where(BeanRating.bean_id == bean_id)
 
     if not include_retired:
         stmt = stmt.where(BeanRating.retired_at.is_(None))  # type: ignore[union-attr]
@@ -417,9 +407,7 @@ def patch_bean_rating_taste(
     if db_rating is None:
         raise HTTPException(status_code=404, detail="BeanRating not found.")
 
-    db_taste = session.exec(
-        select(BeanTaste).where(BeanTaste.bean_rating_id == rating_id)
-    ).first()
+    db_taste = session.exec(select(BeanTaste).where(BeanTaste.bean_rating_id == rating_id)).first()
     if db_taste is None:
         raise HTTPException(status_code=404, detail="BeanTaste not found.")
 
@@ -474,17 +462,13 @@ def delete_bean_rating_taste(
     if db_rating is None:
         raise HTTPException(status_code=404, detail="BeanRating not found.")
 
-    db_taste = session.exec(
-        select(BeanTaste).where(BeanTaste.bean_rating_id == rating_id)
-    ).first()
+    db_taste = session.exec(select(BeanTaste).where(BeanTaste.bean_rating_id == rating_id)).first()
     if db_taste is None:
         raise HTTPException(status_code=404, detail="BeanTaste not found.")
 
     # Delete flavor tag links first
     existing_links = session.exec(
-        select(BeanTasteFlavorTagLink).where(
-            BeanTasteFlavorTagLink.bean_taste_id == db_taste.id
-        )
+        select(BeanTasteFlavorTagLink).where(BeanTasteFlavorTagLink.bean_taste_id == db_taste.id)
     ).all()
     for link in existing_links:
         session.delete(link)

@@ -35,10 +35,20 @@ from beanbay.utils.grinder_display import from_display, to_display
 router = APIRouter(tags=["Brews"])
 
 BREW_SORT_FIELDS = [
-    "brewed_at", "created_at", "dose", "grind_setting",
-    "temperature", "yield_amount", "pressure", "flow_rate",
-    "total_time", "pre_infusion_time",
-    "score", "bean_name", "brew_method_name", "person_name",
+    "brewed_at",
+    "created_at",
+    "dose",
+    "grind_setting",
+    "temperature",
+    "yield_amount",
+    "pressure",
+    "flow_rate",
+    "total_time",
+    "pre_infusion_time",
+    "score",
+    "bean_name",
+    "brew_method_name",
+    "person_name",
     "grind_setting_display",
 ]
 
@@ -145,9 +155,7 @@ def _set_taste_tags(
     """
     # Delete existing links
     existing_links = session.exec(
-        select(BrewTasteFlavorTagLink).where(
-            BrewTasteFlavorTagLink.brew_taste_id == taste.id
-        )
+        select(BrewTasteFlavorTagLink).where(BrewTasteFlavorTagLink.brew_taste_id == taste.id)
     ).all()
     for link in existing_links:
         session.delete(link)
@@ -161,9 +169,7 @@ def _set_taste_tags(
                 status_code=404,
                 detail=f"FlavorTag with id '{tag_id}' not found.",
             )
-        session.add(
-            BrewTasteFlavorTagLink(brew_taste_id=taste.id, flavor_tag_id=tag_id)
-        )
+        session.add(BrewTasteFlavorTagLink(brew_taste_id=taste.id, flavor_tag_id=tag_id))
 
 
 def _create_taste(
@@ -498,9 +504,7 @@ def create_brew(
     session.commit()
 
     # Auto-create campaign for this bean+setup combination
-    ensure_campaign(
-        session, bean_id=bag.bean_id, brew_setup_id=payload.brew_setup_id
-    )
+    ensure_campaign(session, bean_id=bag.bean_id, brew_setup_id=payload.brew_setup_id)
 
     session.refresh(db_brew)
     return _brew_to_read(db_brew)  # type: ignore[return-value]
@@ -666,9 +670,7 @@ def delete_taste(
 
     # Delete tag links
     existing_links = session.exec(
-        select(BrewTasteFlavorTagLink).where(
-            BrewTasteFlavorTagLink.brew_taste_id == db_taste.id
-        )
+        select(BrewTasteFlavorTagLink).where(BrewTasteFlavorTagLink.brew_taste_id == db_taste.id)
     ).all()
     for link in existing_links:
         session.delete(link)

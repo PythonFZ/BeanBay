@@ -4,9 +4,6 @@ Tests cover append-only rating creation, taste sub-resource CRUD,
 person_id filtering, soft-delete, and nested person_name in reads.
 """
 
-import uuid
-from datetime import datetime, timezone
-
 BEANS = "/api/v1/beans"
 PEOPLE = "/api/v1/people"
 FLAVOR_TAGS = "/api/v1/flavor-tags"
@@ -123,12 +120,8 @@ class TestListRatingsOrdering:
         older_time = "2025-01-01T10:00:00"
         newer_time = "2025-06-15T10:00:00"
 
-        _create_rating(
-            client, bean_id, person_id, rated_at=older_time
-        )
-        _create_rating(
-            client, bean_id, person_id, rated_at=newer_time
-        )
+        _create_rating(client, bean_id, person_id, rated_at=older_time)
+        _create_rating(client, bean_id, person_id, rated_at=newer_time)
 
         resp = client.get(f"{BEANS}/{bean_id}/ratings")
         assert resp.status_code == 200
@@ -206,9 +199,7 @@ class TestPutTaste:
         bean_id = _create_bean(client, "RatingBean5b")
 
         taste_data = {"score": 5.0, "notes": "Initial"}
-        rating = _create_rating(
-            client, bean_id, person_id, taste=taste_data
-        )
+        rating = _create_rating(client, bean_id, person_id, taste=taste_data)
         original_taste_id = rating["taste"]["id"]
 
         resp = client.put(
@@ -240,9 +231,7 @@ class TestPatchTaste:
             "acidity": 5.0,
             "notes": "Original notes",
         }
-        rating = _create_rating(
-            client, bean_id, person_id, taste=taste_data
-        )
+        rating = _create_rating(client, bean_id, person_id, taste=taste_data)
 
         resp = client.patch(
             f"{BEAN_RATINGS}/{rating['id']}/taste",
@@ -270,14 +259,10 @@ class TestDeleteTaste:
         bean_id = _create_bean(client, "RatingBean7")
 
         taste_data = {"score": 6.0}
-        rating = _create_rating(
-            client, bean_id, person_id, taste=taste_data
-        )
+        rating = _create_rating(client, bean_id, person_id, taste=taste_data)
         assert rating["taste"] is not None
 
-        resp = client.delete(
-            f"{BEAN_RATINGS}/{rating['id']}/taste"
-        )
+        resp = client.delete(f"{BEAN_RATINGS}/{rating['id']}/taste")
         assert resp.status_code == 204
 
         # Verify taste is gone

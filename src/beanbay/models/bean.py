@@ -39,12 +39,8 @@ class BeanOriginLink(SQLModel, table=True):
 
     __tablename__ = "bean_origins"  # type: ignore[assignment]
 
-    bean_id: uuid.UUID = Field(
-        foreign_key="beans.id", primary_key=True
-    )
-    origin_id: uuid.UUID = Field(
-        foreign_key="origins.id", primary_key=True
-    )
+    bean_id: uuid.UUID = Field(foreign_key="beans.id", primary_key=True)
+    origin_id: uuid.UUID = Field(foreign_key="origins.id", primary_key=True)
     percentage: float | None = None
 
 
@@ -61,12 +57,8 @@ class BeanProcessLink(SQLModel, table=True):
 
     __tablename__ = "bean_processes"  # type: ignore[assignment]
 
-    bean_id: uuid.UUID = Field(
-        foreign_key="beans.id", primary_key=True
-    )
-    process_id: uuid.UUID = Field(
-        foreign_key="process_methods.id", primary_key=True
-    )
+    bean_id: uuid.UUID = Field(foreign_key="beans.id", primary_key=True)
+    process_id: uuid.UUID = Field(foreign_key="process_methods.id", primary_key=True)
 
 
 class BeanVarietyLink(SQLModel, table=True):
@@ -82,12 +74,8 @@ class BeanVarietyLink(SQLModel, table=True):
 
     __tablename__ = "bean_variety_links"  # type: ignore[assignment]
 
-    bean_id: uuid.UUID = Field(
-        foreign_key="beans.id", primary_key=True
-    )
-    variety_id: uuid.UUID = Field(
-        foreign_key="bean_varieties.id", primary_key=True
-    )
+    bean_id: uuid.UUID = Field(foreign_key="beans.id", primary_key=True)
+    variety_id: uuid.UUID = Field(foreign_key="bean_varieties.id", primary_key=True)
 
 
 class BeanFlavorTagLink(SQLModel, table=True):
@@ -103,12 +91,8 @@ class BeanFlavorTagLink(SQLModel, table=True):
 
     __tablename__ = "bean_flavor_tags"  # type: ignore[assignment]
 
-    bean_id: uuid.UUID = Field(
-        foreign_key="beans.id", primary_key=True
-    )
-    flavor_tag_id: uuid.UUID = Field(
-        foreign_key="flavor_tags.id", primary_key=True
-    )
+    bean_id: uuid.UUID = Field(foreign_key="beans.id", primary_key=True)
+    flavor_tag_id: uuid.UUID = Field(foreign_key="flavor_tags.id", primary_key=True)
 
 
 # ---------------------------------------------------------------------------
@@ -153,9 +137,7 @@ class Bean(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     name: str = Field(index=True)
-    roaster_id: uuid.UUID | None = Field(
-        default=None, foreign_key="roasters.id"
-    )
+    roaster_id: uuid.UUID | None = Field(default=None, foreign_key="roasters.id")
     notes: str | None = None
     roast_degree: float | None = None
     bean_mix_type: BeanMixType = Field(default=BeanMixType.UNKNOWN)

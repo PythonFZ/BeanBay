@@ -1,7 +1,6 @@
 """Tests for maximin diversity subsampling."""
 
 import pandas as pd
-import pytest
 
 from beanbay.utils.subsample import maximin_subsample
 
@@ -40,8 +39,6 @@ class TestMaximinSubsample:
 
     def test_preserves_all_columns(self):
         """Returned DataFrame has all original columns."""
-        df = pd.DataFrame(
-            {"x": range(20), "y": range(20), "score": range(20), "extra": range(20)}
-        )
+        df = pd.DataFrame({"x": range(20), "y": range(20), "score": range(20), "extra": range(20)})
         result = maximin_subsample(df, ["x", "y"], n=5)
         assert list(result.columns) == ["x", "y", "score", "extra"]

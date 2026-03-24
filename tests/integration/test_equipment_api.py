@@ -102,9 +102,7 @@ class TestGrinderCRUD:
 
         # Add rings via PATCH
         new_rings = [{"label": "Main", "min": 0, "max": 20, "step": 0.25}]
-        resp = client.patch(
-            f"{GRINDERS}/{grinder_id}", json={"rings": new_rings}
-        )
+        resp = client.patch(f"{GRINDERS}/{grinder_id}", json={"rings": new_rings})
         assert resp.status_code == 200
         body = resp.json()
         assert len(body["rings"]) == 1
@@ -296,9 +294,7 @@ class TestPaperCRUD:
 
     def test_create_paper(self, client):
         """POST creates a paper."""
-        resp = client.post(
-            PAPERS, json={"name": "Hario V60 02", "notes": "tabbed"}
-        )
+        resp = client.post(PAPERS, json={"name": "Hario V60 02", "notes": "tabbed"})
         assert resp.status_code == 201
         body = resp.json()
         assert body["name"] == "Hario V60 02"
@@ -346,9 +342,7 @@ class TestWaterCRUD:
 
     def test_create_water_no_minerals(self, client):
         """POST creates a water with no minerals."""
-        resp = client.post(
-            WATERS, json={"name": "Distilled", "notes": "pure H2O"}
-        )
+        resp = client.post(WATERS, json={"name": "Distilled", "notes": "pure H2O"})
         assert resp.status_code == 201
         body = resp.json()
         assert body["name"] == "Distilled"
@@ -402,9 +396,7 @@ class TestWaterCRUD:
 
         # Replace with new set
         new_minerals = [{"mineral_name": "potassium", "ppm": 3.0}]
-        resp = client.patch(
-            f"{WATERS}/{water_id}", json={"minerals": new_minerals}
-        )
+        resp = client.patch(f"{WATERS}/{water_id}", json={"minerals": new_minerals})
         assert resp.status_code == 200
         body = resp.json()
         assert len(body["minerals"]) == 1
@@ -420,9 +412,7 @@ class TestWaterCRUD:
         water_id = r.json()["id"]
 
         # Update only name — minerals should be preserved
-        resp = client.patch(
-            f"{WATERS}/{water_id}", json={"name": "PreserveTestRenamed"}
-        )
+        resp = client.patch(f"{WATERS}/{water_id}", json={"name": "PreserveTestRenamed"})
         assert resp.status_code == 200
         body = resp.json()
         assert body["name"] == "PreserveTestRenamed"

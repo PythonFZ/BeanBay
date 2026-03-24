@@ -176,12 +176,23 @@ class TestBrewStats:
 
         # Create 2 brews: one successful, one failed
         _create_brew(
-            client, bag_id, setup_id, person_id,
-            dose=18.0, yield_amount=36.0, total_time=30.0,
+            client,
+            bag_id,
+            setup_id,
+            person_id,
+            dose=18.0,
+            yield_amount=36.0,
+            total_time=30.0,
         )
         _create_brew(
-            client, bag_id, setup_id, person_id,
-            dose=20.0, yield_amount=40.0, total_time=25.0, is_failed=True,
+            client,
+            bag_id,
+            setup_id,
+            person_id,
+            dose=20.0,
+            yield_amount=40.0,
+            total_time=25.0,
+            is_failed=True,
         )
 
         resp = client.get(STATS_BREWS, params={"person_id": person_id})
@@ -324,7 +335,15 @@ class TestTasteStats:
         assert bt["best_score"] is None
         assert bt["best_brew_id"] is None
         assert bt["top_flavor_tags"] == []
-        for axis in ("score", "acidity", "sweetness", "body", "bitterness", "balance", "aftertaste"):
+        for axis in (
+            "score",
+            "acidity",
+            "sweetness",
+            "body",
+            "bitterness",
+            "balance",
+            "aftertaste",
+        ):
             assert bt["avg_axes"][axis] is None
 
         bnt = data["bean_taste"]
@@ -436,9 +455,7 @@ class TestEquipmentStats:
         grinder_id = _create_grinder(client)
         brewer_id = _create_brewer(client)
 
-        setup_id = _create_brew_setup(
-            client, method_id, grinder_id=grinder_id, brewer_id=brewer_id
-        )
+        setup_id = _create_brew_setup(client, method_id, grinder_id=grinder_id, brewer_id=brewer_id)
 
         # Create 3 brews using this setup
         for _ in range(3):
@@ -485,22 +502,28 @@ class TestCuppingStats:
         bag_id = _create_bag(client, bean_id)
         tag_id = _create_flavor_tag(client)
 
-        c1 = client.post(CUPPINGS, json={
-            "bag_id": bag_id,
-            "person_id": person_id,
-            "cupped_at": _now_iso(),
-            "total_score": 80.0,
-            "flavor_tag_ids": [tag_id],
-        })
+        c1 = client.post(
+            CUPPINGS,
+            json={
+                "bag_id": bag_id,
+                "person_id": person_id,
+                "cupped_at": _now_iso(),
+                "total_score": 80.0,
+                "flavor_tag_ids": [tag_id],
+            },
+        )
         assert c1.status_code == 201
 
-        c2 = client.post(CUPPINGS, json={
-            "bag_id": bag_id,
-            "person_id": person_id,
-            "cupped_at": _now_iso(),
-            "total_score": 90.0,
-            "flavor_tag_ids": [tag_id],
-        })
+        c2 = client.post(
+            CUPPINGS,
+            json={
+                "bag_id": bag_id,
+                "person_id": person_id,
+                "cupped_at": _now_iso(),
+                "total_score": 90.0,
+                "flavor_tag_ids": [tag_id],
+            },
+        )
         assert c2.status_code == 201
         c2_id = c2.json()["id"]
 
@@ -521,14 +544,24 @@ class TestCuppingStats:
         bean_id = _create_bean(client)
         bag_id = _create_bag(client, bean_id)
 
-        client.post(CUPPINGS, json={
-            "bag_id": bag_id, "person_id": person_a,
-            "cupped_at": _now_iso(), "total_score": 80.0,
-        })
-        client.post(CUPPINGS, json={
-            "bag_id": bag_id, "person_id": person_b,
-            "cupped_at": _now_iso(), "total_score": 90.0,
-        })
+        client.post(
+            CUPPINGS,
+            json={
+                "bag_id": bag_id,
+                "person_id": person_a,
+                "cupped_at": _now_iso(),
+                "total_score": 80.0,
+            },
+        )
+        client.post(
+            CUPPINGS,
+            json={
+                "bag_id": bag_id,
+                "person_id": person_b,
+                "cupped_at": _now_iso(),
+                "total_score": 90.0,
+            },
+        )
 
         resp = client.get(STATS_CUPPINGS, params={"person_id": person_a})
         assert resp.status_code == 200

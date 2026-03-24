@@ -84,12 +84,8 @@ class BrewerMethodLink(SQLModel, table=True):
 
     __tablename__ = "brewer_methods"  # type: ignore[assignment]
 
-    brewer_id: uuid.UUID = Field(
-        foreign_key="brewers.id", primary_key=True
-    )
-    method_id: uuid.UUID = Field(
-        foreign_key="brew_methods.id", primary_key=True
-    )
+    brewer_id: uuid.UUID = Field(foreign_key="brewers.id", primary_key=True)
+    method_id: uuid.UUID = Field(foreign_key="brew_methods.id", primary_key=True)
 
 
 class BrewerStopModeLink(SQLModel, table=True):
@@ -105,12 +101,8 @@ class BrewerStopModeLink(SQLModel, table=True):
 
     __tablename__ = "brewer_stop_modes"  # type: ignore[assignment]
 
-    brewer_id: uuid.UUID = Field(
-        foreign_key="brewers.id", primary_key=True
-    )
-    stop_mode_id: uuid.UUID = Field(
-        foreign_key="stop_modes.id", primary_key=True
-    )
+    brewer_id: uuid.UUID = Field(foreign_key="brewers.id", primary_key=True)
+    stop_mode_id: uuid.UUID = Field(foreign_key="stop_modes.id", primary_key=True)
 
 
 # ---------------------------------------------------------------------------
@@ -223,9 +215,7 @@ class Brewer(SQLModel, table=True):
     preinfusion_max_time: float | None = None
 
     # Pressure
-    pressure_control_type: PressureControlType = Field(
-        default=PressureControlType.FIXED
-    )
+    pressure_control_type: PressureControlType = Field(default=PressureControlType.FIXED)
     pressure_min: float | None = None
     pressure_max: float | None = None
 
@@ -360,9 +350,7 @@ class WaterMineral(SQLModel, table=True):
     """
 
     __tablename__ = "water_minerals"  # type: ignore[assignment]
-    __table_args__ = (
-        UniqueConstraint("water_id", "mineral_name", name="uq_water_mineral"),
-    )
+    __table_args__ = (UniqueConstraint("water_id", "mineral_name", name="uq_water_mineral"),)
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     water_id: uuid.UUID = Field(foreign_key="waters.id", index=True)

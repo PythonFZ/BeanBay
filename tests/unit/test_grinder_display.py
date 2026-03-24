@@ -13,12 +13,13 @@ from beanbay.utils.grinder_display import (
 
 # ── Ring configurations ──────────────────────────────────────────────────────
 
-COMANDANTE_RINGS: list[tuple] = [(0, 40, 1)]           # Single stepped
-NICHE_ZERO_RINGS: list[tuple] = [(0, 50, 0.5)]         # Single stepless (0.5 step)
+COMANDANTE_RINGS: list[tuple] = [(0, 40, 1)]  # Single stepped
+NICHE_ZERO_RINGS: list[tuple] = [(0, 50, 0.5)]  # Single stepless (0.5 step)
 JX_PRO_RINGS: list[tuple] = [(0, 4, 1), (0, 9, 1), (0, 3, 1)]  # 3-ring, 5*10*4=200 positions
 
 
 # ── ring_position_counts ─────────────────────────────────────────────────────
+
 
 class TestRingPositionCounts:
     """Tests for ring_position_counts."""
@@ -34,6 +35,7 @@ class TestRingPositionCounts:
 
 
 # ── linear_bounds ────────────────────────────────────────────────────────────
+
 
 class TestLinearBounds:
     """Tests for linear_bounds."""
@@ -53,6 +55,7 @@ class TestLinearBounds:
 
 
 # ── to_display ───────────────────────────────────────────────────────────────
+
 
 class TestToDisplay:
     """Tests for to_display."""
@@ -96,6 +99,7 @@ class TestToDisplay:
 
 # ── from_display ─────────────────────────────────────────────────────────────
 
+
 class TestFromDisplay:
     """Tests for from_display."""
 
@@ -120,14 +124,13 @@ class TestFromDisplay:
 
 # ── Round-trip ───────────────────────────────────────────────────────────────
 
+
 class TestRoundTrip:
     """Verify that to_display/from_display round-trip correctly."""
 
     @pytest.mark.parametrize("value", [0, 10, 22, 40])
     def test_single_ring_roundtrip(self, value: int):
-        assert from_display(to_display(value, COMANDANTE_RINGS), COMANDANTE_RINGS) == float(
-            value
-        )
+        assert from_display(to_display(value, COMANDANTE_RINGS), COMANDANTE_RINGS) == float(value)
 
     @pytest.mark.parametrize("value", [0, 1, 50, 101, 150, 199])
     def test_multi_ring_roundtrip(self, value: int):

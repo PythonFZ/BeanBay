@@ -47,9 +47,7 @@ def _set_flavor_tags(
     """
     # Delete existing links
     existing_links = session.exec(
-        select(CuppingFlavorTagLink).where(
-            CuppingFlavorTagLink.cupping_id == cupping.id
-        )
+        select(CuppingFlavorTagLink).where(CuppingFlavorTagLink.cupping_id == cupping.id)
     ).all()
     for link in existing_links:
         session.delete(link)
@@ -63,9 +61,7 @@ def _set_flavor_tags(
                 status_code=404,
                 detail=f"FlavorTag with id '{tag_id}' not found.",
             )
-        session.add(
-            CuppingFlavorTagLink(cupping_id=cupping.id, flavor_tag_id=tag_id)
-        )
+        session.add(CuppingFlavorTagLink(cupping_id=cupping.id, flavor_tag_id=tag_id))
 
 
 # ======================================================================

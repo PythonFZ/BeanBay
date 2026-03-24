@@ -4,7 +4,6 @@ Covers creation with inline taste, grind setting conversion,
 list filtering, taste sub-resource CRUD, and soft-delete.
 """
 
-import json
 import uuid
 from datetime import datetime, timezone
 

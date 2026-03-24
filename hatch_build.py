@@ -32,9 +32,7 @@ class CustomBuildHook(BuildHookInterface):
             return
 
         env = {**os.environ, "VITE_APP_VERSION": version}
-        subprocess.run(
-            ["bun", "install"], cwd=frontend_dir, check=True, env=env
-        )
+        subprocess.run(["bun", "install"], cwd=frontend_dir, check=True, env=env)
         subprocess.run(
             [
                 "bun",

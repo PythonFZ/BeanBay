@@ -71,9 +71,7 @@ async def generate_recommendation(job_id: str) -> None:
             # 3. Load setup, brewer, grinder
             setup = session.get(BrewSetup, campaign_row.brew_setup_id)
             brewer = session.get(Brewer, setup.brewer_id) if setup.brewer_id else None
-            grinder = (
-                session.get(Grinder, setup.grinder_id) if setup.grinder_id else None
-            )
+            grinder = session.get(Grinder, setup.grinder_id) if setup.grinder_id else None
 
             # 4. Load method defaults
             defaults = session.exec(
@@ -95,9 +93,7 @@ async def generate_recommendation(job_id: str) -> None:
             )
 
             # 7. Check fingerprints — rebuild if changed
-            bounds_fp, param_fp = OptimizerService.compute_fingerprints(
-                effective_ranges
-            )
+            bounds_fp, param_fp = OptimizerService.compute_fingerprints(effective_ranges)
 
             if (
                 campaign_row.campaign_json
@@ -181,16 +177,16 @@ async def generate_recommendation(job_id: str) -> None:
                 from beanbay.utils.subsample import maximin_subsample
 
                 measurements_df = maximin_subsample(
-                    measurements_df, param_names, n=MAX_MEASUREMENTS_FOR_GP,
+                    measurements_df,
+                    param_names,
+                    n=MAX_MEASUREMENTS_FOR_GP,
                 )
 
             # 10. Get recommendation
             raw_values = OptimizerService.recommend(baybe_campaign, measurements_df)
 
             # 11. Round values
-            rounded_values = OptimizerService.round_recommendation(
-                raw_values, effective_ranges
-            )
+            rounded_values = OptimizerService.round_recommendation(raw_values, effective_ranges)
 
             # Remove 'score' key if present (it's the target, not a parameter)
             rounded_values.pop("score", None)
@@ -222,9 +218,7 @@ async def generate_recommendation(job_id: str) -> None:
                 status="pending",
                 optimization_mode=resolved_mode,
                 personal_brew_count=(
-                    len(brews)
-                    if resolved_mode == "personal" and person_id is not None
-                    else None
+                    len(brews) if resolved_mode == "personal" and person_id is not None else None
                 ),
             )
             session.add(rec)
@@ -235,12 +229,8 @@ async def generate_recommendation(job_id: str) -> None:
                 try:
                     rec_df = pd.DataFrame([rounded_values])
                     posterior = baybe_campaign.posterior_stats(rec_df)
-                    rec.predicted_score = round(
-                        float(posterior["score_mean"].iloc[0]), 4
-                    )
-                    rec.predicted_std = round(
-                        float(posterior["score_std"].iloc[0]), 4
-                    )
+                    rec.predicted_score = round(float(posterior["score_mean"].iloc[0]), 4)
+                    rec.predicted_std = round(float(posterior["score_std"].iloc[0]), 4)
                 except Exception:
                     logger.warning(
                         "Could not compute posterior stats for rec %s",
@@ -270,9 +260,7 @@ async def generate_recommendation(job_id: str) -> None:
             )
 
         except Exception as e:
-            logger.exception(
-                "Failed to generate recommendation for job %s", job_id
-            )
+            logger.exception("Failed to generate recommendation for job %s", job_id)
             # Try to mark job as failed
             try:
                 job = session.get(OptimizationJob, uuid.UUID(job_id))

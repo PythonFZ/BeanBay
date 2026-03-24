@@ -5,7 +5,11 @@ class TestVendorCRUD:
     def test_create_vendor(self, client):
         resp = client.post(
             "/api/v1/vendors",
-            json={"name": "Coffee Island", "url": "https://coffeeisland.example.com", "location": "Athens, Greece"},
+            json={
+                "name": "Coffee Island",
+                "url": "https://coffeeisland.example.com",
+                "location": "Athens, Greece",
+            },
         )
         assert resp.status_code == 201
         data = resp.json()
@@ -32,7 +36,9 @@ class TestVendorCRUD:
     def test_update_vendor(self, client):
         resp = client.post("/api/v1/vendors", json={"name": "Old Name"})
         vid = resp.json()["id"]
-        resp = client.patch(f"/api/v1/vendors/{vid}", json={"name": "New Name", "url": "https://new.example.com"})
+        resp = client.patch(
+            f"/api/v1/vendors/{vid}", json={"name": "New Name", "url": "https://new.example.com"}
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "New Name"
         assert resp.json()["url"] == "https://new.example.com"

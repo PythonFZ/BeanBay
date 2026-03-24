@@ -395,9 +395,7 @@ class TestInvalidRange:
         overrides = [FakeBeanOverride("dose", min_value=22.0, max_value=22.0)]
 
         with pytest.raises(ValueError, match="dose"):
-            compute_effective_ranges(
-                defaults, brewer=None, grinder=None, bean_overrides=overrides
-            )
+            compute_effective_ranges(defaults, brewer=None, grinder=None, bean_overrides=overrides)
 
     def test_min_exceeds_max_raises(self):
         defaults = [FakeMethodDefault("temperature", min_value=85.0, max_value=100.0)]
@@ -415,9 +413,7 @@ class TestInvalidRange:
 
         # min=45 > grinder max=40, so effective_min=45, effective_max=40 => invalid
         with pytest.raises(ValueError, match="grind_setting"):
-            compute_effective_ranges(
-                [], brewer=None, grinder=grinder, bean_overrides=overrides
-            )
+            compute_effective_ranges([], brewer=None, grinder=grinder, bean_overrides=overrides)
 
 
 # ---------------------------------------------------------------------------

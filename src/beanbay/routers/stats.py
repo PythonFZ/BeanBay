@@ -138,15 +138,11 @@ def get_brew_stats(
     month_start = _month_start()
 
     this_week = session.exec(
-        select(sa_func.count()).where(
-            *conditions, Brew.brewed_at >= week_start
-        )
+        select(sa_func.count()).where(*conditions, Brew.brewed_at >= week_start)
     ).one()
 
     this_month = session.exec(
-        select(sa_func.count()).where(
-            *conditions, Brew.brewed_at >= month_start
-        )
+        select(sa_func.count()).where(*conditions, Brew.brewed_at >= month_start)
     ).one()
 
     # By method
@@ -174,9 +170,7 @@ def get_brew_stats(
         avg_brew_time_s=round(row.avg_time, 2) if row.avg_time is not None else None,
         last_brewed_at=row.last_brewed,
         by_method=[
-            MethodBrewCount(
-                brew_method_id=r[0], brew_method_name=r[1], count=r[2]
-            )
+            MethodBrewCount(brew_method_id=r[0], brew_method_name=r[1], count=r[2])
             for r in method_rows
         ],
     )
@@ -200,9 +194,7 @@ def get_bean_stats(session: SessionDep) -> BeanStatsRead:
     bag_not_retired = Bag.retired_at.is_(None)  # type: ignore[union-attr]
 
     # Bean counts
-    total_beans = session.exec(
-        select(sa_func.count()).where(not_retired).select_from(Bean)
-    ).one()
+    total_beans = session.exec(select(sa_func.count()).where(not_retired).select_from(Bean)).one()
 
     # beans_active: non-retired beans with >= 1 non-retired bag
     beans_active = session.exec(
@@ -213,9 +205,7 @@ def get_bean_stats(session: SessionDep) -> BeanStatsRead:
 
     # Mix type breakdown
     mix_rows = session.exec(
-        select(Bean.bean_mix_type, sa_func.count())
-        .where(not_retired)
-        .group_by(Bean.bean_mix_type)
+        select(Bean.bean_mix_type, sa_func.count()).where(not_retired).group_by(Bean.bean_mix_type)
     ).all()
     mix_type_breakdown = {str(r[0].value) if r[0] else "unknown": r[1] for r in mix_rows}
 
@@ -247,15 +237,16 @@ def get_bean_stats(session: SessionDep) -> BeanStatsRead:
     ).all()
 
     # Bag stats
-    total_bags = session.exec(
-        select(sa_func.count()).where(bag_not_retired).select_from(Bag)
-    ).one()
+    total_bags = session.exec(select(sa_func.count()).where(bag_not_retired).select_from(Bag)).one()
     bags_active = total_bags  # same as total non-retired
 
     bags_unopened = session.exec(
-        select(sa_func.count()).where(
-            bag_not_retired, Bag.opened_at.is_(None)  # type: ignore[union-attr]
-        ).select_from(Bag)
+        select(sa_func.count())
+        .where(
+            bag_not_retired,
+            Bag.opened_at.is_(None),  # type: ignore[union-attr]
+        )
+        .select_from(Bag)
     ).one()
 
     bag_agg = session.exec(
@@ -271,12 +262,10 @@ def get_bean_stats(session: SessionDep) -> BeanStatsRead:
         mix_type_breakdown=mix_type_breakdown,
         use_type_breakdown=use_type_breakdown,
         top_roasters=[
-            RoasterBeanCount(roaster_id=r[0], roaster_name=r[1], count=r[2])
-            for r in roaster_rows
+            RoasterBeanCount(roaster_id=r[0], roaster_name=r[1], count=r[2]) for r in roaster_rows
         ],
         top_origins=[
-            OriginBeanCount(origin_id=r[0], origin_name=r[1], count=r[2])
-            for r in origin_rows
+            OriginBeanCount(origin_id=r[0], origin_name=r[1], count=r[2]) for r in origin_rows
         ],
         total_bags=total_bags,
         bags_active=bags_active,
@@ -313,10 +302,7 @@ def _flavor_tag_counts(session, link_model, entity_conditions):
         .group_by(FlavorTag.id, FlavorTag.name)
         .order_by(sa_func.count().desc())
     ).all()
-    return [
-        FlavorTagCount(flavor_tag_id=r[0], flavor_tag_name=r[1], count=r[2])
-        for r in rows
-    ]
+    return [FlavorTagCount(flavor_tag_id=r[0], flavor_tag_name=r[1], count=r[2]) for r in rows]
 
 
 @router.get("/stats/taste", response_model=TasteStatsRead)
@@ -370,9 +356,7 @@ def get_taste_stats(
     # Brew taste flavor tags
     bt_link_conditions = [
         BrewTasteFlavorTagLink.brew_taste_id.in_(  # type: ignore[union-attr]
-            select(BrewTaste.id)
-            .join(Brew, Brew.id == BrewTaste.brew_id)
-            .where(*brew_conditions)
+            select(BrewTaste.id).join(Brew, Brew.id == BrewTaste.brew_id).where(*brew_conditions)
         )
     ]
     bt_tags = _flavor_tag_counts(session, BrewTasteFlavorTagLink, bt_link_conditions)
@@ -533,21 +517,14 @@ def get_equipment_stats(session: SessionDep) -> EquipmentStatsRead:
         total_brewers=total_brewers,
         total_papers=total_papers,
         total_waters=total_waters,
-        top_grinders=[
-            NamedUsageCount(id=r[0], name=r[1], brew_count=r[2])
-            for r in grinder_rows
-        ],
-        top_brewers=[
-            NamedUsageCount(id=r[0], name=r[1], brew_count=r[2])
-            for r in brewer_rows
-        ],
-        top_setups=[
-            SetupUsage(id=r[0], name=r[1], brew_count=r[2])
-            for r in setup_rows
-        ],
+        top_grinders=[NamedUsageCount(id=r[0], name=r[1], brew_count=r[2]) for r in grinder_rows],
+        top_brewers=[NamedUsageCount(id=r[0], name=r[1], brew_count=r[2]) for r in brewer_rows],
+        top_setups=[SetupUsage(id=r[0], name=r[1], brew_count=r[2]) for r in setup_rows],
         most_used_method=NamedUsageCount(
             id=method_row[0], name=method_row[1], brew_count=method_row[2]
-        ) if method_row else None,
+        )
+        if method_row
+        else None,
     )
 
 

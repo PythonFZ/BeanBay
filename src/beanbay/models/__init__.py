@@ -14,6 +14,7 @@ accepts and returns these units. Frontend clients handle display conversion.
 - **Time**: seconds (s) — pre_infusion_time, total_time, preinfusion_max_time
 - **Concentration**: parts per million (ppm) — water mineral content
 """
+
 from beanbay.models.bean import (  # noqa: F401
     Bag,
     Bean,

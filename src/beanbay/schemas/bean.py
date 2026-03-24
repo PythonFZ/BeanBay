@@ -191,9 +191,7 @@ class BagRead(BagBase):
             "updated_at",
             "retired_at",
         )
-        data_dict: dict[str, Any] = {
-            f: getattr(data, f, None) for f in fields
-        }
+        data_dict: dict[str, Any] = {f: getattr(data, f, None) for f in fields}
         data_dict["is_retired"] = data_dict["retired_at"] is not None
         bean = getattr(data, "bean", None)
         if bean is not None:
@@ -410,9 +408,7 @@ class BeanRead(BeanBase):
         raw_origins = getattr(data, "origins", [])
         if sa_session is not None and raw_origins:
             link_rows = sa_session.exec(
-                select(BeanOriginLink).where(
-                    BeanOriginLink.bean_id == data.id
-                )
+                select(BeanOriginLink).where(BeanOriginLink.bean_id == data.id)
             ).all()
             pct_map = {lnk.origin_id: lnk.percentage for lnk in link_rows}
             origins_with_pct = []
@@ -436,7 +432,5 @@ class BeanRead(BeanBase):
         data_dict["flavor_tags"] = getattr(data, "flavor_tags", [])
         # Filter out retired bags
         all_bags = getattr(data, "bags", [])
-        data_dict["bags"] = [
-            b for b in all_bags if getattr(b, "retired_at", None) is None
-        ]
+        data_dict["bags"] = [b for b in all_bags if getattr(b, "retired_at", None) is None]
         return data_dict

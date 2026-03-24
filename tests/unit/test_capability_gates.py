@@ -25,18 +25,24 @@ def test_not_equal_none_fails():
 
 def test_in_list():
     brewer = FakeBrewer(pressure_control_type="electronic")
-    assert evaluate_requires(
-        "pressure_control_type in (opv_adjustable, electronic, programmable)",
-        brewer,
-    ) is True
+    assert (
+        evaluate_requires(
+            "pressure_control_type in (opv_adjustable, electronic, programmable)",
+            brewer,
+        )
+        is True
+    )
 
 
 def test_in_list_fails():
     brewer = FakeBrewer(pressure_control_type="fixed")
-    assert evaluate_requires(
-        "pressure_control_type in (opv_adjustable, electronic, programmable)",
-        brewer,
-    ) is False
+    assert (
+        evaluate_requires(
+            "pressure_control_type in (opv_adjustable, electronic, programmable)",
+            brewer,
+        )
+        is False
+    )
 
 
 def test_equals_true():

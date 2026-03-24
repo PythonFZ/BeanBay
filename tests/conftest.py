@@ -10,9 +10,7 @@ from beanbay.main import app
 @pytest.fixture(name="engine", scope="session")
 def engine_fixture():
     """Create a shared in-memory SQLite engine for the test session."""
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}
-    )
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
     return engine
 

@@ -49,9 +49,7 @@ class OptimizerService:
             if r.allowed_values is not None:
                 # Categorical parameter
                 values = tuple(v.strip() for v in r.allowed_values.split(","))
-                parameters.append(
-                    CategoricalParameter(name=r.parameter_name, values=values)
-                )
+                parameters.append(CategoricalParameter(name=r.parameter_name, values=values))
             else:
                 # Continuous numeric parameter
                 parameters.append(
@@ -171,17 +169,10 @@ class OptimizerService:
         """
         # Param fingerprint: hash of sorted parameter names
         param_names = sorted(r.parameter_name for r in effective_ranges)
-        param_hash = hashlib.md5(
-            ",".join(param_names).encode()
-        ).hexdigest()[:16]
+        param_hash = hashlib.md5(",".join(param_names).encode()).hexdigest()[:16]
 
         # Bounds fingerprint: hash of sorted (name, min, max) tuples
-        bounds = sorted(
-            (r.parameter_name, r.min_value, r.max_value)
-            for r in effective_ranges
-        )
-        bounds_hash = hashlib.md5(
-            str(bounds).encode()
-        ).hexdigest()[:16]
+        bounds = sorted((r.parameter_name, r.min_value, r.max_value) for r in effective_ranges)
+        bounds_hash = hashlib.md5(str(bounds).encode()).hexdigest()[:16]
 
         return bounds_hash, param_hash

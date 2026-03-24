@@ -43,12 +43,8 @@ class BrewTasteFlavorTagLink(SQLModel, table=True):
 
     __tablename__ = "brew_taste_flavor_tags"  # type: ignore[assignment]
 
-    brew_taste_id: uuid.UUID = Field(
-        foreign_key="brew_tastes.id", primary_key=True
-    )
-    flavor_tag_id: uuid.UUID = Field(
-        foreign_key="flavor_tags.id", primary_key=True
-    )
+    brew_taste_id: uuid.UUID = Field(foreign_key="brew_tastes.id", primary_key=True)
+    flavor_tag_id: uuid.UUID = Field(foreign_key="flavor_tags.id", primary_key=True)
 
 
 # ---------------------------------------------------------------------------
@@ -202,9 +198,7 @@ class Brew(SQLModel, table=True):
     bloom_pause: float | None = None
     temp_profile: str | None = None
 
-    stop_mode_id: uuid.UUID | None = Field(
-        default=None, foreign_key="stop_modes.id"
-    )
+    stop_mode_id: uuid.UUID | None = Field(default=None, foreign_key="stop_modes.id")
     is_failed: bool = Field(default=False)
     notes: str | None = None
     brewed_at: datetime
@@ -267,9 +261,7 @@ class BrewTaste(SQLModel, table=True):
     """
 
     __tablename__ = "brew_tastes"  # type: ignore[assignment]
-    __table_args__ = (
-        UniqueConstraint("brew_id", name="uq_brew_taste_brew_id"),
-    )
+    __table_args__ = (UniqueConstraint("brew_id", name="uq_brew_taste_brew_id"),)
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     brew_id: uuid.UUID = Field(foreign_key="brews.id", index=True)

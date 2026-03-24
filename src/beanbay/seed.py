@@ -28,9 +28,7 @@ def seed_brew_methods(session: Session) -> None:
         "cold-brew",
     ]
     for name in defaults:
-        existing = session.exec(
-            select(BrewMethod).where(BrewMethod.name == name)
-        ).first()
+        existing = session.exec(select(BrewMethod).where(BrewMethod.name == name)).first()
         if not existing:
             session.add(BrewMethod(name=name))
 
@@ -45,9 +43,7 @@ def seed_stop_modes(session: Session) -> None:
     """
     defaults = ["manual", "timed", "volumetric", "gravimetric"]
     for name in defaults:
-        existing = session.exec(
-            select(StopMode).where(StopMode.name == name)
-        ).first()
+        existing = session.exec(select(StopMode).where(StopMode.name == name)).first()
         if not existing:
             session.add(StopMode(name=name))
 
@@ -77,8 +73,6 @@ def seed_storage_types(session: Session) -> None:
     """
     defaults = ["Vacuum Sealed", "Zip Lock", "Coffee Bag", "Coffee Jar", "Tube"]
     for name in defaults:
-        existing = session.exec(
-            select(StorageType).where(StorageType.name == name)
-        ).first()
+        existing = session.exec(select(StorageType).where(StorageType.name == name)).first()
         if not existing:
             session.add(StorageType(name=name))

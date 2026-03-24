@@ -33,12 +33,8 @@ class BeanTasteFlavorTagLink(SQLModel, table=True):
 
     __tablename__ = "bean_taste_flavor_tags"  # type: ignore[assignment]
 
-    bean_taste_id: uuid.UUID = Field(
-        foreign_key="bean_tastes.id", primary_key=True
-    )
-    flavor_tag_id: uuid.UUID = Field(
-        foreign_key="flavor_tags.id", primary_key=True
-    )
+    bean_taste_id: uuid.UUID = Field(foreign_key="bean_tastes.id", primary_key=True)
+    flavor_tag_id: uuid.UUID = Field(foreign_key="flavor_tags.id", primary_key=True)
 
 
 # ---------------------------------------------------------------------------
@@ -134,9 +130,7 @@ class BeanTaste(SQLModel, table=True):
     __tablename__ = "bean_tastes"  # type: ignore[assignment]
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
-    bean_rating_id: uuid.UUID = Field(
-        foreign_key="bean_ratings.id", unique=True, index=True
-    )
+    bean_rating_id: uuid.UUID = Field(foreign_key="bean_ratings.id", unique=True, index=True)
     score: float | None = None
     acidity: float | None = None
     sweetness: float | None = None

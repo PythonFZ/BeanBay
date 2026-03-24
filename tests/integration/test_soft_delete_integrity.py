@@ -31,6 +31,7 @@ BEAN_RATINGS = "/api/v1/bean-ratings"
 # Helpers
 # ======================================================================
 
+
 def _unique(prefix: str) -> str:
     """Return a unique name to avoid collisions across tests."""
     return f"{prefix}_{uuid.uuid4().hex[:8]}"
@@ -294,7 +295,7 @@ class TestFlavorTagSoftDeleteIntegrity:
         bag_id = _create_bag(client, bean["id"])
         method_id = _create_brew_method(client)
         setup_id = _create_brew_setup(client, method_id)
-        brew = _create_brew(
+        _create_brew(
             client,
             bag_id,
             setup_id,
@@ -338,9 +339,7 @@ class TestFlavorTagSoftDeleteIntegrity:
         assert resp.status_code == 200
         assert resp.json()["retired_at"] is not None
 
-    def test_cannot_delete_flavor_tag_linked_to_active_bean_rating_taste(
-        self, client
-    ):
+    def test_cannot_delete_flavor_tag_linked_to_active_bean_rating_taste(self, client):
         """DELETE /flavor-tags/{id} returns 409 when a BeanRating taste uses it."""
         tag_id = _create_flavor_tag(client)
 
@@ -348,7 +347,7 @@ class TestFlavorTagSoftDeleteIntegrity:
         bean = _create_bean(client)
 
         # Create rating with taste + flavor tag
-        rating = _create_rating(
+        _create_rating(
             client,
             bean["id"],
             person_id,

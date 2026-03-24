@@ -48,9 +48,7 @@ def test_seed_default_person_idempotent(session):
     seed_default_person(session, "Default")
     session.commit()
 
-    people = session.exec(
-        select(Person).where(Person.name == "Default")
-    ).all()
+    people = session.exec(select(Person).where(Person.name == "Default")).all()
     assert len(people) == 1
     assert people[0].is_default is True
 

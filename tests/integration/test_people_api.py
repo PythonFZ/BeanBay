@@ -75,9 +75,7 @@ class TestPersonUpdate:
         """PATCH /{id} updates the name."""
         r = client.post(BASE, json={"name": "OldPersonName"})
         person_id = r.json()["id"]
-        resp = client.patch(
-            f"{BASE}/{person_id}", json={"name": "NewPersonName"}
-        )
+        resp = client.patch(f"{BASE}/{person_id}", json={"name": "NewPersonName"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "NewPersonName"
 

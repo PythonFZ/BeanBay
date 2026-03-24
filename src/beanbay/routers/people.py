@@ -114,9 +114,7 @@ def create_person(
     PersonRead
         The created person.
     """
-    existing = session.exec(
-        select(Person).where(Person.name == payload.name)
-    ).first()
+    existing = session.exec(select(Person).where(Person.name == payload.name)).first()
     if existing is not None:
         raise HTTPException(
             status_code=409,

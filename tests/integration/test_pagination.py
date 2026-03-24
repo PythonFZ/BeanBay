@@ -77,9 +77,7 @@ class TestSortByName:
         """Items with names A, C, B sorted asc return A, B, C."""
         _create_tags(client, ["SortAsc_A", "SortAsc_C", "SortAsc_B"])
 
-        resp = client.get(
-            BASE, params={"q": "SortAsc_", "sort_by": "name", "sort_dir": "asc"}
-        )
+        resp = client.get(BASE, params={"q": "SortAsc_", "sort_by": "name", "sort_dir": "asc"})
         assert resp.status_code == 200
         names = [item["name"] for item in resp.json()["items"]]
         assert names == ["SortAsc_A", "SortAsc_B", "SortAsc_C"]
@@ -88,9 +86,7 @@ class TestSortByName:
         """Items with names A, C, B sorted desc return C, B, A."""
         _create_tags(client, ["SortDesc_A", "SortDesc_C", "SortDesc_B"])
 
-        resp = client.get(
-            BASE, params={"q": "SortDesc_", "sort_by": "name", "sort_dir": "desc"}
-        )
+        resp = client.get(BASE, params={"q": "SortDesc_", "sort_by": "name", "sort_dir": "desc"})
         assert resp.status_code == 200
         names = [item["name"] for item in resp.json()["items"]]
         assert names == ["SortDesc_C", "SortDesc_B", "SortDesc_A"]

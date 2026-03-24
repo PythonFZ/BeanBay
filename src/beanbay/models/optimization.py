@@ -50,11 +50,7 @@ class Campaign(SQLModel, table=True):
     """
 
     __tablename__ = "campaigns"  # type: ignore[assignment]
-    __table_args__ = (
-        UniqueConstraint(
-            "bean_id", "brew_setup_id", name="uq_campaign_bean_setup"
-        ),
-    )
+    __table_args__ = (UniqueConstraint("bean_id", "brew_setup_id", name="uq_campaign_bean_setup"),)
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     bean_id: uuid.UUID = Field(foreign_key="beans.id", index=True)
@@ -119,9 +115,7 @@ class MethodParameterDefault(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
-    brew_method_id: uuid.UUID = Field(
-        foreign_key="brew_methods.id", index=True
-    )
+    brew_method_id: uuid.UUID = Field(foreign_key="brew_methods.id", index=True)
 
     parameter_name: str
     min_value: float | None = None
@@ -167,11 +161,7 @@ class BeanParameterOverride(SQLModel, table=True):
     """
 
     __tablename__ = "bean_parameter_overrides"  # type: ignore[assignment]
-    __table_args__ = (
-        UniqueConstraint(
-            "bean_id", "parameter_name", name="uq_bean_param_override"
-        ),
-    )
+    __table_args__ = (UniqueConstraint("bean_id", "parameter_name", name="uq_bean_param_override"),)
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     bean_id: uuid.UUID = Field(foreign_key="beans.id", index=True)
@@ -224,9 +214,7 @@ class Recommendation(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid4_default, primary_key=True)
     campaign_id: uuid.UUID = Field(foreign_key="campaigns.id", index=True)
-    brew_id: uuid.UUID | None = Field(
-        default=None, foreign_key="brews.id", index=True
-    )
+    brew_id: uuid.UUID | None = Field(default=None, foreign_key="brews.id", index=True)
 
     phase: str
     predicted_score: float | None = None
@@ -234,7 +222,9 @@ class Recommendation(SQLModel, table=True):
     parameter_values: str
     status: str = Field(default="pending")
     optimization_mode: str | None = Field(default=None, description="community or personal")
-    personal_brew_count: int | None = Field(default=None, description="Person's brew count when generated")
+    personal_brew_count: int | None = Field(
+        default=None, description="Person's brew count when generated"
+    )
 
     created_at: datetime = Field(
         default=None,

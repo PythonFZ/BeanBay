@@ -45,7 +45,12 @@ async def lifespan(_app: FastAPI):
     from sqlmodel import SQLModel
 
     from beanbay.database import engine
-    from beanbay.seed import seed_brew_methods, seed_default_person, seed_stop_modes, seed_storage_types
+    from beanbay.seed import (
+        seed_brew_methods,
+        seed_default_person,
+        seed_stop_modes,
+        seed_storage_types,
+    )
     from beanbay.seed_optimization import seed_method_parameter_defaults
 
     SQLModel.metadata.create_all(engine)
@@ -66,13 +71,24 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="BeanBay", lifespan=lifespan)
 
 _routers = [
-    flavor_tag_router, origin_router, roaster_router,
-    process_method_router, bean_variety_router,
-    brew_method_router, stop_mode_router,
-    vendor_router, storage_type_router,
-    people_router, equipment_router, beans_router,
-    brew_setups_router, brews_router, cuppings_router, ratings_router,
-    stats_router, optimize_router,
+    flavor_tag_router,
+    origin_router,
+    roaster_router,
+    process_method_router,
+    bean_variety_router,
+    brew_method_router,
+    stop_mode_router,
+    vendor_router,
+    storage_type_router,
+    people_router,
+    equipment_router,
+    beans_router,
+    brew_setups_router,
+    brews_router,
+    cuppings_router,
+    ratings_router,
+    stats_router,
+    optimize_router,
 ]
 for _router in _routers:
     app.include_router(_router, prefix="/api/v1")

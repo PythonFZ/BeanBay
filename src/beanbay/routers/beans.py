@@ -45,8 +45,6 @@ BAG_SORTABLE = ["created_at", "updated_at", "roast_date", "weight", "price"]
 router = APIRouter(tags=["Beans"])
 
 
-
-
 # ======================================================================
 # Helper: set M2M relationships via link models
 # ======================================================================
@@ -79,9 +77,7 @@ def _set_bean_origins(
         return
 
     # Delete existing links
-    existing = session.exec(
-        select(BeanOriginLink).where(BeanOriginLink.bean_id == bean.id)
-    ).all()
+    existing = session.exec(select(BeanOriginLink).where(BeanOriginLink.bean_id == bean.id)).all()
     for link in existing:
         session.delete(link)
     session.flush()
@@ -102,11 +98,7 @@ def _set_bean_origins(
                 status_code=404,
                 detail=f"Origin with id '{oid}' not found.",
             )
-        session.add(
-            BeanOriginLink(
-                bean_id=bean.id, origin_id=oid, percentage=pct
-            )
-        )
+        session.add(BeanOriginLink(bean_id=bean.id, origin_id=oid, percentage=pct))
 
 
 def _set_bean_m2m(
@@ -144,9 +136,7 @@ def _set_bean_m2m(
 
     if process_ids is not None:
         existing = session.exec(
-            select(BeanProcessLink).where(
-                BeanProcessLink.bean_id == bean.id
-            )
+            select(BeanProcessLink).where(BeanProcessLink.bean_id == bean.id)
         ).all()
         for link in existing:
             session.delete(link)
@@ -162,9 +152,7 @@ def _set_bean_m2m(
 
     if variety_ids is not None:
         existing = session.exec(
-            select(BeanVarietyLink).where(
-                BeanVarietyLink.bean_id == bean.id
-            )
+            select(BeanVarietyLink).where(BeanVarietyLink.bean_id == bean.id)
         ).all()
         for link in existing:
             session.delete(link)
@@ -180,9 +168,7 @@ def _set_bean_m2m(
 
     if flavor_tag_ids is not None:
         existing = session.exec(
-            select(BeanFlavorTagLink).where(
-                BeanFlavorTagLink.bean_id == bean.id
-            )
+            select(BeanFlavorTagLink).where(BeanFlavorTagLink.bean_id == bean.id)
         ).all()
         for link in existing:
             session.delete(link)
@@ -194,9 +180,7 @@ def _set_bean_m2m(
                     status_code=404,
                     detail=f"FlavorTag with id '{fid}' not found.",
                 )
-            session.add(
-                BeanFlavorTagLink(bean_id=bean.id, flavor_tag_id=fid)
-            )
+            session.add(BeanFlavorTagLink(bean_id=bean.id, flavor_tag_id=fid))
 
 
 # ======================================================================
@@ -213,12 +197,8 @@ def list_beans(
     q: str | None = Query(None, description="Case-insensitive name search"),
     roaster_id: uuid.UUID | None = Query(None, description="Filter by roaster"),
     origin_id: uuid.UUID | None = Query(None, description="Filter by origin"),
-    process_id: uuid.UUID | None = Query(
-        None, description="Filter by process method"
-    ),
-    variety_id: uuid.UUID | None = Query(
-        None, description="Filter by bean variety"
-    ),
+    process_id: uuid.UUID | None = Query(None, description="Filter by process method"),
+    variety_id: uuid.UUID | None = Query(None, description="Filter by bean variety"),
     include_retired: bool = Query(False, description="Include soft-deleted items"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -277,25 +257,17 @@ def list_beans(
         count_stmt = count_stmt.where(Bean.roaster_id == roaster_id)
 
     if origin_id:
-        stmt = stmt.join(BeanOriginLink).where(
-            BeanOriginLink.origin_id == origin_id
-        )
-        count_stmt = count_stmt.join(BeanOriginLink).where(
-            BeanOriginLink.origin_id == origin_id
-        )
+        stmt = stmt.join(BeanOriginLink).where(BeanOriginLink.origin_id == origin_id)
+        count_stmt = count_stmt.join(BeanOriginLink).where(BeanOriginLink.origin_id == origin_id)
 
     if process_id:
-        stmt = stmt.join(BeanProcessLink).where(
-            BeanProcessLink.process_id == process_id
-        )
+        stmt = stmt.join(BeanProcessLink).where(BeanProcessLink.process_id == process_id)
         count_stmt = count_stmt.join(BeanProcessLink).where(
             BeanProcessLink.process_id == process_id
         )
 
     if variety_id:
-        stmt = stmt.join(BeanVarietyLink).where(
-            BeanVarietyLink.variety_id == variety_id
-        )
+        stmt = stmt.join(BeanVarietyLink).where(BeanVarietyLink.variety_id == variety_id)
         count_stmt = count_stmt.join(BeanVarietyLink).where(
             BeanVarietyLink.variety_id == variety_id
         )
@@ -344,9 +316,7 @@ def create_bean(
     if payload.roaster_id is not None:
         roaster = session.get(Roaster, payload.roaster_id)
         if roaster is None:
-            raise HTTPException(
-                status_code=404, detail="Roaster not found."
-            )
+            raise HTTPException(status_code=404, detail="Roaster not found.")
 
     db_bean = Bean(
         name=payload.name,
@@ -440,9 +410,7 @@ def update_bean(
     if "roaster_id" in update_data and update_data["roaster_id"] is not None:
         roaster = session.get(Roaster, update_data["roaster_id"])
         if roaster is None:
-            raise HTTPException(
-                status_code=404, detail="Roaster not found."
-            )
+            raise HTTPException(status_code=404, detail="Roaster not found.")
 
     # Extract M2M IDs (don't pass them to sqlmodel_update)
     origin_ids = update_data.pop("origin_ids", None)
@@ -463,8 +431,7 @@ def update_bean(
     origins_typed: list[OriginWithPercentage] | None = None
     if "origins" in raw_unset and origins_raw is not None:
         origins_typed = [
-            OriginWithPercentage(**o) if isinstance(o, dict) else o
-            for o in origins_raw
+            OriginWithPercentage(**o) if isinstance(o, dict) else o for o in origins_raw
         ]
 
     _set_bean_m2m(
@@ -541,9 +508,7 @@ def delete_bean(
 # ------------------------------------------------------------------
 # GET /beans/{bean_id}/bags  — list bags for a bean
 # ------------------------------------------------------------------
-@router.get(
-    "/beans/{bean_id}/bags", response_model=PaginatedResponse[BagRead]
-)
+@router.get("/beans/{bean_id}/bags", response_model=PaginatedResponse[BagRead])
 def list_bean_bags(
     bean_id: uuid.UUID,
     *,
@@ -586,9 +551,7 @@ def list_bean_bags(
         raise HTTPException(status_code=404, detail="Bean not found.")
 
     stmt = select(Bag).where(Bag.bean_id == bean_id).options(selectinload(Bag.bean))
-    count_stmt = (
-        select(func.count()).select_from(Bag).where(Bag.bean_id == bean_id)
-    )
+    count_stmt = select(func.count()).select_from(Bag).where(Bag.bean_id == bean_id)
 
     if not include_retired:
         stmt = stmt.where(Bag.retired_at.is_(None))  # type: ignore[union-attr]
@@ -606,9 +569,7 @@ def list_bean_bags(
 
     return PaginatedResponse(
         items=[
-            BagRead.model_validate(
-                bag, update={"bean_name": bag.bean.name if bag.bean else None}
-            )
+            BagRead.model_validate(bag, update={"bean_name": bag.bean.name if bag.bean else None})
             for bag in items
         ],
         total=total,
@@ -620,9 +581,7 @@ def list_bean_bags(
 # ------------------------------------------------------------------
 # POST /beans/{bean_id}/bags  — create bag
 # ------------------------------------------------------------------
-@router.post(
-    "/beans/{bean_id}/bags", response_model=BagRead, status_code=201
-)
+@router.post("/beans/{bean_id}/bags", response_model=BagRead, status_code=201)
 def create_bag_for_bean(
     bean_id: uuid.UUID,
     payload: BagCreate,
@@ -681,12 +640,8 @@ def create_bag_for_bean(
 def list_bags(
     *,
     bean_id: uuid.UUID | None = Query(None, description="Filter by bean"),
-    is_preground: bool | None = Query(
-        None, description="Filter by pre-ground status"
-    ),
-    opened_after: date | None = Query(
-        None, description="Filter bags opened after this date"
-    ),
+    is_preground: bool | None = Query(None, description="Filter by pre-ground status"),
+    opened_after: date | None = Query(None, description="Filter bags opened after this date"),
     include_retired: bool = Query(False, description="Include soft-deleted items"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -755,9 +710,7 @@ def list_bags(
 
     return PaginatedResponse(
         items=[
-            BagRead.model_validate(
-                bag, update={"bean_name": bag.bean.name if bag.bean else None}
-            )
+            BagRead.model_validate(bag, update={"bean_name": bag.bean.name if bag.bean else None})
             for bag in items
         ],
         total=total,

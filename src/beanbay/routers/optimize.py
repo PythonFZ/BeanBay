@@ -86,9 +86,7 @@ def list_bean_overrides(
     if bean is None:
         raise HTTPException(status_code=404, detail="Bean not found.")
     overrides = session.exec(
-        select(BeanParameterOverride).where(
-            BeanParameterOverride.bean_id == bean_id
-        )
+        select(BeanParameterOverride).where(BeanParameterOverride.bean_id == bean_id)
     ).all()
     return overrides  # type: ignore[return-value]
 
@@ -132,9 +130,7 @@ def put_bean_overrides(
 
     # Delete existing overrides
     existing = session.exec(
-        select(BeanParameterOverride).where(
-            BeanParameterOverride.bean_id == bean_id
-        )
+        select(BeanParameterOverride).where(BeanParameterOverride.bean_id == bean_id)
     ).all()
     for override in existing:
         session.delete(override)
@@ -212,11 +208,7 @@ def _compute_live_stats(
         )
 
     # Compute live stats
-    valid_scores = [
-        e.score
-        for e in score_history
-        if not e.is_failed and e.score is not None
-    ]
+    valid_scores = [e.score for e in score_history if not e.is_failed and e.score is not None]
     valid_count = len(valid_scores)
     best_score = max(valid_scores) if valid_scores else None
     phase = OptimizerService.determine_phase(valid_count)
@@ -239,9 +231,7 @@ def _compute_live_stats(
         recent_best = max(valid_scores[-3:])
         previous_best = max(valid_scores[-6:-3])
         if previous_best > 0:
-            improvement_rate = round(
-                (recent_best - previous_best) / previous_best, 4
-            )
+            improvement_rate = round((recent_best - previous_best) / previous_best, 4)
 
     return {
         "measurement_count": valid_count,
@@ -289,20 +279,14 @@ def _compute_campaign_ranges(
 
     # Load equipment (may be None)
     brewer = session.get(Brewer, setup.brewer_id) if setup.brewer_id else None
-    grinder = (
-        session.get(Grinder, setup.grinder_id) if setup.grinder_id else None
-    )
+    grinder = session.get(Grinder, setup.grinder_id) if setup.grinder_id else None
 
     # Load bean overrides
     overrides = session.exec(
-        select(BeanParameterOverride).where(
-            BeanParameterOverride.bean_id == campaign.bean_id
-        )
+        select(BeanParameterOverride).where(BeanParameterOverride.bean_id == campaign.bean_id)
     ).all()
 
-    service_ranges = compute_effective_ranges(
-        defaults, brewer, grinder, overrides
-    )
+    service_ranges = compute_effective_ranges(defaults, brewer, grinder, overrides)
 
     # Convert dataclasses to schema objects
     return [
@@ -565,9 +549,7 @@ def reset_campaign(
 
     # Delete related recommendations
     recommendations = session.exec(
-        select(Recommendation).where(
-            Recommendation.campaign_id == campaign_id
-        )
+        select(Recommendation).where(Recommendation.campaign_id == campaign_id)
     ).all()
     for rec in recommendations:
         session.delete(rec)
@@ -748,9 +730,7 @@ def get_posterior_predictions(
                 val = getattr(brew, r.parameter_name, None)
                 if val is not None:
                     values[r.parameter_name] = val
-        measurement_points.append(
-            MeasurementPoint(values=values, score=brew.taste.score)
-        )
+        measurement_points.append(MeasurementPoint(values=values, score=brew.taste.score))
 
     # 7. Validate >= 2 valid measurements
     if len(measurement_points) < 2:
@@ -767,9 +747,7 @@ def get_posterior_predictions(
     grid_arrays: list[list[float]] = []
     for pname in param_names:
         r = range_map[pname]
-        grid_arrays.append(
-            np.linspace(r.min_value, r.max_value, points).tolist()
-        )
+        grid_arrays.append(np.linspace(r.min_value, r.max_value, points).tolist())
 
     if len(param_names) == 1:
         # 1D: single column swept, others held constant
@@ -910,12 +888,8 @@ def get_feature_importance(
 
         # Rebuild campaign with subsampled measurements for SHAP analysis
         param_cols = [c for c in measurements.columns if c != "score"]
-        subsampled = maximin_subsample(
-            measurements, param_cols, n=MAX_MEASUREMENTS_FOR_SHAP
-        )
-        shap_campaign = OptimizerService.build_campaign(
-            _compute_campaign_ranges(session, campaign)
-        )
+        subsampled = maximin_subsample(measurements, param_cols, n=MAX_MEASUREMENTS_FOR_SHAP)
+        shap_campaign = OptimizerService.build_campaign(_compute_campaign_ranges(session, campaign))
         shap_campaign.add_measurements(subsampled)
         insight = SHAPInsight.from_campaign(shap_campaign)
     else:
@@ -1129,9 +1103,7 @@ def list_recommendations(
         raise HTTPException(status_code=404, detail="Campaign not found.")
 
     recs = session.exec(
-        select(Recommendation).where(
-            Recommendation.campaign_id == campaign_id
-        )
+        select(Recommendation).where(Recommendation.campaign_id == campaign_id)
     ).all()
     return [RecommendationRead.model_validate(r) for r in recs]
 
@@ -1165,9 +1137,7 @@ def get_recommendation(
     """
     rec = session.get(Recommendation, recommendation_id)
     if rec is None:
-        raise HTTPException(
-            status_code=404, detail="Recommendation not found."
-        )
+        raise HTTPException(status_code=404, detail="Recommendation not found.")
     return RecommendationRead.model_validate(rec)
 
 
@@ -1200,9 +1170,7 @@ def skip_recommendation(
     """
     rec = session.get(Recommendation, recommendation_id)
     if rec is None:
-        raise HTTPException(
-            status_code=404, detail="Recommendation not found."
-        )
+        raise HTTPException(status_code=404, detail="Recommendation not found.")
     rec.status = "skipped"
     session.add(rec)
     session.commit()
@@ -1245,9 +1213,7 @@ def link_recommendation(
     """
     rec = session.get(Recommendation, recommendation_id)
     if rec is None:
-        raise HTTPException(
-            status_code=404, detail="Recommendation not found."
-        )
+        raise HTTPException(status_code=404, detail="Recommendation not found.")
 
     brew = session.get(Brew, payload.brew_id)
     if brew is None:
@@ -1357,9 +1323,7 @@ def get_person_preferences(
         .order_by(func.count(FlavorTag.id).desc())
     )
     flavor_rows = session.exec(flavor_stmt).all()  # type: ignore[call-overload]
-    flavor_profile = [
-        FlavorFrequency(tag=row[0], frequency=row[1]) for row in flavor_rows
-    ]
+    flavor_profile = [FlavorFrequency(tag=row[0], frequency=row[1]) for row in flavor_rows]
 
     # 4. Roast preference: AVG(roast_degree) and distribution
     roast_preference: dict = {}
@@ -1455,7 +1419,12 @@ def get_person_preferences(
 
     # 7. Taste profile: average sub-scores from top-5 qualifying brews
     SUB_SCORE_AXES = [
-        "acidity", "sweetness", "body", "bitterness", "balance", "aftertaste",
+        "acidity",
+        "sweetness",
+        "body",
+        "bitterness",
+        "balance",
+        "aftertaste",
     ]
 
     taste_brews = session.exec(
@@ -1476,9 +1445,7 @@ def get_person_preferences(
         taste = brew.taste
         if taste is None:
             continue
-        non_null_count = sum(
-            1 for ax in SUB_SCORE_AXES if getattr(taste, ax) is not None
-        )
+        non_null_count = sum(1 for ax in SUB_SCORE_AXES if getattr(taste, ax) is not None)
         if non_null_count >= 3:
             qualifying.append(taste)
         if len(qualifying) == 5:
@@ -1490,12 +1457,8 @@ def get_person_preferences(
     if len(qualifying) >= 3:
         profile_values = {}
         for ax in SUB_SCORE_AXES:
-            values = [
-                getattr(t, ax) for t in qualifying if getattr(t, ax) is not None
-            ]
-            profile_values[ax] = (
-                round(sum(values) / len(values), 1) if len(values) >= 2 else None
-            )
+            values = [getattr(t, ax) for t in qualifying if getattr(t, ax) is not None]
+            profile_values[ax] = round(sum(values) / len(values), 1) if len(values) >= 2 else None
         taste_profile = TasteProfile(**profile_values)
 
     return PersonPreferences(

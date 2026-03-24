@@ -111,9 +111,7 @@ def create_grinder(
     session: SessionDep,
 ) -> GrinderRead:
     """Create a new grinder."""
-    existing = session.exec(
-        select(Grinder).where(Grinder.name == payload.name)
-    ).first()
+    existing = session.exec(select(Grinder).where(Grinder.name == payload.name)).first()
     if existing is not None:
         raise HTTPException(
             status_code=409,
@@ -234,9 +232,7 @@ def _set_brewer_m2m(
     if method_ids is not None:
         # Delete existing links
         existing_links = session.exec(
-            select(BrewerMethodLink).where(
-                BrewerMethodLink.brewer_id == brewer.id
-            )
+            select(BrewerMethodLink).where(BrewerMethodLink.brewer_id == brewer.id)
         ).all()
         for link in existing_links:
             session.delete(link)
@@ -255,9 +251,7 @@ def _set_brewer_m2m(
     if stop_mode_ids is not None:
         # Delete existing links
         existing_links = session.exec(
-            select(BrewerStopModeLink).where(
-                BrewerStopModeLink.brewer_id == brewer.id
-            )
+            select(BrewerStopModeLink).where(BrewerStopModeLink.brewer_id == brewer.id)
         ).all()
         for link in existing_links:
             session.delete(link)
@@ -317,9 +311,7 @@ def create_brewer(
     session: SessionDep,
 ) -> BrewerRead:
     """Create a new brewer with optional M2M methods and stop modes."""
-    existing = session.exec(
-        select(Brewer).where(Brewer.name == payload.name)
-    ).first()
+    existing = session.exec(select(Brewer).where(Brewer.name == payload.name)).first()
     if existing is not None:
         raise HTTPException(
             status_code=409,
@@ -404,9 +396,7 @@ def update_brewer(
         session,
         db_brewer,
         method_ids if "method_ids" in payload.model_dump(exclude_unset=True) else None,
-        stop_mode_ids
-        if "stop_mode_ids" in payload.model_dump(exclude_unset=True)
-        else None,
+        stop_mode_ids if "stop_mode_ids" in payload.model_dump(exclude_unset=True) else None,
     )
 
     session.commit()
@@ -481,9 +471,7 @@ def create_paper(
     session: SessionDep,
 ) -> PaperRead:
     """Create a new paper."""
-    existing = session.exec(
-        select(Paper).where(Paper.name == payload.name)
-    ).first()
+    existing = session.exec(select(Paper).where(Paper.name == payload.name)).first()
     if existing is not None:
         raise HTTPException(
             status_code=409,
@@ -583,9 +571,7 @@ def _set_water_minerals(
         Mineral create schemas to insert.
     """
     # Delete existing
-    existing = session.exec(
-        select(WaterMineral).where(WaterMineral.water_id == water.id)
-    ).all()
+    existing = session.exec(select(WaterMineral).where(WaterMineral.water_id == water.id)).all()
     for m in existing:
         session.delete(m)
     session.flush()
@@ -643,9 +629,7 @@ def create_water(
     session: SessionDep,
 ) -> WaterRead:
     """Create a new water with optional inline minerals."""
-    existing = session.exec(
-        select(Water).where(Water.name == payload.name)
-    ).first()
+    existing = session.exec(select(Water).where(Water.name == payload.name)).first()
     if existing is not None:
         raise HTTPException(
             status_code=409,
@@ -703,7 +687,7 @@ def update_water(
             )
 
     # Handle minerals: delete-and-reinsert only if minerals was sent
-    minerals_data = update_data.pop("minerals", None)
+    update_data.pop("minerals", None)
 
     # Apply scalar updates
     db_water.sqlmodel_update(update_data)

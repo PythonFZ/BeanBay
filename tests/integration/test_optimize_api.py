@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, timezone
 
 import pandas as pd
-from baybe import Campaign as BaybeCampaign
 from sqlmodel import select
 
 from beanbay.models.optimization import (
@@ -26,14 +25,10 @@ def test_seed_espresso_defaults(session):
     seed_method_parameter_defaults(session)
     session.commit()
 
-    espresso = session.exec(
-        select(BrewMethod).where(BrewMethod.name == "espresso")
-    ).one()
+    espresso = session.exec(select(BrewMethod).where(BrewMethod.name == "espresso")).one()
 
     defaults = session.exec(
-        select(MethodParameterDefault).where(
-            MethodParameterDefault.brew_method_id == espresso.id
-        )
+        select(MethodParameterDefault).where(MethodParameterDefault.brew_method_id == espresso.id)
     ).all()
 
     param_names = {d.parameter_name for d in defaults}
@@ -98,9 +93,7 @@ def test_seed_all_methods_have_defaults(session):
     methods = session.exec(select(BrewMethod)).all()
     for method in methods:
         defaults = session.exec(
-            select(MethodParameterDefault).where(
-                MethodParameterDefault.brew_method_id == method.id
-            )
+            select(MethodParameterDefault).where(MethodParameterDefault.brew_method_id == method.id)
         ).all()
         assert len(defaults) > 0, f"No defaults seeded for {method.name}"
 
@@ -384,9 +377,7 @@ class TestMethodDefaults:
         session.commit()
 
         # Find espresso method id
-        espresso = session.exec(
-            select(BrewMethod).where(BrewMethod.name == "espresso")
-        ).one()
+        espresso = session.exec(select(BrewMethod).where(BrewMethod.name == "espresso")).one()
 
         resp = client.get(f"{DEFAULTS}/{espresso.id}")
         assert resp.status_code == 200
@@ -433,9 +424,7 @@ def _setup_campaign(client, session):
     session.commit()
 
     # Look up the seeded pour-over method
-    pour_over = session.exec(
-        select(BrewMethod).where(BrewMethod.name == "pour-over")
-    ).one()
+    pour_over = session.exec(select(BrewMethod).where(BrewMethod.name == "pour-over")).one()
     method_id = str(pour_over.id)
 
     bean_id = _create_bean(client, "Rec Bean")
@@ -465,9 +454,7 @@ def _create_person(client, name: str = "Tester") -> str:
 
 def _create_bag(client, bean_id: str) -> str:
     """Create a bag for a bean and return its id."""
-    resp = client.post(
-        f"{BEANS}/{bean_id}/bags", json={"weight": 250.0}
-    )
+    resp = client.post(f"{BEANS}/{bean_id}/bags", json={"weight": 250.0})
     assert resp.status_code == 201
     return resp.json()["id"]
 
@@ -500,17 +487,11 @@ def _create_brew(client, bag_id: str, setup_id: str, person_id: str) -> str:
 class TestRequestRecommendation:
     """Tests for POST /optimize/campaigns/{id}/recommend."""
 
-    def test_recommend_returns_202_with_job_id(
-        self, recommend_client, recommend_session
-    ):
+    def test_recommend_returns_202_with_job_id(self, recommend_client, recommend_session):
         """POST /recommend -> 202, returns job_id and status."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 202
         data = resp.json()
         assert "job_id" in data
@@ -518,31 +499,21 @@ class TestRequestRecommendation:
         # job_id should be a valid UUID string
         uuid.UUID(data["job_id"])
 
-    def test_recommend_nonexistent_campaign_404(
-        self, recommend_client, recommend_session
-    ):
+    def test_recommend_nonexistent_campaign_404(self, recommend_client, recommend_session):
         """POST /recommend for a non-existent campaign -> 404."""
         fake_id = str(uuid.uuid4())
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=fake_id)
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=fake_id))
         assert resp.status_code == 404
 
 
 class TestGetJob:
     """Tests for GET /optimize/jobs/{job_id}."""
 
-    def test_get_job_after_recommend(
-        self, recommend_client, recommend_session
-    ):
+    def test_get_job_after_recommend(self, recommend_client, recommend_session):
         """GET /jobs/{id} returns job; with InMemoryBroker it may be completed."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        rec_resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        rec_resp = recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
         job_id = rec_resp.json()["job_id"]
 
         resp = recommend_client.get(f"{JOBS}/{job_id}")
@@ -558,21 +529,13 @@ class TestGetJob:
 class TestListRecommendations:
     """Tests for GET /optimize/campaigns/{id}/recommendations."""
 
-    def test_list_recommendations_after_recommend(
-        self, recommend_client, recommend_session
-    ):
+    def test_list_recommendations_after_recommend(self, recommend_client, recommend_session):
         """After requesting a recommendation, listing returns it."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
 
-        resp = recommend_client.get(
-            CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"])
-        )
+        resp = recommend_client.get(CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
@@ -582,36 +545,24 @@ class TestListRecommendations:
         assert isinstance(rec["parameter_values"], dict)
         assert rec["status"] == "pending"
 
-    def test_list_recommendations_nonexistent_campaign(
-        self, recommend_client, recommend_session
-    ):
+    def test_list_recommendations_nonexistent_campaign(self, recommend_client, recommend_session):
         """GET recommendations for non-existent campaign -> 404."""
         fake_id = str(uuid.uuid4())
-        resp = recommend_client.get(
-            CAMPAIGN_RECS.format(campaign_id=fake_id)
-        )
+        resp = recommend_client.get(CAMPAIGN_RECS.format(campaign_id=fake_id))
         assert resp.status_code == 404
 
 
 class TestGetRecommendation:
     """Tests for GET /optimize/recommendations/{id}."""
 
-    def test_get_recommendation_detail(
-        self, recommend_client, recommend_session
-    ):
+    def test_get_recommendation_detail(self, recommend_client, recommend_session):
         """GET recommendation detail has parameter_values as dict."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
 
         # List to get the recommendation id
-        list_resp = recommend_client.get(
-            CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"])
-        )
+        list_resp = recommend_client.get(CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"]))
         rec_id = list_resp.json()[0]["id"]
 
         resp = recommend_client.get(f"{RECOMMENDATIONS}/{rec_id}")
@@ -628,26 +579,16 @@ class TestGetRecommendation:
 class TestSkipRecommendation:
     """Tests for POST /optimize/recommendations/{id}/skip."""
 
-    def test_skip_sets_status(
-        self, recommend_client, recommend_session
-    ):
+    def test_skip_sets_status(self, recommend_client, recommend_session):
         """POST /skip -> status becomes 'skipped'."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
 
-        list_resp = recommend_client.get(
-            CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"])
-        )
+        list_resp = recommend_client.get(CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"]))
         rec_id = list_resp.json()[0]["id"]
 
-        resp = recommend_client.post(
-            f"{RECOMMENDATIONS}/{rec_id}/skip"
-        )
+        resp = recommend_client.post(f"{RECOMMENDATIONS}/{rec_id}/skip")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "skipped"
@@ -657,29 +598,19 @@ class TestSkipRecommendation:
 class TestLinkRecommendation:
     """Tests for POST /optimize/recommendations/{id}/link."""
 
-    def test_link_with_valid_brew(
-        self, recommend_client, recommend_session
-    ):
+    def test_link_with_valid_brew(self, recommend_client, recommend_session):
         """POST /link with valid brew_id -> status 'brewed', brew_id set."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
 
-        list_resp = recommend_client.get(
-            CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"])
-        )
+        list_resp = recommend_client.get(CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"]))
         rec_id = list_resp.json()[0]["id"]
 
         # Create a brew to link
         person_id = _create_person(recommend_client)
         bag_id = _create_bag(recommend_client, ids["bean_id"])
-        brew_id = _create_brew(
-            recommend_client, bag_id, ids["brew_setup_id"], person_id
-        )
+        brew_id = _create_brew(recommend_client, bag_id, ids["brew_setup_id"], person_id)
 
         resp = recommend_client.post(
             f"{RECOMMENDATIONS}/{rec_id}/link",
@@ -690,21 +621,13 @@ class TestLinkRecommendation:
         assert data["status"] == "brewed"
         assert data["brew_id"] == brew_id
 
-    def test_link_with_invalid_brew_404(
-        self, recommend_client, recommend_session
-    ):
+    def test_link_with_invalid_brew_404(self, recommend_client, recommend_session):
         """POST /link with non-existent brew_id -> 404."""
-        ids = _setup_campaign(
-            recommend_client, recommend_session
-        )
+        ids = _setup_campaign(recommend_client, recommend_session)
 
-        recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
 
-        list_resp = recommend_client.get(
-            CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"])
-        )
+        list_resp = recommend_client.get(CAMPAIGN_RECS.format(campaign_id=ids["campaign_id"]))
         rec_id = list_resp.json()[0]["id"]
 
         fake_brew = str(uuid.uuid4())
@@ -824,15 +747,27 @@ class TestPersonPreferences:
 
         # Create brews with taste scores and flavor tags
         _create_brew_with_taste(
-            client, bag1_id, setup_id, person_id, score=8.5,
+            client,
+            bag1_id,
+            setup_id,
+            person_id,
+            score=8.5,
             flavor_tag_ids=[tag1_id, tag2_id],
         )
         _create_brew_with_taste(
-            client, bag1_id, setup_id, person_id, score=7.0,
+            client,
+            bag1_id,
+            setup_id,
+            person_id,
+            score=7.0,
             flavor_tag_ids=[tag1_id],
         )
         _create_brew_with_taste(
-            client, bag2_id, setup_id, person_id, score=9.0,
+            client,
+            bag2_id,
+            setup_id,
+            person_id,
+            score=9.0,
         )
 
         # Fetch preferences
@@ -925,21 +860,21 @@ class TestAutoCampaignOnBrew:
         bag_id = _create_bag(recommend_client, bean_id)
 
         # Before brew: no campaign should exist
-        resp = recommend_client.get(
-            CAMPAIGNS, params={"bean_id": bean_id}
-        )
+        resp = recommend_client.get(CAMPAIGNS, params={"bean_id": bean_id})
         assert resp.status_code == 200
         assert len(resp.json()) == 0
 
         # Create a brew
         _create_brew_with_taste(
-            recommend_client, bag_id, setup_id, person_id, score=7.5,
+            recommend_client,
+            bag_id,
+            setup_id,
+            person_id,
+            score=7.5,
         )
 
         # After brew: campaign should exist
-        resp = recommend_client.get(
-            CAMPAIGNS, params={"bean_id": bean_id}
-        )
+        resp = recommend_client.get(CAMPAIGNS, params={"bean_id": bean_id})
         assert resp.status_code == 200
         campaigns = resp.json()
         assert len(campaigns) >= 1
@@ -961,15 +896,21 @@ class TestAutoCampaignOnBrew:
         bag_id = _create_bag(recommend_client, bean_id)
 
         _create_brew_with_taste(
-            recommend_client, bag_id, setup_id, person_id, score=7.0,
+            recommend_client,
+            bag_id,
+            setup_id,
+            person_id,
+            score=7.0,
         )
         _create_brew_with_taste(
-            recommend_client, bag_id, setup_id, person_id, score=8.0,
+            recommend_client,
+            bag_id,
+            setup_id,
+            person_id,
+            score=8.0,
         )
 
-        resp = recommend_client.get(
-            CAMPAIGNS, params={"bean_id": bean_id}
-        )
+        resp = recommend_client.get(CAMPAIGNS, params={"bean_id": bean_id})
         campaigns = resp.json()
         matching = [c for c in campaigns if c["brew_setup_name"] is not None]
         assert len(matching) == 1  # Only one campaign, not two
@@ -1039,7 +980,11 @@ class TestCampaignProgress:
         scores = [6.5, 7.0, 8.0, 7.5]
         for score in scores:
             _create_brew_with_taste(
-                client, bag_id, setup_id, person_id, score=score,
+                client,
+                bag_id,
+                setup_id,
+                person_id,
+                score=score,
             )
 
         resp = client.get(PROGRESS.format(campaign_id=campaign_id))
@@ -1097,9 +1042,7 @@ def _setup_trained_campaign(client, session, measurement_count=3):
     session.commit()
 
     # Look up seeded pour-over method
-    pour_over = session.exec(
-        select(BrewMethod).where(BrewMethod.name == "pour-over")
-    ).one()
+    pour_over = session.exec(select(BrewMethod).where(BrewMethod.name == "pour-over")).one()
     method_id = str(pour_over.id)
 
     bean_id = _create_bean(client, "Posterior Bean")
@@ -1151,14 +1094,10 @@ def _setup_trained_campaign(client, session, measurement_count=3):
 
     # Load method defaults for effective ranges
     defaults = session.exec(
-        select(MethodParameterDefault).where(
-            MethodParameterDefault.brew_method_id == pour_over.id
-        )
+        select(MethodParameterDefault).where(MethodParameterDefault.brew_method_id == pour_over.id)
     ).all()
     overrides = session.exec(
-        select(BeanParameterOverride).where(
-            BeanParameterOverride.bean_id == uuid.UUID(bean_id)
-        )
+        select(BeanParameterOverride).where(BeanParameterOverride.bean_id == uuid.UUID(bean_id))
     ).all()
     effective_ranges = compute_effective_ranges(list(defaults), None, None, list(overrides))
     param_names = [r.parameter_name for r in effective_ranges]
@@ -1201,9 +1140,7 @@ class TestPosteriorPredictions:
 
     def test_posterior_1d(self, recommend_client, recommend_session):
         """1D posterior returns grid, mean, std of correct length."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=3
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=3)
         campaign_id = ids["campaign_id"]
         points = 20
 
@@ -1225,9 +1162,7 @@ class TestPosteriorPredictions:
 
     def test_posterior_2d(self, recommend_client, recommend_session):
         """2D posterior returns nested arrays (points x points)."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=3
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=3)
         campaign_id = ids["campaign_id"]
         points = 10
 
@@ -1248,13 +1183,9 @@ class TestPosteriorPredictions:
         assert len(data["std"]) == points
         assert all(len(row) == points for row in data["std"])
 
-    def test_posterior_includes_measurements(
-        self, recommend_client, recommend_session
-    ):
+    def test_posterior_includes_measurements(self, recommend_client, recommend_session):
         """Response includes measurement overlay data."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=3
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=3)
         campaign_id = ids["campaign_id"]
 
         resp = recommend_client.get(
@@ -1272,13 +1203,9 @@ class TestPosteriorPredictions:
             assert isinstance(m["values"], dict)
             assert isinstance(m["score"], (int, float))
 
-    def test_posterior_insufficient_data(
-        self, recommend_client, recommend_session
-    ):
+    def test_posterior_insufficient_data(self, recommend_client, recommend_session):
         """Campaign with <2 measurements returns 422."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=1
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=1)
         campaign_id = ids["campaign_id"]
 
         resp = recommend_client.get(
@@ -1287,9 +1214,7 @@ class TestPosteriorPredictions:
         )
         assert resp.status_code == 422
 
-    def test_posterior_campaign_not_found(
-        self, recommend_client, recommend_session
-    ):
+    def test_posterior_campaign_not_found(self, recommend_client, recommend_session):
         """Non-existent campaign returns 404."""
         fake_id = str(uuid.uuid4())
         resp = recommend_client.get(
@@ -1298,13 +1223,9 @@ class TestPosteriorPredictions:
         )
         assert resp.status_code == 404
 
-    def test_posterior_invalid_param_name(
-        self, recommend_client, recommend_session
-    ):
+    def test_posterior_invalid_param_name(self, recommend_client, recommend_session):
         """Unknown parameter name returns 422."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=3
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=3)
         campaign_id = ids["campaign_id"]
 
         resp = recommend_client.get(
@@ -1324,16 +1245,10 @@ IMPORTANCE = "/api/v1/optimize/campaigns/{campaign_id}/feature-importance"
 class TestFeatureImportance:
     """Tests for GET /optimize/campaigns/{id}/feature-importance."""
 
-    def test_feature_importance_with_enough_data(
-        self, recommend_client, recommend_session
-    ):
+    def test_feature_importance_with_enough_data(self, recommend_client, recommend_session):
         """Returns sorted parameter importance with >= 3 measurements."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=4
-        )
-        resp = recommend_client.get(
-            IMPORTANCE.format(campaign_id=ids["campaign_id"])
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=4)
+        resp = recommend_client.get(IMPORTANCE.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 200
         body = resp.json()
         assert len(body["parameters"]) > 0
@@ -1343,24 +1258,16 @@ class TestFeatureImportance:
         for i in range(len(body["importance"]) - 1):
             assert body["importance"][i] >= body["importance"][i + 1]
 
-    def test_feature_importance_insufficient_data(
-        self, recommend_client, recommend_session
-    ):
+    def test_feature_importance_insufficient_data(self, recommend_client, recommend_session):
         """Returns 422 when campaign has < 3 measurements."""
-        ids = _setup_trained_campaign(
-            recommend_client, recommend_session, measurement_count=2
-        )
-        resp = recommend_client.get(
-            IMPORTANCE.format(campaign_id=ids["campaign_id"])
-        )
+        ids = _setup_trained_campaign(recommend_client, recommend_session, measurement_count=2)
+        resp = recommend_client.get(IMPORTANCE.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 422
 
     def test_feature_importance_not_found(self, recommend_client):
         """Returns 404 for non-existent campaign."""
         fake_id = str(uuid.uuid4())
-        resp = recommend_client.get(
-            IMPORTANCE.format(campaign_id=fake_id)
-        )
+        resp = recommend_client.get(IMPORTANCE.format(campaign_id=fake_id))
         assert resp.status_code == 404
 
 
@@ -1401,9 +1308,7 @@ class TestPredictedScorePopulation:
             assert resp.status_code == 201
 
         # Request recommendation (InMemoryBroker runs inline)
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
 
@@ -1428,9 +1333,7 @@ class TestPredictedScorePopulation:
         """Recommendation with 0 measurements has null predicted_score."""
         ids = _setup_campaign(recommend_client, recommend_session)
 
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
 
@@ -1447,7 +1350,9 @@ class TestRecommendationGrindDisplay:
     """Recommendation must include grind_setting_display for grinder setups."""
 
     def test_recommendation_includes_grind_setting_display(
-        self, recommend_client, recommend_session,
+        self,
+        recommend_client,
+        recommend_session,
     ):
         """When brew setup has a grinder, recommendation includes display string."""
         seed_brew_methods(recommend_session)
@@ -1494,9 +1399,7 @@ class TestRecommendationGrindDisplay:
         campaign_id = resp.json()["id"]
 
         # Request recommendation
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=campaign_id)
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=campaign_id))
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
         job_resp = recommend_client.get(f"{JOBS}/{job_id}")
@@ -1571,9 +1474,7 @@ def _setup_campaign_with_scored_brews(client, session, n_brews=3):
     session.commit()
 
     # Use the seeded pour-over method so BayBE has real parameters
-    pour_over = session.exec(
-        select(BrewMethod).where(BrewMethod.name == "pour-over")
-    ).one()
+    pour_over = session.exec(select(BrewMethod).where(BrewMethod.name == "pour-over")).one()
     method_id = str(pour_over.id)
 
     bean_id = _create_bean(client, f"Live Bean {uuid.uuid4().hex[:6]}")
@@ -1657,7 +1558,10 @@ class TestCampaignLiveStats:
         assert "score_history" in data
         assert len(data["score_history"]) == 3
         assert data["convergence"]["status"] in (
-            "getting_started", "exploring", "learning", "converged",
+            "getting_started",
+            "exploring",
+            "learning",
+            "converged",
         )
 
     def test_list_returns_live_measurement_count(self, client, session):
@@ -1673,9 +1577,7 @@ class TestCampaignLiveStats:
 class TestPosteriorWithNullParams:
     """Posterior endpoint must tolerate NULL brew parameters."""
 
-    def test_posterior_with_null_bloom_weight(
-        self, recommend_client, recommend_session
-    ):
+    def test_posterior_with_null_bloom_weight(self, recommend_client, recommend_session):
         """Posterior works when bloom_weight is NULL on brews.
 
         The endpoint should not discard measurements just because an
@@ -1683,13 +1585,13 @@ class TestPosteriorWithNullParams:
         bloom_weight in effective ranges, but brews omit it.
         """
         ids = _setup_campaign_with_scored_brews(
-            recommend_client, recommend_session, n_brews=5,
+            recommend_client,
+            recommend_session,
+            n_brews=5,
         )
 
         # Generate a recommendation to create the BayBE campaign model
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
         job_resp = recommend_client.get(f"{JOBS}/{job_id}")
@@ -1708,27 +1610,23 @@ class TestPosteriorWithNullParams:
 class TestFeatureImportanceLiveCount:
     """Feature importance must use live measurement count."""
 
-    def test_feature_importance_uses_live_count(
-        self, recommend_client, recommend_session
-    ):
+    def test_feature_importance_uses_live_count(self, recommend_client, recommend_session):
         """Feature importance uses live count, not stale campaign.measurement_count."""
         ids = _setup_campaign_with_scored_brews(
-            recommend_client, recommend_session, n_brews=5,
+            recommend_client,
+            recommend_session,
+            n_brews=5,
         )
 
         # Generate recommendation to build the BayBE model
-        resp = recommend_client.post(
-            RECOMMEND.format(campaign_id=ids["campaign_id"])
-        )
+        resp = recommend_client.post(RECOMMEND.format(campaign_id=ids["campaign_id"]))
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
         job_resp = recommend_client.get(f"{JOBS}/{job_id}")
         assert job_resp.json()["status"] == "completed"
 
         # Feature importance should NOT reject with "found 0"
-        resp = recommend_client.get(
-            f"{CAMPAIGNS}/{ids['campaign_id']}/feature-importance"
-        )
+        resp = recommend_client.get(f"{CAMPAIGNS}/{ids['campaign_id']}/feature-importance")
         # Should be 200 (not 422 with "found 0")
         assert resp.status_code == 200, resp.text
 
@@ -1739,6 +1637,7 @@ class TestPersonAwareOptimization:
     def test_optimization_job_has_person_fields(self, session):
         """OptimizationJob model has person_id and optimization_mode columns."""
         from beanbay.models.optimization import OptimizationJob
+
         job = OptimizationJob(
             campaign_id=uuid.uuid4(),
             job_type="recommend",
@@ -1754,6 +1653,7 @@ class TestPersonAwareOptimization:
     def test_recommendation_has_mode_fields(self, session):
         """Recommendation model has optimization_mode and personal_brew_count."""
         from beanbay.models.optimization import Recommendation
+
         rec = Recommendation(
             campaign_id=uuid.uuid4(),
             phase="random",
@@ -1844,7 +1744,9 @@ class TestHybridOptimization:
     def test_recommend_accepts_person_id(self, recommend_client, recommend_session):
         """Recommend endpoint accepts person_id in body and stores on job."""
         ids = _setup_campaign_with_scored_brews(
-            recommend_client, recommend_session, n_brews=5,
+            recommend_client,
+            recommend_session,
+            n_brews=5,
         )
         resp = recommend_client.post(
             RECOMMEND.format(campaign_id=ids["campaign_id"]),
@@ -1863,7 +1765,9 @@ class TestHybridOptimization:
         assert rec["personal_brew_count"] == 5
 
     def test_recommend_without_person_uses_community(
-        self, recommend_client, recommend_session,
+        self,
+        recommend_client,
+        recommend_session,
     ):
         """Recommend without person_id defaults to community mode."""
         ids = _setup_campaign(recommend_client, recommend_session)
@@ -1882,11 +1786,15 @@ class TestHybridOptimization:
         assert rec["optimization_mode"] == "community"
 
     def test_auto_mode_graduates_to_personal(
-        self, recommend_client, recommend_session,
+        self,
+        recommend_client,
+        recommend_session,
     ):
         """Auto mode resolves to personal when person has >= 5 brews."""
         ids = _setup_campaign_with_scored_brews(
-            recommend_client, recommend_session, n_brews=5,
+            recommend_client,
+            recommend_session,
+            n_brews=5,
         )
         resp = recommend_client.post(
             RECOMMEND.format(campaign_id=ids["campaign_id"]),
@@ -1904,7 +1812,9 @@ class TestHybridOptimization:
         assert rec["personal_brew_count"] == 5
 
     def test_personal_mode_no_brews_returns_error(
-        self, recommend_client, recommend_session,
+        self,
+        recommend_client,
+        recommend_session,
     ):
         """Personal mode with 0 brews for this person fails gracefully."""
         ids = _setup_campaign(recommend_client, recommend_session)

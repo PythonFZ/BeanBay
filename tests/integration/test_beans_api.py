@@ -140,9 +140,7 @@ class TestBeanWithRoaster:
     def test_create_bean_with_roaster(self, client):
         """Bean created with roaster_id includes nested roaster in GET."""
         roaster_id = _create_roaster(client, "SquareMile-b3")
-        bean = _create_bean(
-            client, "Roasted Bean", roaster_id=roaster_id
-        )
+        bean = _create_bean(client, "Roasted Bean", roaster_id=roaster_id)
         assert bean["roaster_id"] == roaster_id
         assert bean["roaster"] is not None
         assert bean["roaster"]["name"] == "SquareMile-b3"
@@ -167,9 +165,7 @@ class TestBeanUpdateM2M:
         origin1 = _create_origin(client, "Kenya-b4")
         origin2 = _create_origin(client, "Rwanda-b4")
 
-        bean = _create_bean(
-            client, "Update Bean", origin_ids=[origin1]
-        )
+        bean = _create_bean(client, "Update Bean", origin_ids=[origin1])
         assert len(bean["origins"]) == 1
 
         # Update to origin2
@@ -185,9 +181,7 @@ class TestBeanUpdateM2M:
     def test_patch_bean_clears_m2m(self, client):
         """PATCH with empty list clears the M2M relationship."""
         origin_id = _create_origin(client, "Brazil-b4b")
-        bean = _create_bean(
-            client, "Clear Bean", origin_ids=[origin_id]
-        )
+        bean = _create_bean(client, "Clear Bean", origin_ids=[origin_id])
         assert len(bean["origins"]) == 1
 
         resp = client.patch(
@@ -469,9 +463,7 @@ class TestBeanEnrichment:
             json={
                 "name": "Blend Bean",
                 "bean_mix_type": "blend",
-                "origins": [
-                    {"origin_id": origin["id"], "percentage": 60.0}
-                ],
+                "origins": [{"origin_id": origin["id"], "percentage": 60.0}],
             },
         )
         assert resp.status_code == 201
@@ -509,14 +501,17 @@ class TestBagEnrichment:
         bean_id = self._create_bean(client)
         vendor = client.post("/api/v1/vendors", json={"name": "Test Shop"}).json()
         storage = client.post("/api/v1/storage-types", json={"name": "Vacuum Sealed"}).json()
-        resp = client.post(f"/api/v1/beans/{bean_id}/bags", json={
-            "weight": 250.0,
-            "bought_at": "2026-03-20",
-            "vendor_id": vendor["id"],
-            "frozen_at": "2026-03-20T10:00:00",
-            "storage_type_id": storage["id"],
-            "best_date": "2026-06-20",
-        })
+        resp = client.post(
+            f"/api/v1/beans/{bean_id}/bags",
+            json={
+                "weight": 250.0,
+                "bought_at": "2026-03-20",
+                "vendor_id": vendor["id"],
+                "frozen_at": "2026-03-20T10:00:00",
+                "storage_type_id": storage["id"],
+                "best_date": "2026-06-20",
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["bought_at"] == "2026-03-20"

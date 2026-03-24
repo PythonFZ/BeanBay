@@ -145,9 +145,7 @@ def seed_method_parameter_defaults(session: Session) -> None:
         calling ``session.commit()`` after this function returns.
     """
     for method_name, params in _METHOD_DEFAULTS.items():
-        brew_method = session.exec(
-            select(BrewMethod).where(BrewMethod.name == method_name)
-        ).first()
+        brew_method = session.exec(select(BrewMethod).where(BrewMethod.name == method_name)).first()
 
         if brew_method is None:
             continue
