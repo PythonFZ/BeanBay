@@ -36,11 +36,16 @@ export interface ScoreHistoryEntry {
   phase: string;
 }
 
+export interface ConvergenceInfo {
+  status: string;
+  improvement_rate: number | null;
+}
+
 export interface CampaignProgress {
   phase: string;
   measurement_count: number;
   best_score: number | null;
-  convergence: number | null;
+  convergence: ConvergenceInfo;
   score_history: ScoreHistoryEntry[];
 }
 
