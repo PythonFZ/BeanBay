@@ -58,7 +58,7 @@ const initialState: WizardState = {
     stop_mode: null,
     is_failed: false,
     notes: '',
-    brewed_at: nowLocal(),
+    brewed_at: '',
   },
   taste: {
     score: 0,
@@ -189,7 +189,7 @@ export default function BrewWizard() {
       person_id: setup.person?.id,
       dose: Number(params.dose),
       is_failed: params.is_failed,
-      brewed_at: params.brewed_at || null,
+      brewed_at: params.brewed_at || nowLocal(),
     };
 
     if (params.grind_setting_display.trim())

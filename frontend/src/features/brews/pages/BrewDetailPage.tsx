@@ -5,7 +5,7 @@ import { useNotification } from '@/components/NotificationProvider';
 import PageHeader from '@/components/PageHeader';
 import TasteRadar, { brewTasteToRadar } from '@/components/TasteRadar';
 import type { Grinder } from '@/features/equipment/hooks';
-import { fmtDate } from '@/utils/date';
+import { fmtDate, fmtDateTime } from '@/utils/date';
 import {
   getGrindPlaceholder,
   getGrindRangeDisplay,
@@ -88,7 +88,7 @@ function BrewInfoCard({ brew }: { brew: Brew }) {
             <Stack spacing={1}>
               <InfoRow label="Bean" value={brew.bag?.bean_name} />
               <InfoRow label="Person" value={brew.person?.name} />
-              <InfoRow label="Brewed At" value={fmtDate(brew.brewed_at)} />
+              <InfoRow label="Brewed At" value={fmtDateTime(brew.brewed_at)} />
               {brew.is_failed && (
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Typography
